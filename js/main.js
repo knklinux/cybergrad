@@ -8,7 +8,9 @@ import { UI } from "./ui.js";
 import { crearComandos } from "./commands.js";
 import { FX } from "./fx.js";
 import { GAME } from "./state.js";
-import { CASOS } from "./casos.js";
+import { CASOS, siguienteCaso } from "./casos.js";
+import { siguienteCasoRT } from "./rt-casos.js";
+import { hayGuardado, cargar } from "./save.js";
 
 const BANNER = [
   "  ██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ",
@@ -55,6 +57,10 @@ function procesar(linea) {
 ui.setNuevoCasoHandler((caso, opciones) => engine.iniciarCaso(caso, opciones));
 
 // ---- Arranque ----
+// Si hay partida guardada, se restaura y se continúa sin onboarding
+const tieneGuardado = hayGuardado();
+if (tieneGuardado) cargar();
+
 ui.actualizarPerfil();
 term.print(BANNER, "t-out-hi");
 term.print("");
@@ -62,11 +68,40 @@ term.print("Simulador de carrera SOC — aprende ciberseguridad defensiva resolv
 term.print("© CYBERGRAD · Uso educativo · Personajes y empresas ficticios", "t-out-dim");
 term.print("");
 
-ui.onboarding((nombre) => {
-  term.printSec(`Bienvenido al turno, ${nombre}.`);
-  term.printSec("Estado del SOC: monitorizando 4.200 endpoints · 1 incidente pendiente de asignación.");
+if (tieneGuardado) {
+  term.printSec(`Bienvenido de vuelta, ${GAME.nombre}. Progreso restaurado.`);
+  term.printInfo(`${GAME.xp} XP (SOC) · ${GAME.rtXp} XP (Red Team) · ${GAME.puntos} puntos · ${GAME.casosResueltos + GAME.rtCasosResueltos} casos resueltos`);
   term.print("");
-  // Asignar el primer caso no completado
-  const siguiente = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
-  engine.iniciarCaso(siguiente);
-});
+  const pendiente = casoInicialCargado();
+  if (pendiente) {
+    engine.iniciarCaso(pendiente);
+  } else {
+    term.print("Ambas campañas completadas. Abre Carrera para repasar tu trayectoria o reiniciar el progreso.", "t-out-dim");
+    ui.mostrarCarrera();
+  }
+} else {
+  ui.onboarding((nombre) => {
+    term.printSec(`Bienvenido al turno, ${nombre}.`);
+    term.printSec("Estado del SOC: monitorizando 4.200 endpoints · 1 incidente pendiente de asignación.");
+    term.print("");
+    // Asignar el primer caso no completado
+    const siguiente = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
+    engine.iniciarCaso(siguiente);
+  });
+}
+
+// Caso pendiente al cargar una partida: prioriza la campaña activa y
+// cae a la otra si ya está completa
+function casoInicialCargado() {
+  const orden = GAME.modo === "rt" ? ["rt", "soc"] : ["soc", "rt"];
+  for (const m of orden) {
+    if (m === "rt") {
+      const sig = siguienteCasoRT(GAME.rtCasosCompletados);
+      if (sig) return sig;
+    } else {
+      const sig = siguienteCaso(GAME.casosCompletados);
+      if (sig) return sig;
+    }
+  }
+  return null;
+}

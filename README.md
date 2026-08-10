@@ -66,7 +66,9 @@ Cada caso tiene **SLA** (tiempo real), **eventos en vivo** (el ataque avanza mie
 6. Recibe tu **calificación (S+ a C)**, XP de pentest y la **lección** del caso.
 7. **Asciende**: Aprendiz de Pentester → Pentester Junior → Pentester → Pentester Senior → Líder Red Team → **CISO**.
 
-El progreso red team es independiente del blue team: XP, rango y campaña propios (sin persistencia entre sesiones todavía).
+El progreso red team es independiente del blue team: XP, rango y campaña propios.
+
+**💾 Tu progreso se guarda automáticamente** en el navegador (localStorage): nombre, XP de ambas carreras, puntos, casos y pentests resueltos y lecciones vistas. Al volver, el juego te recibe con "Bienvenido de vuelta" y te asigna el siguiente caso pendiente. Puedes **reiniciar el progreso** desde el panel de Carrera (botón 🎖 → 🔄 REINICIAR PROGRESO, con doble confirmación). El caso en curso no se guarda a medias: el progreso se consolida al cerrar cada caso.
 
 ## 🎓 Modo Becario
 
@@ -187,7 +189,7 @@ cybergrad/
 - Más pentests red team (active directory, phishing ofensivo, movimiento lateral en dominio)
 - Más prácticas guiadas de becario (más escenarios paso a paso)
 - Sistema de logros e insignias por rango
-- Guardado de progreso (localStorage) y ranking
+- Ranking entre jugadores
 - Más personajes sintéticos con voz propia (Ark y otros)
 
 ## ⚖️ Aviso

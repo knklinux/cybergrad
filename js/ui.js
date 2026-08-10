@@ -3,6 +3,7 @@
 // ============================================================
 
 import { GAME, RANKS, RT_RANKS, estadoRango, estadoRangoRT } from "./state.js";
+import { guardar, borrarGuardado } from "./save.js";
 import { CASOS, numCaso, siguienteCaso } from "./casos.js";
 import { RT_CASOS, numCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
@@ -185,6 +186,7 @@ export class UI {
       "empezar": () => {
         const nombre = ($("input-nombre")?.value || "").trim() || "Analista";
         GAME.nombre = nombre;
+        guardar();
         this.cerrarModal();
         this.jimmyDice(`Turno iniciado. Estoy contigo, ${nombre}.`);
         cb(nombre);
@@ -833,8 +835,26 @@ ${acciones}
         <h3>${esRT ? "PENTESTS COMPLETADOS" : "CASOS COMPLETADOS"}</h3>
         <div class="modal-text" style="font-size:12.5px">${casosHechos || "Ninguno todavía. ¡A trabajar!"}</div>
       </div>
-      <div class="btn-row"><button class="btn-primary" data-action="cerrar-carrera">CERRAR</button></div>`;
-    this.setAcciones({ "cerrar-carrera": () => this.cerrarModal() });
+      <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">💾 Progreso guardado automáticamente en este navegador (localStorage).</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="reiniciar">🔄 REINICIAR PROGRESO</button>
+        <button class="btn-primary" data-action="cerrar-carrera">CERRAR</button>
+      </div>`;
+    let confirmando = false;
+    this.setAcciones({
+      "cerrar-carrera": () => this.cerrarModal(),
+      "reiniciar": (btn) => {
+        if (!confirmando) {
+          confirmando = true;
+          btn.textContent = "⚠ ¿BORRAR TODO? CONFIRMA";
+          btn.style.borderColor = "var(--red)";
+          btn.style.color = "#ff6b6b";
+          return;
+        }
+        borrarGuardado();
+        location.reload();
+      },
+    });
     this.abrirModal(html);
   }
 

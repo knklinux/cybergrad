@@ -23,6 +23,7 @@ const TIPOS_OBJETIVO = {
 import { md5, sha256 } from "./hash.js";
 import { temaParaCaso } from "./fx.js";
 import { JIMMY_PISTA } from "./jimmy.js";
+import { guardar } from "./save.js";
 
 const PUNTOS = {
   accionCorrecta: 30,
@@ -605,6 +606,7 @@ export class Engine {
     if (this.lab) {
       GAME.lecciones.push(caso.id);
       this._limpiarTimers();
+      guardar();
       this.ui.mostrarResultado(resultado, () =>
         this.ui.mostrarLeccion(caso, () => this.ui.mostrarLaboratorio())
       );
@@ -620,6 +622,7 @@ export class Engine {
       GAME.lecciones.push(caso.id);
     }
     this._limpiarTimers();
+    guardar();
     this.ui.mostrarResultado(resultado, () =>
       this.ui.mostrarLeccion(caso, () => this._siguienteCaso())
     );
@@ -658,6 +661,7 @@ export class Engine {
   fracasarCaso(motivo) {
     this._limpiarTimers();
     addPuntos(PUNTOS.slaSuperado);
+    guardar();
     this.term.printErr("🔴 " + motivo);
     this.ui.fracasarCaso(motivo, () => this._reintentar(), () => this._saltarCaso());
   }
