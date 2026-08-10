@@ -431,8 +431,14 @@ export class Engine {
         this.tutorialFin = true;
         this._limpiarTimers();
         this.ui.ocultarGuia();
-        if (this.becario) this.ui.mostrarFinBecario();
-        else this.ui.mostrarFinTutorial();
+        if (this.becario) {
+          // Registra la práctica superada (persistida con el guardado)
+          if (this.caso?.id && !GAME.becarioCompletadas.includes(this.caso.id)) {
+            GAME.becarioCompletadas.push(this.caso.id);
+            guardar();
+          }
+          this.ui.mostrarFinBecario();
+        } else this.ui.mostrarFinTutorial();
       } else {
         const siguiente = pasos[this.tutorialIdx];
         this.ui.mostrarGuia(siguiente, this.tutorialIdx, pasos.length, this._gratisLabel());

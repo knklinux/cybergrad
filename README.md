@@ -68,7 +68,7 @@ Cada caso tiene **SLA** (tiempo real), **eventos en vivo** (el ataque avanza mie
 
 El progreso red team es independiente del blue team: XP, rango y campaña propios.
 
-**💾 Tu progreso se guarda automáticamente** en el navegador (localStorage): nombre, XP de ambas carreras, puntos, casos y pentests resueltos y lecciones vistas. Al volver, el juego te recibe con "Bienvenido de vuelta" y te asigna el siguiente caso pendiente. Puedes **reiniciar el progreso** desde el panel de Carrera (botón 🎖 → 🔄 REINICIAR PROGRESO, con doble confirmación). El caso en curso no se guarda a medias: el progreso se consolida al cerrar cada caso.
+**💾 Tu progreso se guarda automáticamente** en el navegador (localStorage): nombre, XP de ambas carreras, puntos, casos y pentests resueltos, lecciones vistas y **prácticas de becario superadas** (se marcan con ✔ en el selector). Al volver, el juego te recibe con "Bienvenido de vuelta" y te asigna el siguiente caso pendiente. Puedes **reiniciar el progreso** desde el panel de Carrera (botón 🎖 → 🔄 REINICIAR PROGRESO, con doble confirmación). El caso en curso no se guarda a medias: el progreso se consolida al cerrar cada caso.
 
 ## 🎓 Modo Becario
 

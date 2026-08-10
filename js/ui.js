@@ -268,13 +268,16 @@ export class UI {
   // ---------- Modo Becario ----------
   mostrarBecario(onCerrar = null) {
     this._becOnCerrar = onCerrar;
-    const seccion = (lista, titulo) => lista.map((c, i) => `
-      <div class="bec-card">
-        <div class="bec-num">${titulo} ${i + 1}/${lista.length}</div>
+    const seccion = (lista, titulo) => lista.map((c, i) => {
+      const hecha = GAME.becarioCompletadas.includes(c.id);
+      return `
+      <div class="bec-card ${hecha ? "bec-hecha" : ""}" style="${hecha ? "opacity:.75" : ""}">
+        <div class="bec-num">${titulo} ${i + 1}/${lista.length}${hecha ? " · ✔ COMPLETADA" : ""}</div>
         <div class="bec-titulo">${c.titulo}</div>
         <div class="bec-meta">${c.severidad} ${c.modo === "rt" ? "· Red Team" : "· SOC"} · Sin penalizaciones · 0 XP</div>
         <div class="bec-brief">${c.briefing.slice(0, 160)}…</div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
     const html = `
       <div class="modal-title">&#127891; MODO BECARIO — APRENDE CON JIMMY</div>
       ${this.holoHTML("holo-md")}
@@ -858,6 +861,8 @@ ${acciones}
     }).join("");
     const casosHechos = (esRT ? GAME.rtCasosCompletados : GAME.casosCompletados)
       .map((id) => listaCasos.find((c) => c.id === id)?.titulo || id).join("<br/>");
+    const becHechas = GAME.becarioCompletadas
+      .map((id) => [...BECARIO_CASOS, ...BECARIO_RT_CASOS].find((c) => c.id === id)?.titulo || id).join("<br/>");
     const html = `
       <div class="modal-title">🎖 ${esRT ? "TU CARRERA EN RED TEAM" : "TU CARRERA EN EL SOC"}</div>
       <div class="modal-text" style="margin-bottom:8px">
@@ -867,6 +872,10 @@ ${acciones}
       <div class="modal-section">
         <h3>${esRT ? "PENTESTS COMPLETADOS" : "CASOS COMPLETADOS"}</h3>
         <div class="modal-text" style="font-size:12.5px">${casosHechos || "Ninguno todavía. ¡A trabajar!"}</div>
+      </div>
+      <div class="modal-section">
+        <h3>🎓 PRÁCTICAS DE BECARIO</h3>
+        <div class="modal-text" style="font-size:12.5px">${becHechas || "Ninguna todavía. Abre el modo Becario para empezar."}</div>
       </div>
       <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">💾 Progreso guardado automáticamente en este navegador (localStorage).</div>
       <div class="btn-row">

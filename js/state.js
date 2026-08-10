@@ -117,6 +117,8 @@ export const GAME = {
   rtCasosResueltos: 0,
   rtCasosCompletados: [],
   rtLecciones: [],
+  // ---- Prácticas guiadas de becario superadas (blue team y red team) ----
+  becarioCompletadas: [],
 };
 
 export function estadoRango() {
