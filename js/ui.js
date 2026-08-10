@@ -1095,9 +1095,20 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
   // permite precargar texto por URL, así que el mensaje se pega con Ctrl+V.
   compartirLinkedin(btn) {
     const urlJuego = "https://knklinux.github.io/cybergrad/";
-    const rSOC = estadoRango();
-    const rRT = estadoRangoRT();
-    const mensaje = `Acabo de completar ${GAME.casosResueltos}/6 casos SOC (${rSOC.nombre}) y ${GAME.rtCasosResueltos}/6 pentests red team (${rRT.nombre}) en CYBERGRAD: ${GAME.xp} XP SOC · ${GAME.rtXp} XP RT. Un simulador gratuito para aprender ciberseguridad jugando desde el navegador. ${urlJuego}`;
+    const nLogros = GAME.logros?.length || 0;
+    const mejor = GAME.mejorRating; // null → "S+", persistido con el guardado
+    let mensaje;
+    if (GAME.casosResueltos === 0 && GAME.rtCasosResueltos === 0) {
+      // Aún no hay casos completados: resumen corto de presentación
+      mensaje = `Acabo de crear CYBERGRAD: un simulador gratuito para aprender ciberseguridad jugando desde el navegador, con terminal funcional, 12 casos (SOC + red team), modo becario guiado y lecciones MITRE ATT&CK. ${urlJuego}`;
+    } else {
+      const rSOC = estadoRango();
+      const rRT = estadoRangoRT();
+      let progreso = `Acabo de completar ${GAME.casosResueltos}/6 casos SOC (${rSOC.nombre}) y ${GAME.rtCasosResueltos}/6 pentests red team (${rRT.nombre}) en CYBERGRAD: ${GAME.xp} XP SOC · ${GAME.rtXp} XP RT`;
+      if (mejor === "S+" || mejor === "S") progreso += ` · mejor calificación ${mejor}`;
+      if (nLogros > 0) progreso += ` · ${nLogros} logros desbloqueados`;
+      mensaje = `${progreso}. Un simulador gratuito para aprender ciberseguridad jugando desde el navegador. ${urlJuego}`;
+    }
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(urlJuego)}`, "_blank", "noopener,width=650,height=700");
     this._copiarAlPortapapeles(mensaje, btn);
     this.notificar("💼 LINKEDIN", "Diálogo abierto y mensaje copiado: pulsa Ctrl+V en el cuadro de LinkedIn para publicar.", "logro");
@@ -1216,7 +1227,8 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
         </div>
         <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">
           MD y JSON descargan el resumen. COPIAR lo pone en el portapapeles. LINKEDIN abre el diálogo de
-          LinkedIn con la tarjeta del juego y copia un mensaje de tu progreso listo para pegar (Ctrl+V).
+          LinkedIn con la tarjeta del juego y copia un mensaje adaptado a tu progreso (rangos, XP, mejor
+          calificación y logros) listo para pegar (Ctrl+V).
         </div>
       </div>
       <div class="btn-row">
