@@ -29,3 +29,16 @@ jobs:
 
       - name: Smoke test (carga sin errores de consola)
         run: npm run test:smoke
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historial completo: gitleaks detect escanea TODOS los commits,
+          # no solo el último (caza secretos ya subidos en el pasado).
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          # Token automático del runner: no hace falta crear ninguno.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
