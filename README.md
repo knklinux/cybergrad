@@ -76,6 +76,8 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 
 **📊 Estadísticas globales** en el panel Carrera (persistidas con tu guardado): **tiempo total jugado**, **acciones correctas/errores**, **pistas usadas**, la **calificación de cada caso completado** (chips S+ a C con su campaña) y dos **barras de progreso de XP** (SOC y Red Team). Además, el botón **📥 EXPORTAR RESUMEN (MD)** descarga tu informe de carrera completo en Markdown.
 
+**🥚 Huevo de pascua**: hay un **logro oculto** que no aparece en la lista de pendientes… pero la curiosidad tiene premio. Pulsa **3 veces seguidas el avatar de Jimmy** (en el HUD o en cualquier panel) y verás qué pasa. (Pista: Jimmy aprecia a los que investigan.)
+
 ## 🎓 Modo Becario
 
 ¿Nunca has tocado un SOC? El **Modo Becario** es tu rampa de entrada: tres prácticas guiadas de blue team y un **pentest guiado** de red team, donde Jimmy valida comando a comando y un **panel de guía** muestra el paso actual (N/M), el comando exacto y la explicación del **porqué** de cada acción:

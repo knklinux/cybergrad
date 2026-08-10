@@ -43,6 +43,7 @@ const CAMPOS = [
   "logros",
   "mejorRating",
   "casoSinPistas",
+  "secretos",
   "estadisticas",
 ];
 
@@ -91,7 +92,7 @@ export function cargar(slot = 1) {
       if (datos[c] !== undefined) GAME[c] = datos[c];
     }
     // Garantías: arrays válidos y estado de ejecución siempre limpio
-    for (const arr of ["casosCompletados", "lecciones", "rtCasosCompletados", "rtLecciones", "becarioCompletadas", "logros"]) {
+    for (const arr of ["casosCompletados", "lecciones", "rtCasosCompletados", "rtLecciones", "becarioCompletadas", "logros", "secretos"]) {
       if (!Array.isArray(GAME[arr])) GAME[arr] = [];
     }
     // Estadísticas: objeto con sub-array ratings
@@ -144,6 +145,7 @@ export function nuevaPartida() {
   GAME.logros = [];
   GAME.mejorRating = null;
   GAME.casoSinPistas = false;
+  GAME.secretos = [];
   GAME.casoActual = null;
   GAME.casoIniciadoEn = 0;
   GAME.reloj = 0;

@@ -26,6 +26,8 @@ export const LOGROS = [
   { id: "becario", icono: "🎓", nombre: "Aprendiz aplicado", desc: "Supera tu primera práctica guiada de becario", condicion: (g) => g.becarioCompletadas.length >= 1 },
   { id: "becario-todas", icono: "📚", nombre: "Becario graduado", desc: "Supera todas las prácticas guiadas (blue team + red team)", condicion: (g) => g.becarioCompletadas.length >= 4 },
   { id: "puntos-1000", icono: "💰", nombre: "Banco de puntos", desc: "Acumula 1.000 puntos", condicion: (g) => g.puntos >= 1000 },
+  // ---- Secreto (oculto: no aparece en PENDIENTES hasta encontrarse) ----
+  { id: "huevo-jimmy", icono: "🥚", nombre: "Huevo de pascua", desc: "Encuentra el secreto escondido en el avatar de Jimmy", condicion: (g) => (g.secretos || []).includes("jimmy"), oculto: true },
 ];
 
 export function totalLogros() {
@@ -37,7 +39,8 @@ export function logrosDesbloqueados() {
 }
 
 export function logrosPendientes() {
-  return LOGROS.filter((l) => !GAME.logros.includes(l.id));
+  // Los logros ocultos no se listan hasta desbloquearse: el secreto sigue siendo secreto
+  return LOGROS.filter((l) => !l.oculto && !GAME.logros.includes(l.id));
 }
 
 // Comprueba los logros aún bloqueados y devuelve los recién desbloqueados

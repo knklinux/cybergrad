@@ -9,7 +9,7 @@ import { RT_CASOS, numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
-import { LOGROS, logrosDesbloqueados, logrosPendientes, totalLogros } from "./logros.js";
+import { LOGROS, logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
   JIMMY_LECCION, JIMMY_PISTA, JIMMY_LAB, JIMMY_FINAL,
@@ -25,7 +25,52 @@ export class UI {
     this._sla = 0;
     this._acciones = {};
     this._becIdx = 0;
+    this._jimmyClicks = 0;
+    this._jimmyClicksLast = 0;
     this._bindBotones();
+    document.addEventListener("click", (e) => this._onClickJimmy(e));
+    const sc = $("secreto-cerrar");
+    if (sc) sc.addEventListener("click", () => $("secreto-overlay")?.classList.add("hidden"));
+  }
+
+  // ---------- Secreto: 3 clics en el avatar de Jimmy ----------
+  _onClickJimmy(e) {
+    if (!e.target || !e.target.closest || !e.target.closest(".holo-avatar")) return;
+    const ahora = Date.now();
+    if (ahora - this._jimmyClicksLast > 1200) this._jimmyClicks = 0; // serie rota por pausa
+    this._jimmyClicks++;
+    this._jimmyClicksLast = ahora;
+    if (this._jimmyClicks >= 3) {
+      this._jimmyClicks = 0;
+      this._desbloquearSecreto();
+    }
+  }
+
+  _desbloquearSecreto() {
+    const yaEncontrado = GAME.secretos.includes("jimmy");
+    if (!yaEncontrado) GAME.secretos.push("jimmy");
+    const nuevos = evaluarLogros();
+    guardar();
+    this.actualizarPerfil();
+    this._mostrarSecreto(yaEncontrado);
+    if (nuevos.length) {
+      this.notificar("🥚 SECRETO DESBLOQUEADO", `${nuevos[0].icono} ${nuevos[0].nombre} — ${nuevos[0].desc}`, "logro");
+    } else {
+      this.notificar("🥚 Secreto ya desbloqueado", "Jimmy aprecia tu insistencia.", "logro");
+    }
+  }
+
+  _mostrarSecreto(yaEncontrado) {
+    const overlay = $("secreto-overlay");
+    if (!overlay) return;
+    $("secreto-titulo").textContent = yaEncontrado ? "🥚 SECRETO YA CONOCIDO" : "🥚 SECRETO DESBLOQUEADO";
+    $("secreto-msg").textContent = yaEncontrado
+      ? "Ya encontraste mi secreto, analista. La curiosidad no se premia dos veces… pero se agradece. — Jimmy"
+      : "Nadie te dijo que pulsaras mi avatar tres veces. Pero lo hiciste. La curiosidad es el primer vector de intrusión del mundo: úsala a tu favor. — Jimmy";
+    $("secreto-logro").innerHTML = yaEncontrado
+      ? `🥚 Huevo de pascua · Encuentra el secreto escondido en el avatar de Jimmy`
+      : `🏅 NUEVO LOGRO: 🥚 Huevo de pascua — Encuentra el secreto escondido en el avatar de Jimmy`;
+    overlay.classList.remove("hidden");
   }
 
   _bindBotones() {
@@ -891,7 +936,7 @@ ${acciones}
     const hechos = logrosDesbloqueados();
     const pendientes = logrosPendientes();
     const card = (l, hecho) => `
-      <div class="logro-card ${hecho ? "desbloqueado" : "locked"}">
+      <div class="logro-card ${hecho ? "desbloqueado" : "locked"} ${l.oculto && hecho ? "secreto" : ""}">
         <span class="l-icon">${hecho ? l.icono : "&#128274;"}</span>
         <div style="flex:1">
           <div class="l-name">${l.nombre}</div>
