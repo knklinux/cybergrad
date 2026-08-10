@@ -920,6 +920,68 @@ ${acciones}
     this.abrirModal(html);
   }
 
+  // ---------- Exportar resumen (Markdown) ----------
+  exportarResumen() {
+    const rSOC = estadoRango();
+    const rRT = estadoRangoRT();
+    const nomCasos = (ids, lista) => ids.map((id) => lista.find((c) => c.id === id)?.titulo || id);
+    const socC = nomCasos(GAME.casosCompletados, CASOS);
+    const rtC = nomCasos(GAME.rtCasosCompletados, RT_CASOS);
+    const becs = GAME.becarioCompletadas
+      .map((id) => [...BECARIO_CASOS, ...BECARIO_RT_CASOS].find((c) => c.id === id)?.titulo || id);
+    const logs = logrosDesbloqueados();
+
+    const md = `# 🛡️ CYBERGRAD — Informe de Carrera
+
+**Jugador:** ${GAME.nombre}  
+**Generado:** ${new Date().toLocaleString("es-ES")}
+
+## 📊 Resumen
+
+| Métrica | Valor |
+|---------|-------|
+| XP SOC | ${GAME.xp} / 2.400 |
+| XP Red Team | ${GAME.rtXp} / 2.600 |
+| Puntos | ${GAME.puntos} |
+| Rango SOC | ${rSOC.icono} ${rSOC.nombre} |
+| Rango Red Team | ${rRT.icono} ${rRT.nombre} |
+| Casos SOC | ${GAME.casosResueltos} / 6 |
+| Pentests | ${GAME.rtCasosResueltos} / 6 |
+| Logros | ${logs.length} / ${totalLogros()} |
+
+## ✅ Casos completados (SOC)
+
+${socC.length ? socC.map((t, i) => `- #${String(i + 1).padStart(2, "0")} — ${t} (✔)`).join("\n") : "— (*ninguno todavía*)"}
+
+## ✅ Pentests completados (Red Team)
+
+${rtC.length ? rtC.map((t, i) => `- #RT-${String(i + 1).padStart(2, "0")} — ${t} (✔)`).join("\n") : "— (*ninguno todavía*)"}
+
+## 🎓 Prácticas de becario
+
+${becs.length ? becs.map((t) => `- ${t} (✔)`).join("\n") : "— (*ninguna todavía*)"}
+
+## 🏅 Logros desbloqueados
+
+${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join("\n") : "— (*ninguno todavía*)"}
+
+---
+*Generado por CYBERGRAD — https://knklinux.github.io/cybergrad/*`;
+
+    // Descargar como .md
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cybergrad-carrera-${GAME.nombre.toLowerCase().replace(/\s+/g, "-")}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    this.notificar("📥 INFORME EXPORTADO", "Resumen de carrera descargado como Markdown (.md)", "logro");
+  }
+
   // ---------- Carrera ----------
   mostrarCarrera() {
     const esRT = GAME.modo === "rt";
@@ -974,6 +1036,7 @@ ${acciones}
         </div>
       </div>
       <div class="btn-row">
+        <button class="btn-secondary" data-action="exportar-resumen">📥 EXPORTAR RESUMEN (MD)</button>
         <button class="btn-primary" data-action="cerrar-carrera">CERRAR</button>
       </div>`;
     let confirmando = null; // "soc" | "rt" | "todo"
@@ -988,6 +1051,7 @@ ${acciones}
       fn();
     };
     this.setAcciones({
+      "exportar-resumen": () => this.exportarResumen(),
       "cerrar-carrera": () => this.cerrarModal(),
       "reiniciar-soc": (btn) => pedirConfirmacion(btn, "soc", () => {
         reiniciarCampania("soc");
