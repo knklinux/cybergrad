@@ -2,7 +2,7 @@
 
 > Aprende ciberseguridad defensiva como si fuera un videojuego: empiezas como **Analista Junior** en un SOC, investigas incidentes realistas con una **terminal funcional** y asciendes hasta **Jefe de CSIRT**.
 
-**Sin dependencias. Sin backend. Abre el `index.html` y juega** (o sírvelo estáticamente).
+**Sin dependencias. Sin backend.** Juega online en **[knklinux.github.io/cybergrad](https://knklinux.github.io/cybergrad/)** o en local con un pequeño servidor (ver *Arranque rápido*).
 
 ## 🤖 Tu director: Jimmy
 
