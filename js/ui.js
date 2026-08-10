@@ -965,18 +965,26 @@ ${acciones}
     this.abrirModal(html);
   }
 
-  // ---------- Exportar resumen (Markdown) ----------
-  exportarResumen() {
+  // ---------- Exportar resumen (Markdown / JSON / portapapeles) ----------
+  // Datos estructurados compartidos por el Markdown y el JSON
+  _datosResumen() {
     const rSOC = estadoRango();
     const rRT = estadoRangoRT();
-    const nomCasos = (ids, lista) => ids.map((id) => lista.find((c) => c.id === id)?.titulo || id);
-    const socC = nomCasos(GAME.casosCompletados, CASOS);
-    const rtC = nomCasos(GAME.rtCasosCompletados, RT_CASOS);
-    const becs = GAME.becarioCompletadas
-      .map((id) => [...BECARIO_CASOS, ...BECARIO_RT_CASOS].find((c) => c.id === id)?.titulo || id);
+    const socDet = GAME.casosCompletados.map((id) => ({ id, titulo: CASOS.find((c) => c.id === id)?.titulo || id }));
+    const rtDet = GAME.rtCasosCompletados.map((id) => ({ id, titulo: RT_CASOS.find((c) => c.id === id)?.titulo || id }));
+    const becDet = GAME.becarioCompletadas.map((id) => ({ id, titulo: [...BECARIO_CASOS, ...BECARIO_RT_CASOS].find((c) => c.id === id)?.titulo || id }));
     const logs = logrosDesbloqueados();
+    return {
+      rSOC, rRT, socDet, rtDet, becDet, logs,
+      socC: socDet.map((c) => c.titulo),
+      rtC: rtDet.map((c) => c.titulo),
+      becs: becDet.map((c) => c.titulo),
+    };
+  }
 
-    const md = `# 🛡️ CYBERGRAD — Informe de Carrera
+  _resumenMarkdown() {
+    const { rSOC, rRT, socC, rtC, becs, logs } = this._datosResumen();
+    return `# 🛡️ CYBERGRAD — Informe de Carrera
 
 **Jugador:** ${GAME.nombre}  
 **Generado:** ${new Date().toLocaleString("es-ES")}
@@ -1012,19 +1020,74 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
 
 ---
 *Generado por CYBERGRAD — https://knklinux.github.io/cybergrad/*`;
+  }
 
-    // Descargar como .md
-    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  _descargar(nombre, contenido, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `cybergrad-carrera-${GAME.nombre.toLowerCase().replace(/\s+/g, "-")}.md`;
+    a.download = nombre;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
 
+  _nombreBase() {
+    return `cybergrad-carrera-${GAME.nombre.toLowerCase().replace(/\s+/g, "-")}`;
+  }
+
+  exportarResumen() {
+    this._descargar(`${this._nombreBase()}.md`, this._resumenMarkdown(), "text/markdown;charset=utf-8");
     this.notificar("📥 INFORME EXPORTADO", "Resumen de carrera descargado como Markdown (.md)", "logro");
+  }
+
+  exportarJSON() {
+    const { socDet, rtDet, becDet, logs, rSOC, rRT } = this._datosResumen();
+    const datos = {
+      juego: "CYBERGRAD",
+      version: 1,
+      jugador: GAME.nombre,
+      generado: new Date().toISOString(),
+      resumen: {
+        xpSOC: GAME.xp,
+        xpRedTeam: GAME.rtXp,
+        puntos: GAME.puntos,
+        rangoSOC: rSOC.nombre,
+        rangoRedTeam: rRT.nombre,
+        casosSOCResueltos: GAME.casosResueltos,
+        pentestsResueltos: GAME.rtCasosResueltos,
+        logrosDesbloqueados: logs.length,
+        logrosTotales: totalLogros(),
+      },
+      campanaSOC: {
+        xp: GAME.xp,
+        casosCompletados: socDet,
+      },
+      redTeam: {
+        xp: GAME.rtXp,
+        pentestsCompletados: rtDet,
+      },
+      becario: becDet,
+      logros: logs.map((l) => ({ icono: l.icono, nombre: l.nombre, desc: l.desc, oculto: !!l.oculto })),
+      secretosEncontrados: GAME.secretos || [],
+      estadisticas: {
+        tiempoJugadoSegundos: GAME.estadisticas?.tiempoJugado || 0,
+        tiempoJugado: this._formatearTiempo(GAME.estadisticas?.tiempoJugado || 0),
+        accionesCorrectas: GAME.estadisticas?.accionesOk || 0,
+        errores: GAME.estadisticas?.accionesErr || 0,
+        pistasUsadas: GAME.estadisticas?.pistasUsadas || 0,
+        ratings: GAME.estadisticas?.ratings || [],
+      },
+      url: "https://knklinux.github.io/cybergrad/",
+    };
+    this._descargar(`${this._nombreBase()}.json`, JSON.stringify(datos, null, 2), "application/json;charset=utf-8");
+    this.notificar("🧾 JSON EXPORTADO", "Datos de carrera descargados como JSON (.json)", "logro");
+  }
+
+  async copiarResumen(btn) {
+    await this._copiarAlPortapapeles(this._resumenMarkdown(), btn);
   }
 
   // ---------- Estadísticas ----------
@@ -1130,8 +1193,18 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
           <button class="btn-danger" data-action="reiniciar">🔄 TODO</button>
         </div>
       </div>
+      <div class="modal-section">
+        <h3>📤 EXPORTAR / COMPARTIR</h3>
+        <div class="btn-row" style="justify-content:flex-start">
+          <button class="btn-secondary" data-action="exportar-resumen">📥 MD</button>
+          <button class="btn-secondary" data-action="exportar-json">🧾 JSON</button>
+          <button class="btn-secondary" data-action="copiar-resumen">📋 COPIAR</button>
+        </div>
+        <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">
+          MD y JSON descargan el resumen. COPIAR lo pone en el portapapeles para pegarlo en redes o en tu CV.
+        </div>
+      </div>
       <div class="btn-row">
-        <button class="btn-secondary" data-action="exportar-resumen">📥 EXPORTAR RESUMEN (MD)</button>
         <button class="btn-primary" data-action="cerrar-carrera">CERRAR</button>
       </div>`;
     let confirmando = null; // "soc" | "rt" | "todo"
@@ -1147,6 +1220,8 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
     };
     this.setAcciones({
       "exportar-resumen": () => this.exportarResumen(),
+      "exportar-json": () => this.exportarJSON(),
+      "copiar-resumen": (btn) => this.copiarResumen(btn),
       "cerrar-carrera": () => this.cerrarModal(),
       "reiniciar-soc": (btn) => pedirConfirmacion(btn, "soc", () => {
         reiniciarCampania("soc");
