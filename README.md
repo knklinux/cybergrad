@@ -1,6 +1,6 @@
-# 🛡️ CYBERGRAD — Simulador de Carrera SOC
+# 🛡️ CYBERGRAD — Simulador de Carrera SOC + Red Team
 
-> Aprende ciberseguridad defensiva como si fuera un videojuego: empiezas como **Analista Junior** en un SOC, investigas incidentes realistas con una **terminal funcional** y asciendes hasta **Jefe de CSIRT**.
+> Aprende ciberseguridad como si fuera un videojuego: por un lado, entras como **Analista Junior** en un SOC, investigas incidentes realistas con una **terminal funcional** y asciendes hasta **Jefe de CSIRT**. Por el otro, lanzas la campaña **red team**: seis pentests ofensivos con herramientas reales (`nmap`, `hydra`, `sqlmap`, `metasploit`, `mimikatz`) y asciendes de **Aprendiz de Pentester** a **CISO**.
 
 **Sin dependencias. Sin backend.** Juega online en **[knklinux.github.io/cybergrad](https://knklinux.github.io/cybergrad/)** o en local con un pequeño servidor (ver *Arranque rápido*).
 
@@ -12,7 +12,12 @@ Cada turno lo abre **Jimmy**, el director del SOC y tu socio sintético: te reci
 
 ## ¿Qué es?
 
-CYBERGRAD es un simulador de *blue team* con 6 casos basados en ataques reales (phishing, ransomware, BEC, fuerza bruta, exfiltración por túnel DNS…). No hay teoría aburrida: el incidente llega, tú investigas con comandos reales y respondes. Cada caso termina con una **lección** explicando la anatomía del ataque, cómo detectarlo, cómo responder y su mapeo a **MITRE ATT&CK**.
+CYBERGRAD tiene **dos campañas completas**:
+
+- **🛡️ Blue team (SOC):** 6 casos basados en ataques reales (phishing, ransomware, BEC, fuerza bruta, exfiltración por túnel DNS…). El incidente llega, tú investigas con comandos reales y respondes.
+- **🎯 Red team:** 6 pentests ofensivos con contrato firmado. Enumeras, ganas acceso, escalas privilegios y exfiltas datos con herramientas reales simuladas, y entregas un **informe de pentest** ejecutivo.
+
+Cada caso de ambas campañas termina con una **lección** explicando la anatomía del ataque, cómo detectarlo, cómo responder y su mapeo a **MITRE ATT&CK**.
 
 Está pensado como **guía de aprendizaje** para ti y para cualquiera que quiera entrar en el mundo SOC, y como **pieza de portfolio** que demuestra conocimientos de seguridad + capacidad de construir herramientas.
 
@@ -36,6 +41,8 @@ python -m http.server 8000
 
 ## 🎮 Cómo se juega
 
+**Campaña blue team (SOC):**
+
 1. **Entra al SOC** como Analista Junior (0 XP). Jimmy te da la bienvenida.
 2. **¿Primera vez?** Pulsa **🧭 Tutorial Rápido** en la pantalla de bienvenida (o el botón 🧭 del menú): 6 pantallas que te ponen en contexto + una **micro-práctica guiada** donde Jimmy valida tus primeros comandos (`mail` → `alertas` → `bloquear`).
 3. Recibe un incidente: **splash cinemático** + briefing de Jimmy. Acepta el caso.
@@ -46,6 +53,18 @@ python -m http.server 8000
 8. **Asciende**: Analista Junior → Analista SOC → Analista Senior → Líder de Equipo → Jefe de CSIRT.
 
 Cada caso tiene **SLA** (tiempo real), **eventos en vivo** (el ataque avanza mientras investigas), **pistas** (cuestan puntos) y un **checklist** de respuesta.
+
+**🎯 Campaña red team (pentest):**
+
+1. Abre el **panel Red Team** desde el botón **🎯 Red Team** del HUD.
+2. Los casos se desbloquean en orden: debes completar un pentest para abrir el siguiente.
+3. Recibe el **contrato** con el alcance autorizado, acepta y despliega tu terminal de ataque.
+4. Sigue la metodología: **Reconocimiento → Acceso → Escalada de privilegios → Exfiltración**.
+5. Entrega el **informe de pentest**: se evalúa la cobertura de hallazgos y objetivos.
+6. Recibe tu **calificación (S+ a C)**, XP de pentest y la **lección** del caso.
+7. **Asciende**: Aprendiz de Pentester → Pentester Junior → Pentester → Pentester Senior → Líder Red Team → **CISO**.
+
+El progreso red team es independiente del blue team: XP, rango y campaña propios (sin persistencia entre sesiones todavía).
 
 ## 🔬 Modo Laboratorio
 
@@ -65,11 +84,12 @@ El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del l
 | Hash / malware | `md5sum`, `sha256sum`, `decode`, `base64`, `vt` |
 | Red | `whois`, `dig`, `host`, `nslookup`, `curl` |
 | Respuesta | `bloquear`, `aislar`, `deshabilitar`, `escalar`, `cerrar_caso`, `informe` |
+| **Red team** | `nmap`, `gobuster`, `nikto`, `searchsploit`, `hydra`, `ssh`, `sqlmap`, `msf`, `mimikatz`, `john`/`hashcat`, `nc`, `exfiltrar`, `escalar_priv` |
 | Sistema | `ayuda`, `tutorial`, `clear`, `history`, `carrera`, `glosario`, `whoami`, `date` |
 
 > 💡 `Tab` autocompleta · ↑/↓ historial · Ctrl+L limpia.
 
-## 📋 Casos de la campaña
+## 📋 Casos de la campaña blue team
 
 | # | Caso | Técnicas (MITRE) | Qué aprendes |
 |---|---|---|---|
@@ -79,6 +99,21 @@ El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del l
 | 4 | **«LockCrypt»** — Ransomware | T1486, T1490, T1059, T1078 | Contención, C2, copias de sombra, por qué no se paga el rescate |
 | 5 | **«Accesos fallidos en masa»** — Fuerza bruta RDP | T1110, T1078, T1003, T1021 | Fuerza bruta, Mimikatz, movimiento lateral, MFA y hardening |
 | 6 | **«Consultas DNS interminables»** — Túnel DNS | T1048.003, T1071.004 | Exfiltración silenciosa, entropía, cuentas de servicio, RGPD |
+
+## 🎯 Campaña red team: 6 pentests ofensivos
+
+Contrato firmado, alcance autorizado y herramientas reales simuladas en tu terminal de ataque. Cada pentest sigue la metodología **Reconocimiento → Acceso → Escalada → Exfiltración**, con objetivo propio, checklist en vivo y un **informe de pentest** que se califica como en un engagement real.
+
+| # | Pentest | Técnicas (MITRE) | Qué aprendes |
+|---|---|---|---|
+| 1 | **Reconocimiento: mapeando la superficie de ataque** | T1595, T1590, T1046 | `nmap` (escaneo de puertos/versiones), `gobuster` y `nikto` (enumeración web), footprinting |
+| 2 | **Fuerza bruta SSH: la puerta con la cerradura mala** | T1110, T1110.002 | `hydra` con diccionarios, políticas de contraseñas, por qué el SSH expuesto es un riesgo |
+| 3 | **Inyección SQL: la tienda que habla SQL** | T1190, T1505.003 | `sqlmap`, inyección basada en error, extracción de credenciales de la base de datos |
+| 4 | **De la web al sistema: Metasploit y escalada de privilegios** | T1190, T1068, T1078 | `msf`/`msfconsole`, explotación de un servicio web vulnerable, `escalar_priv` con kernel exploit |
+| 5 | **Mimikatz: la memoria lo recuerda todo** | T1003.001, T1552.001, T1021.001 | `mimikatz` (credenciales en memoria), movimiento lateral con credenciales robadas |
+| 6 | **La joya de la corona: exfiltración y entrega del informe** | T1213, T1041, T1020 | `find` de datos sensibles, `nc`/`exfiltrar`, y redacción del informe ejecutivo final |
+
+> ⚖️ Todo ocurre en un entorno ficticio autorizado (ACME Corp). Las técnicas se explican para aprender a **defender** y a **probar** sistemas propios.
 
 ## 🏗️ Arquitectura
 
@@ -94,20 +129,22 @@ cybergrad/
 └── js/
     ├── main.js           # Arranque
     ├── terminal.js       # Motor de terminal (entrada, historial, autocompletado)
-    ├── engine.js         # Motor del juego: acciones, SLA, eventos, puntuación
+    ├── engine.js         # Motor del juego: acciones, SLA, eventos, puntuación (ambos modos)
     ├── commands.js       # Implementación de los comandos del terminal
     ├── filesystem.js     # Sistema de archivos virtual del caso
     ├── hash.js           # MD5 y SHA-256 en JS puro (sin dependencias)
-    ├── state.js          # XP, rangos, progresión
-    ├── ui.js             # HUD, modales, splash, lecciones, laboratorio, tutorial
+    ├── state.js          # XP, rangos y progresión (blue team y red team)
+    ├── ui.js             # HUD, modales, splash, lecciones, laboratorio, tutorial, panel RT
     ├── fx.js             # Motor gráfico canvas (red, partículas, radar, tema por ataque)
     ├── jimmy.js          # Personaje Jimmy: frases, briefing, reacciones
     ├── tutorial.js       # Mini tutorial: slides de contexto + micro-caso guiado
     ├── glosario.js       # Diccionario del analista
-    └── casos/            # Un archivo por caso (fácil de ampliar)
+    ├── casos/            # Un archivo por caso blue team (fácil de ampliar)
+    ├── rt-casos.js       # Catálogo de la campaña red team
+    └── rt-casos/         # Un archivo por pentest red team (fácil de ampliar)
 ```
 
-### Añadir un caso nuevo
+### Añadir un caso nuevo (blue team)
 
 1. Crea `js/casos/caso-NN-nombre.js` siguiendo la estructura de los existentes:
    - `fs` — logs y evidencias (rutas → contenido)
@@ -119,15 +156,26 @@ cybergrad/
 2. Impórtalo en `js/casos.js`.
 3. El juego lo usa automáticamente.
 
+### Añadir un pentest nuevo (red team)
+
+1. Crea `js/rt-casos/rt-NN-nombre.js` con la estructura de los existentes:
+   - `red` — red simulada (subredes, hosts, puertos, SO)
+   - `web` — servidores web (páginas, rutas, directorios, hallazgos de `nikto`)
+   - `correctas` — objetivos por fase: `recon` (hosts/URLs), `acceso` (credenciales), `escalada`, `exfiltracion`
+   - `pistas`, `eventos`, `incorrectas`
+   - `leccion` — resumen, detección, respuesta, MITRE, glosario
+2. Impórtalo en `js/rt-casos.js`.
+3. El panel Red Team lo usa automáticamente.
+
 ## 🗺️ Roadmap
 
-- **Campaña red team** (modo ofensivo: pentest, post-explotación, escritura de informes de ataque)
 - Más familias de malware y TTPs (APT, supply chain, web attacks)
+- Más pentests red team (active directory, phishing ofensivo, movimiento lateral en dominio)
 - Sistema de logros e insignias por rango
 - Guardado de progreso (localStorage) y ranking
 - Más personajes sintéticos con voz propia (Ark y otros)
 
 ## ⚖️ Aviso
 
-Uso **exclusivamente educativo**. Empresas, personas e indicadores son ficticios.
-Las técnicas descritas en los casos se explican para aprender a **defender** contra ellas.
+Uso **exclusivamente educativo**. Empresas, personas, redes e indicadores son ficticios (ACME Corp y su infraestructura no existen).
+Las técnicas descritas en los casos se explican para aprender a **defender** contra ellas y a **probar** únicamente sistemas propios o con autorización explícita.

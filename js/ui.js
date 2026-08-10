@@ -2,8 +2,9 @@
 // ui.js — Interfaz: HUD, modales, notificaciones, Jimmy, splash
 // ============================================================
 
-import { GAME, RANKS, estadoRango } from "./state.js";
+import { GAME, RANKS, RT_RANKS, estadoRango, estadoRangoRT } from "./state.js";
 import { CASOS, numCaso, siguienteCaso } from "./casos.js";
+import { RT_CASOS, numCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import {
@@ -29,6 +30,7 @@ export class UI {
     $("btn-ayuda").addEventListener("click", () => this.mostrarAyuda());
     $("btn-lab").addEventListener("click", () => this.mostrarLaboratorio());
     $("btn-tutorial").addEventListener("click", () => this.mostrarTutorial(false));
+    $("btn-rt").addEventListener("click", () => this.mostrarRedTeam());
   }
 
   // ---------- Motor gráfico ----------
@@ -104,22 +106,25 @@ export class UI {
 
   // ---------- Briefing de Jimmy ----------
   mostrarBriefing(caso, cb) {
-    const lineas = JIMMY_CASO[caso.id] || ["Analiza el caso y responde. Yo vigilo los datos."];
+    const esRT = caso.modo === "rt";
+    const lineas = JIMMY_CASO[caso.id] || (esRT ? ["Contrato firmado: tú eres el atacante bueno. Respeta el alcance y documenta todo.", "Cada hallazgo que encuentres antes que un atacante real vale oro."] : ["Analiza el caso y responde. Yo vigilo los datos."]);
+    const num = esRT ? numCasoRT(caso.id) : numCaso(caso.id);
+    const total = esRT ? RT_CASOS.length : CASOS.length;
     const html = `
-      <div class="modal-title">&#129302; BRIEFING — ${caso.titulo}</div>
+      <div class="modal-title">${esRT ? "&#127919;" : "&#129302;"} ${esRT ? "CONTRATO PENTEST" : "BRIEFING"} — ${caso.titulo}</div>
       <div class="briefing-avatar">
         ${this.holoHTML("holo-lg")}
         <div class="briefing-lines">
           <div class="briefing-line">${lineas[0]}</div>
           ${lineas[1] ? `<div class="briefing-line">${lineas[1]}</div>` : ""}
           <div class="briefing-line" style="color:#5f8a6a;font-size:11.5px">
-            Caso ${numCaso(caso.id)}/${CASOS.length} · Severidad ${caso.severidad} ·
+            ${esRT ? "Pentest" : "Caso"} ${num}/${total} · Severidad ${caso.severidad} ·
             SLA ${Math.floor(caso.sla / 60)} min · +${caso.xp} XP
           </div>
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn-primary" data-action="aceptar-briefing">&#9654; ACEPTAR CASO</button>
+        <button class="btn-primary" data-action="aceptar-briefing">&#9654; ${esRT ? "ACEPTAR CONTRATO" : "ACEPTAR CASO"}</button>
       </div>`;
     this.setAcciones({
       "aceptar-briefing": () => { this.cerrarModal(); cb(); },
@@ -234,32 +239,38 @@ export class UI {
 
   // ---------- HUD ----------
   actualizarPerfil() {
-    const r = estadoRango();
+    const esRT = GAME.modo === "rt";
+    const r = esRT ? estadoRangoRT() : estadoRango();
+    const ranks = esRT ? RT_RANKS : RANKS;
+    const xp = esRT ? GAME.rtXp : GAME.xp;
     $("perfil-nombre").textContent = GAME.nombre;
     $("perfil-rango").textContent = `${r.icono} ${r.nombre}`;
-    const next = RANKS[r.indice + 1];
+    const next = ranks[r.indice + 1];
     if (next) {
-      const pct = Math.min(100, Math.round(((GAME.xp - r.xpRequerida) / (next.xpRequerida - r.xpRequerida)) * 100));
+      const pct = Math.min(100, Math.round(((xp - r.xpRequerida) / (next.xpRequerida - r.xpRequerida)) * 100));
       $("xp-fill").style.width = pct + "%";
-      $("xp-num").textContent = `${GAME.xp} / ${next.xpRequerida}`;
+      $("xp-num").textContent = `${xp} / ${next.xpRequerida}`;
     } else {
       $("xp-fill").style.width = "100%";
-      $("xp-num").textContent = `${GAME.xp} XP — MÁXIMO`;
+      $("xp-num").textContent = `${xp} XP — MÁXIMO`;
     }
     $("puntos").textContent = GAME.puntos;
-    $("casos-resueltos").textContent = GAME.casosResueltos;
+    $("casos-resueltos").textContent = esRT ? GAME.rtCasosResueltos : GAME.casosResueltos;
   }
 
   mostrarCaso(caso, hecho) {
     this._sla = caso.sla;
+    const esRT = caso.modo === "rt";
     const sev = caso.severidad.toLowerCase();
     const sevClass = { critica: "sev-critica", alta: "sev-alta", media: "sev-media", baja: "sev-baja" }[sev] || "sev-media";
+    const num = esRT ? numCasoRT(caso.id) : numCaso(caso.id);
+    const total = esRT ? RT_CASOS.length : CASOS.length;
     let html = `
-      <div class="caso-titulo">#${String(numCaso(caso.id)).padStart(2, "0")} · ${caso.titulo}</div>
-      <div class="caso-meta">Caso ${numCaso(caso.id)}/${CASOS.length} · Nivel ${caso.nivel} · XP ${caso.xp}</div>
+      <div class="caso-titulo">${esRT ? `&#127919; PENTEST #${String(num).padStart(2, "0")}` : `#${String(num).padStart(2, "0")}`} · ${caso.titulo}</div>
+      <div class="caso-meta">Caso ${num}/${total} · Nivel ${caso.nivel} · XP ${caso.xp}</div>
       <span class="caso-sev ${sevClass}">${caso.severidad}</span>
       <div class="modal-section" style="margin-top:10px">
-        <h3>CHECKLIST DE RESPUESTA</h3>
+        <h3>${esRT ? "CHECKLIST DE OBJETIVOS" : "CHECKLIST DE RESPUESTA"}</h3>
         <ul style="font-size:12px;line-height:1.8;padding-left:18px;color:#8fd39e" id="checklist"></ul>
       </div>`;
     $("caso-info").innerHTML = html;
@@ -272,20 +283,17 @@ export class UI {
     if (!ul) return;
     const items = [];
     const li = (txt, ok) => items.push(`<li style="color:${ok ? "#33ff66" : "#5f8a6a"}">${ok ? "✔" : "○"} ${txt}</li>`);
-    for (const target of caso.correctas.bloquear) {
-      const valor = target.slice(target.indexOf(":") + 1);
-      li(`Bloquear ${valor}`, hecho.has("bloquear:" + target));
+    const ETIQUETAS = { bloquear: "Bloquear", aislar: "Aislar", deshabilitar: "Deshabilitar", recon: "Reconocer", acceso: "Acceso", escalada: "Escalar privilegios", exfiltracion: "Exfiltrar" };
+    for (const [tipo, lista] of Object.entries(caso.correctas || {})) {
+      if (tipo === "escalar") { li("Escalar a CSIRT", hecho.has("escalar")); continue; }
+      if (tipo === "cerrar") { li("Cerrar como falso positivo", hecho.has("cerrar")); continue; }
+      if (!lista) continue;
+      for (const target of lista) {
+        const valor = target.slice(target.indexOf(":") + 1);
+        const clave = tipo === "bloquear" || tipo === "aislar" || tipo === "deshabilitar" ? tipo + ":" + target : "objetivo:" + tipo + ":" + target;
+        li(`${ETIQUETAS[tipo] || tipo} ${valor}`, hecho.has(clave));
+      }
     }
-    for (const target of caso.correctas.aislar) {
-      const valor = target.slice(target.indexOf(":") + 1);
-      li(`Aislar ${valor.toUpperCase()}`, hecho.has("aislar:" + target));
-    }
-    for (const target of caso.correctas.deshabilitar) {
-      const valor = target.slice(target.indexOf(":") + 1);
-      li(`Deshabilitar ${valor}`, hecho.has("deshabilitar:" + target));
-    }
-    if (caso.correctas.escalar) li("Escalar a CSIRT", hecho.has("escalar"));
-    if (caso.correctas.cerrar) li("Cerrar como falso positivo", hecho.has("cerrar"));
     if (items.length === 0) items.push('<li style="color:#5f8a6a">Investiga y determina si es incidente.</li>');
     ul.innerHTML = items.join("");
   }
@@ -329,9 +337,35 @@ export class UI {
   // ---------- Informe ----------
   abrirInforme(engine) {
     const caso = engine.caso;
-    const r = estadoRango();
+    const esRT = caso.modo === "rt";
+    const r = esRT ? estadoRangoRT() : estadoRango();
     const acciones = GAME.acciones.map((a) => `  - [${a.tiempo}s] ${a.tipo}: ${a.detalle}`).join("\n");
-    const plantilla = `INFORME DE INCIDENTE — CASO #${numCaso(caso.id)}
+    const plantilla = esRT
+      ? `INFORME DE PENTEST — ENGAGEMENT #RT-${String(numCasoRT(caso.id)).padStart(2, "0")}
+============================================
+Título: ${caso.titulo}
+Pentester: ${GAME.nombre} (${r.nombre})
+Fecha: ${new Date().toLocaleString("es-ES")}
+Alcance: ${Object.keys(caso.red?.hosts || {}).join(", ") || "n/d"} | SLA: ${caso.sla}s
+
+1. RESUMEN EJECUTIVO
+   (Qué se ha probado, qué se ha encontrado y el riesgo para la organización)
+
+2. HALLAZGOS
+   - Vulnerabilidad:
+   - Severidad:
+   - Evidencia:
+
+3. DATOS OBTENIDOS
+   - Hosts y servicios comprometidos:
+   - Credenciales y datos exfiltrados:
+
+4. IMPACTO
+   (Qué pasaría si un atacante real lo explotara)
+
+5. RECOMENDACIONES
+   (Priorizadas por riesgo)`
+      : `INFORME DE INCIDENTE — CASO #${numCaso(caso.id)}
 ============================================
 Título: ${caso.titulo}
 Analista: ${GAME.nombre} (${r.nombre})
@@ -357,9 +391,12 @@ ${acciones}
    (Hardening, mejoras de detección, formación)`;
 
     const html = `
-      <div class="modal-title">&#128221; INFORME DE INCIDENTE</div>
+      <div class="modal-title">${esRT ? "&#127919; INFORME DE PENTEST" : "&#128221; INFORME DE INCIDENTE"}</div>
       <div class="modal-text" style="font-size:12px;color:#8fd39e;margin-bottom:10px">
-        Documenta el caso antes de cerrarlo. Se evalúa la <b>cobertura de IOCs</b> y las acciones ejecutadas.
+        ${esRT
+          ? "Documenta el engagement antes de entregarlo al CISO. Se evalúa la <b>cobertura de hallazgos</b>: hosts, vulnerabilidades y datos obtenidos."
+          : "Documenta el caso antes de cerrarlo. Se evalúa la <b>cobertura de IOCs</b> y las acciones ejecutadas."
+        }
         Escribe libremente, pero no olvides los indicadores clave.
       </div>
       <textarea id="informe-texto" spellcheck="false">${plantilla}</textarea>
@@ -529,6 +566,99 @@ ${acciones}
     this.actualizarPerfil();
   }
 
+  // ---------- Campaña red team ----------
+  mostrarRedTeam() {
+    const r = estadoRangoRT();
+    const next = RT_RANKS[r.indice + 1];
+    const xpLine = next ? `${GAME.rtXp} / ${next.xpRequerida} XP` : `${GAME.rtXp} XP — MÁXIMO`;
+    const tarjetas = RT_CASOS.map((c) => {
+      const idx = RT_CASOS.indexOf(c);
+      const completado = GAME.rtCasosCompletados.includes(c.id);
+      const desbloqueado = idx === 0 || GAME.rtCasosCompletados.includes(RT_CASOS[idx - 1].id);
+      const estado = completado ? "✔ Completado" : desbloqueado ? "▶ Empezar" : "🔒 Completa el caso anterior";
+      return `
+      <div class="lab-card ${desbloqueado && !completado ? "" : "locked"}" data-rt="${c.id}" ${desbloqueado && !completado ? "" : "style='opacity:.55'"}>
+        <div class="lc-titulo">${completado ? "✔ " : desbloqueado ? "▶ " : "🔒 "}${c.titulo}</div>
+        <div class="lc-meta">Nivel ${c.nivel} · Severidad ${c.severidad} · XP ${c.xp} · ${estado}</div>
+      </div>`;
+    }).join("");
+    const html = `
+      <div class="modal-title">&#127919; CAMPAÑA RED TEAM — PENTEST DE ACME</div>
+      ${this.holoHTML("holo-sm")}
+      <div class="jimmy-habla">El SOC te contrata para atacar tu propia empresa antes que los atacantes reales. Contrato firmado: 6 objetivos autorizados, del reconocimiento al informe final.</div>
+      <div class="modal-text" style="font-size:12.5px;margin-bottom:6px">
+        Rango actual: <b>${r.icono} ${r.nombre}</b> · <b>${xpLine}</b> · ${GAME.rtCasosResueltos}/${RT_CASOS.length} completados
+      </div>
+      <div id="lab-lista">${tarjetas}</div>
+      <div class="modal-text" style="font-size:11.5px;color:#5f8a6a">Los casos se desbloquean en orden. Cada uno se evalúa por cobertura de hallazgos en el informe.</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cerrar-rt">Volver</button>
+      </div>`;
+    this.setAcciones({ "cerrar-rt": () => this.cerrarModal() });
+    this.abrirModal(html);
+    document.querySelectorAll("#lab-lista .lab-card[data-rt]").forEach((card) => {
+      card.addEventListener("click", () => {
+        const id = card.getAttribute("data-rt");
+        const idx = RT_CASOS.findIndex((c) => c.id === id);
+        const desbloqueado = idx === 0 || GAME.rtCasosCompletados.includes(RT_CASOS[idx - 1].id);
+        if (!desbloqueado || GAME.rtCasosCompletados.includes(id)) return;
+        const caso = RT_CASOS[idx];
+        this.cerrarModal();
+        this._onNuevoCaso(caso);
+      });
+    });
+  }
+
+  siguienteCasoRTDisponible(siguiente, completados, saltado = false) {
+    const html = `
+      <div class="modal-title">${saltado ? "⏭ CASO SALTADO" : "🎯 SIGUIENTE PENTEST"}</div>
+      <div class="modal-text">
+        ${saltado
+          ? "Has dejado el objetivo sin completar. El informe se entrega con huecos y el cliente lo nota."
+          : "El engagement continúa: nuevo objetivo autorizado por contrato."}
+        <br/><br/>
+        <b>${siguiente.titulo}</b><br/>
+        <span style="color:#8fd39e">Nivel ${siguiente.nivel} · Severidad ${siguiente.severidad} · SLA ${Math.floor(siguiente.sla / 60)} min · +${siguiente.xp} XP</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" data-action="aceptar-caso">ACEPTAR CASO</button>
+      </div>`;
+    this.setAcciones({
+      "aceptar-caso": () => {
+        this.cerrarModal();
+        this._onNuevoCaso(siguiente);
+      },
+    });
+    this.abrirModal(html);
+  }
+
+  mostrarFinRT() {
+    const r = estadoRangoRT();
+    const html = `
+      <div class="modal-title">&#127942; CAMPAÑA RED TEAM COMPLETADA</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text">
+        Has completado los <b>6 pentests</b> autorizados y has llegado a
+        <b>${r.icono} ${r.nombre}</b> con ${GAME.rtXp} XP y ${GAME.puntos} puntos.
+        <br/><br/>
+        <b>${GAME.nombre}</b>, el informe que has aprendido a entregar es la diferencia
+        entre una empresa que descubre sus fallos por ti o por un atacante real.
+      </div>
+      <div class="jimmy-habla">El atacante real no pide permiso ni avisa. Lo que has entrenado aquí es lo que separa una brecha de un susto. — Jimmy</div>
+      <div class="btn-row">
+        <button class="btn-primary" data-action="cerrar-fin-rt">VOLVER AL SOC</button>
+      </div>`;
+    this.setAcciones({
+      "cerrar-fin-rt": () => {
+        this.cerrarModal();
+        GAME.modo = "soc";
+        this.actualizarPerfil();
+      },
+    });
+    this.abrirModal(html);
+    this.actualizarPerfil();
+  }
+
   // ---------- Laboratorio ----------
   mostrarLaboratorio() {
     const tarjetas = CASOS.map((c) => `
@@ -567,9 +697,15 @@ ${acciones}
 
   // ---------- Carrera ----------
   mostrarCarrera() {
-    const r = estadoRango();
-    const filas = RANKS.map((rank) => {
-      const estado = rank.xpRequerida > GAME.xp ? "locked" : rank.indice === r.indice ? "current" : "";
+    const esRT = GAME.modo === "rt";
+    const ranks = esRT ? RT_RANKS : RANKS;
+    const r = esRT ? estadoRangoRT() : estadoRango();
+    const xp = esRT ? GAME.rtXp : GAME.xp;
+    const resueltos = esRT ? GAME.rtCasosResueltos : GAME.casosResueltos;
+    const total = esRT ? RT_CASOS.length : CASOS.length;
+    const listaCasos = esRT ? RT_CASOS : CASOS;
+    const filas = ranks.map((rank) => {
+      const estado = rank.xpRequerida > xp ? "locked" : rank.indice === r.indice ? "current" : "";
       const req = rank.indice === 0 ? "Rango inicial" : `${rank.xpRequerida} XP`;
       return `
         <div class="career-rank ${estado}">
@@ -581,15 +717,16 @@ ${acciones}
           </div>
         </div>`;
     }).join("");
-    const casosHechos = GAME.casosCompletados.map((id) => CASOS.find((c) => c.id === id)?.titulo || id).join("<br/>");
+    const casosHechos = (esRT ? GAME.rtCasosCompletados : GAME.casosCompletados)
+      .map((id) => listaCasos.find((c) => c.id === id)?.titulo || id).join("<br/>");
     const html = `
-      <div class="modal-title">🎖 TU CARRERA EN EL SOC</div>
+      <div class="modal-title">🎖 ${esRT ? "TU CARRERA EN RED TEAM" : "TU CARRERA EN EL SOC"}</div>
       <div class="modal-text" style="margin-bottom:8px">
-        <b>${GAME.nombre}</b> · ${GAME.xp} XP · ${GAME.puntos} puntos · ${GAME.casosResueltos}/${CASOS.length} casos resueltos
+        <b>${GAME.nombre}</b> · ${xp} XP · ${GAME.puntos} puntos · ${resueltos}/${total} ${esRT ? "pentests" : "casos"} resueltos
       </div>
       <div class="career-path">${filas}</div>
       <div class="modal-section">
-        <h3>CASOS COMPLETADOS</h3>
+        <h3>${esRT ? "PENTESTS COMPLETADOS" : "CASOS COMPLETADOS"}</h3>
         <div class="modal-text" style="font-size:12.5px">${casosHechos || "Ninguno todavía. ¡A trabajar!"}</div>
       </div>
       <div class="btn-row"><button class="btn-primary" data-action="cerrar-carrera">CERRAR</button></div>`;

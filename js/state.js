@@ -30,7 +30,60 @@ export const RANKS = [
   },
 ];
 
+// ---- Carrera red team (pentest ofensivo) ----
+export const RT_RANKS = [
+  {
+    id: 0, nombre: "Aprendiz de Pentester", icono: "🌱",
+    xpRequerida: 0,
+    desc: "Primera campaña ofensiva. Aprendes a enumerar y mapear la superficie de ataque.",
+  },
+  {
+    id: 1, nombre: "Pentester Junior", icono: "🕷️",
+    xpRequerida: 400,
+    desc: "Consigues accesos iniciales: fuerza bruta, credenciales y webs vulnerables.",
+  },
+  {
+    id: 2, nombre: "Pentester", icono: "🥷",
+    xpRequerida: 900,
+    desc: "Explota aplicaciones, extrae datos y documenta hallazgos como un profesional.",
+  },
+  {
+    id: 3, nombre: "Pentester Senior", icono: "🔥",
+    xpRequerida: 1500,
+    desc: "Post-explotación, movimiento lateral y escalada de privilegios sin dejar cabos sueltos.",
+  },
+  {
+    id: 4, nombre: "Líder Red Team", icono: "👑",
+    xpRequerida: 2100,
+    desc: "Dirige engagements completos: planificación, ejecución y reporte ejecutivo.",
+  },
+  {
+    id: 5, nombre: "CISO", icono: "🏆",
+    xpRequerida: 2600,
+    desc: "Responsable de la estrategia de seguridad. Fin de la campaña red team.",
+  },
+];
+
 export const RANK_MAX = RANKS.length - 1;
+export const RT_RANK_MAX = RT_RANKS.length - 1;
+
+export function rangoActualRT(xp) {
+  let r = 0;
+  for (let i = 0; i < RT_RANKS.length; i++) {
+    if (xp >= RT_RANKS[i].xpRequerida) r = i;
+  }
+  return r;
+}
+
+export function estadoRangoRT() {
+  const idx = rangoActualRT(GAME.rtXp);
+  return { indice: idx, ...RT_RANKS[idx] };
+}
+
+// Devuelve el rango de la carrera activa (SOC o Red Team)
+export function estadoRangoActivo() {
+  return GAME.modo === "rt" ? estadoRangoRT() : estadoRango();
+}
 
 export function rangoActual(xp) {
   let r = 0;
@@ -51,13 +104,19 @@ export const GAME = {
   xp: 0,
   puntos: 0,
   casosResueltos: 0,
-  casosCompletados: [],       // ids de casos completados
+  casosCompletados: [],       // ids de casos completados (SOC)
   lecciones: [],              // ids de lecciones desbloqueadas
   casoActual: null,           // id del caso en curso
   casoIniciadoEn: 0,          // timestamp real de inicio
   reloj: 0,                   // segundos de reloj del juego (avanza en tiempo real)
   acciones: [],               // registro de acciones del caso actual
   pausado: false,
+  // ---- Carrera red team ----
+  modo: "soc",                // "soc" | "rt"
+  rtXp: 0,
+  rtCasosResueltos: 0,
+  rtCasosCompletados: [],
+  rtLecciones: [],
 };
 
 export function estadoRango() {
@@ -77,6 +136,16 @@ export function addXP(n) {
 
 export function addPuntos(n) {
   GAME.puntos = Math.max(0, GAME.puntos + n);
+}
+
+export function addRTXP(n) {
+  const antes = estadoRangoRT();
+  GAME.rtXp = Math.max(0, GAME.rtXp + n);
+  const despues = estadoRangoRT();
+  if (despues.indice > antes.indice) {
+    return { ascendido: true, desde: antes, hasta: despues };
+  }
+  return { ascendido: false };
 }
 
 // Registro de acciones del caso actual (para el informe y la puntuación)

@@ -43,6 +43,30 @@ export const JIMMY_CASO = {
     "42.000 registros con IBAN y DNI viajando en consultas DNS. El canal que nadie vigila porque nadie cree que sea un canal.",
     "Si no cortas ese túnel, mañana cumplimiento me pedirá a mí el informe de la brecha. Y te aseguro que mi memoria es infinita.",
   ],
+  "rt-01-recon": [
+    "Contrato firmado: ahora eres el atacante bueno. Mapea antes de tocar; el diablo vive en los detalles de la enumeración.",
+    "La superficie de ataque de ACME es más grande de lo que ellos creen. Demuéstramelo.",
+  ],
+  "rt-02-hydra": [
+    "Los humanos reutilizan passwords desde que existen las passwords. Hydra solo aprovecha esa costumbre.",
+    "Un diccionario de mil palabras vence a la mayoría de los humanos.",
+  ],
+  "rt-03-sqli": [
+    "Una base de datos que habla por una URL es una invitación. Escúchala.",
+    "Los hashes débiles son passwords en texto plano con un retraso de segundos.",
+  ],
+  "rt-04-msf": [
+    "Una subida de archivos sin validar es una puerta con el pomo suelto. Empuja.",
+    "El camino a root está lleno de sudo mal configurados.",
+  ],
+  "rt-05-mimikatz": [
+    "La memoria de Windows guarda secretos que sus dueños creen olvidados.",
+    "Una password reutilizada une dos servidores en uno solo.",
+  ],
+  "rt-06-exfil": [
+    "Los datos valen más que los exploits. El informe vale más que los datos.",
+    "Tu examen final: convertir hallazgos en decisiones.",
+  ],
 };
 
 // Comentarios según calificación

@@ -4,8 +4,22 @@
 // temporizados, puntuación y evaluación del informe.
 // ============================================================
 
-import { GAME, addXP, addPuntos, registrarAccion, resetAccionesCaso, estadoRango, xpNecesariaParaSiguiente } from "./state.js";
+import { GAME, addXP, addRTXP, addPuntos, registrarAccion, resetAccionesCaso, estadoRango, xpNecesariaParaSiguiente } from "./state.js";
 import { numCaso } from "./casos.js";
+import { numCasoRT, siguienteCasoRT } from "./rt-casos.js";
+
+// Cómo se construye la clave en `hecho` y la etiqueta de cada tipo de objetivo
+const TIPOS_OBJETIVO = {
+  // Azul: acciones de respuesta (clave: "tipo:target")
+  bloquear: { clave: (t) => "bloquear:" + t, etiqueta: (v) => `Bloquear ${v}` },
+  aislar: { clave: (t) => "aislar:" + t, etiqueta: (v) => `Aislar ${v}` },
+  deshabilitar: { clave: (t) => "deshabilitar:" + t, etiqueta: (v) => `Deshabilitar ${v}` },
+  // Rojo: objetivos de pentest (clave: "objetivo:tipo:target" — el tipo evita colisiones)
+  recon: { clave: (t, tipo) => `objetivo:${tipo}:${t}`, etiqueta: (v) => `Reconocer ${v}` },
+  acceso: { clave: (t, tipo) => `objetivo:${tipo}:${t}`, etiqueta: (v) => `Acceso ${v}` },
+  escalada: { clave: (t, tipo) => `objetivo:${tipo}:${t}`, etiqueta: (v) => `Escalar privilegios ${v}` },
+  exfiltracion: { clave: (t, tipo) => `objetivo:${tipo}:${t}`, etiqueta: (v) => `Exfiltrar ${v}` },
+};
 import { md5, sha256 } from "./hash.js";
 import { temaParaCaso } from "./fx.js";
 import { JIMMY_PISTA } from "./jimmy.js";
@@ -51,6 +65,8 @@ export class Engine {
   // ---------- Ciclo de vida ----------
   iniciarCaso(caso, opciones = {}) {
     this.caso = caso;
+    this.modoRT = caso.modo === "rt";
+    GAME.modo = this.modoRT ? "rt" : "soc";
     this.lab = !!opciones.lab;
     this.tutorial = !!opciones.tutorial;
     this.tutorialIdx = 0;
@@ -76,20 +92,26 @@ export class Engine {
   _arrancarCaso() {
     const caso = this.caso;
     this.term.clear();
-    this.term.separator("C A S O  " + numCaso(caso.id) + " / 6");
+    const num = this.modoRT ? numCasoRT(caso.id) : numCaso(caso.id);
+    this.term.separator(`${this.modoRT ? "P E N T E S T" : "C A S O"}  ${num} / 6`);
     this.term.printHi(`📨 Nuevo caso asignado: ${caso.titulo}`);
     this.term.printInfo(`Severidad: ${caso.severidad}  |  SLA: ${caso.sla}s  |  XP posible: ${caso.xp}`);
     this.term.print("");
-    this.term.print("Usa `ver_caso` para leer el briefing y `mail` / `alertas` para empezar.", "t-out-dim");
-    this.term.print("`ayuda` muestra todos los comandos. ¡A por ello, analista!", "t-out-dim");
+    this.term.print(this.modoRT
+      ? "Usa `ver_caso` para el briefing y `nmap` / `gobuster` para empezar."
+      : "Usa `ver_caso` para leer el briefing y `mail` / `alertas` para empezar.", "t-out-dim");
+    this.term.print("`ayuda` muestra todos los comandos. ¡A por ello, " + (this.modoRT ? "pentester" : "analista") + "!", "t-out-dim");
     this.term.print("");
 
     this.ui.mostrarCaso(caso, this.hecho);
-    this.ui.feed(`Caso #${caso.id} asignado (${caso.severidad})${this.lab ? " · LAB" : this.tutorial ? " · TUTORIAL" : ""}`, "new-msg");
+    this.ui.actualizarPerfil();
+    this.ui.feed(`Caso #${caso.id} asignado (${caso.severidad})${this.lab ? " · LAB" : this.tutorial ? " · TUTORIAL" : this.modoRT ? " · PENTEST" : ""}`, "new-msg");
     if (this.lab) {
       this.ui.jimmyDice("Modo Laboratorio activo: sin SLA, sin penalizaciones, pistas gratis. Practica con fluidez.");
     } else if (this.tutorial) {
       this.ui.jimmyDice("Modo tutorial: te guío paso a paso. Empieza escribiendo `mail`.");
+    } else if (this.modoRT) {
+      this.ui.jimmyDice("Contrato de pentest activo. Entra antes de que lo haga un atacante real.");
     }
 
     // Reloj + SLA (en laboratorio/tutorial no hay SLA)
@@ -406,23 +428,59 @@ export class Engine {
     }
   }
 
+  // ---------- Objetivos red team ----------
+  // Un comando ofensivo exitoso marca un objetivo cumplido (recon, acceso...)
+  completar(tipo, valor) {
+    const c = this.caso?.correctas;
+    if (!c || !c[tipo]) return false;
+    const valorL = String(valor).toLowerCase();
+    const canon = c[tipo].find((x) => x.slice(x.indexOf(":") + 1).toLowerCase() === valorL);
+    if (!canon) return false;
+    const clave = this._claveObjetivo(tipo, canon);
+    if (this.hecho.has(clave)) return true;
+    this.hecho.add(clave);
+    const pts = this._gratis() ? 0 : 25;
+    addPuntos(pts);
+    registrarAccion(tipo, canon, true, pts);
+    this.term.printOk(this._etiquetaObjetivo(tipo, canon));
+    this.ui.mostrarCaso(this.caso, this.hecho);
+    this._sugerirInforme();
+    return true;
+  }
+
+  _claveObjetivo(tipo, target) {
+    const T = TIPOS_OBJETIVO[tipo];
+    return T ? T.clave(target, tipo) : `objetivo:${tipo}:${target}`;
+  }
+
+  _etiquetaObjetivo(tipo, canon) {
+    const valor = canon.slice(canon.indexOf(":") + 1);
+    const T = TIPOS_OBJETIVO[tipo];
+    return T ? T.etiqueta(valor) : `${tipo}: ${valor}`;
+  }
+
   // ---------- Informe ----------
   _sugerirInforme() {
     if (this.tutorial) return; // el tutorial guiado no necesita informe
-    if (this._requisitosCumplidos() && !GAME.casosCompletados.includes(this.caso.id)) {
-      this.term.printHi("✔ Has cubierto todos los requisitos de respuesta. Redacta el informe con `informe` para cerrar el caso.");
+    const completados = this.modoRT ? GAME.rtCasosCompletados : GAME.casosCompletados;
+    if (this._requisitosCumplidos() && !completados.includes(this.caso.id)) {
+      this.term.printHi("✔ Has cubierto todos los requisitos. Redacta el informe con `informe` para cerrar el caso.");
     }
   }
 
   _requisitosCumplidos() {
-    const c = this.caso;
-    const ok = (tipo, lista) => lista.every((target) => this.hecho.has(tipo + ":" + target));
-    const bloqOk = ok("bloquear", c.correctas.bloquear);
-    const aisOk = ok("aislar", c.correctas.aislar);
-    const desOk = ok("deshabilitar", c.correctas.deshabilitar);
-    const escOk = !c.correctas.escalar || this.hecho.has("escalar");
-    const cerOk = !c.correctas.cerrar || this.hecho.has("cerrar");
-    return bloqOk && aisOk && desOk && escOk && cerOk;
+    const c = this.caso.correctas || {};
+    let ok = true;
+    for (const [tipo, lista] of Object.entries(c)) {
+      if (tipo === "escalar" || tipo === "cerrar") continue;
+      if (!lista || lista.length === 0) continue;
+      for (const target of lista) {
+        if (!this.hecho.has(this._claveObjetivo(tipo, target))) ok = false;
+      }
+    }
+    if (c.escalar && !this.hecho.has("escalar")) ok = false;
+    if (c.cerrar && !this.hecho.has("cerrar")) ok = false;
+    return ok;
   }
 
   abrirInforme() {
@@ -440,24 +498,19 @@ export class Engine {
     const caso = this.caso;
     const t = (texto || "").toLowerCase();
 
-    // Menciones requeridas (IOCs principales + acciones)
+    // Menciones requeridas (IOCs/objetivos + acciones)
     const menciones = [];
     const iocs = [];
-    for (const target of caso.correctas.bloquear) {
-      const valor = target.slice(target.indexOf(":") + 1);
-      iocs.push(valor);
-      menciones.push({ texto: valor, ok: t.includes(valor.toLowerCase()) });
+    for (const [tipo, lista] of Object.entries(caso.correctas || {})) {
+      if (tipo === "escalar") { menciones.push({ texto: "escalar", ok: t.includes("escal") || t.includes("csirt") }); continue; }
+      if (tipo === "cerrar") { menciones.push({ texto: "falso positivo", ok: t.includes("falso") }); continue; }
+      if (!lista) continue;
+      for (const target of lista) {
+        const valor = target.slice(target.indexOf(":") + 1);
+        iocs.push(valor);
+        menciones.push({ texto: valor, ok: t.includes(valor.toLowerCase()) });
+      }
     }
-    for (const target of caso.correctas.aislar) {
-      const valor = target.slice(target.indexOf(":") + 1);
-      menciones.push({ texto: `aislar ${valor.toLowerCase()}`, ok: t.includes(valor.toLowerCase()) });
-    }
-    for (const target of caso.correctas.deshabilitar) {
-      const valor = target.slice(target.indexOf(":") + 1);
-      menciones.push({ texto: `deshabilitar ${valor.toLowerCase()}`, ok: t.includes(valor.toLowerCase()) });
-    }
-    if (caso.correctas.escalar) menciones.push({ texto: "escalar", ok: t.includes("escal") || t.includes("csirt") });
-    if (caso.correctas.cerrar) menciones.push({ texto: "falso positivo", ok: t.includes("falso") });
 
     const mencionesOk = menciones.filter((m) => m.ok).length;
     const cobertura = menciones.length ? mencionesOk / menciones.length : 1;
@@ -506,7 +559,9 @@ export class Engine {
     };
 
     // Aplicar (en laboratorio no se suma XP: práctica libre sin impacto en la carrera)
-    if (!this.lab) addXP(xp);
+    if (!this.lab) {
+      if (this.modoRT) addRTXP(xp); else addXP(xp);
+    }
     if (this.lab) {
       GAME.lecciones.push(caso.id);
       this._limpiarTimers();
@@ -515,9 +570,15 @@ export class Engine {
       );
       return;
     }
-    GAME.casosResueltos++;
-    GAME.casosCompletados.push(caso.id);
-    GAME.lecciones.push(caso.id);
+    if (this.modoRT) {
+      GAME.rtCasosResueltos++;
+      GAME.rtCasosCompletados.push(caso.id);
+      GAME.rtLecciones.push(caso.id);
+    } else {
+      GAME.casosResueltos++;
+      GAME.casosCompletados.push(caso.id);
+      GAME.lecciones.push(caso.id);
+    }
     this._limpiarTimers();
     this.ui.mostrarResultado(resultado, () =>
       this.ui.mostrarLeccion(caso, () => this._siguienteCaso())
@@ -525,17 +586,32 @@ export class Engine {
   }
 
   _pctAcciones() {
+    const c = this.caso.correctas || {};
     let total = 0, ok = 0;
-    const c = this.caso;
-    total += c.correctas.bloquear.length; ok += c.correctas.bloquear.filter((x) => this.hecho.has("bloquear:" + x)).length;
-    total += c.correctas.aislar.length; ok += c.correctas.aislar.filter((x) => this.hecho.has("aislar:" + x)).length;
-    total += c.correctas.deshabilitar.length; ok += c.correctas.deshabilitar.filter((x) => this.hecho.has("deshabilitar:" + x)).length;
-    if (c.correctas.escalar) { total++; if (this.hecho.has("escalar")) ok++; }
-    if (c.correctas.cerrar) { total++; if (this.hecho.has("cerrar")) ok++; }
+    for (const [tipo, lista] of Object.entries(c)) {
+      if (tipo === "escalar" || tipo === "cerrar") {
+        if (lista) { total++; if (this.hecho.has(tipo)) ok++; }
+        continue;
+      }
+      if (!lista) continue;
+      for (const target of lista) {
+        total++;
+        if (this.hecho.has(this._claveObjetivo(tipo, target))) ok++;
+      }
+    }
     return total ? ok / total : 1;
   }
 
   _siguienteCaso() {
+    if (this.modoRT) {
+      const siguiente = siguienteCasoRT(GAME.rtCasosCompletados);
+      if (!siguiente) {
+        this.ui.mostrarFinRT();
+        return;
+      }
+      this.ui.siguienteCasoRTDisponible(siguiente, GAME.rtCasosCompletados);
+      return;
+    }
     this.ui.siguienteCasoDisponible(GAME.casosCompletados);
   }
 
@@ -552,6 +628,12 @@ export class Engine {
 
   _saltarCaso() {
     this._limpiarTimers();
+    if (this.modoRT) {
+      const siguiente = siguienteCasoRT(GAME.rtCasosCompletados);
+      if (siguiente) this.ui.siguienteCasoRTDisponible(siguiente, GAME.rtCasosCompletados, true);
+      else this.ui.mostrarFinRT();
+      return;
+    }
     this.ui.siguienteCasoDisponible(GAME.casosCompletados, true);
   }
 }
