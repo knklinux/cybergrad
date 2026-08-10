@@ -5,10 +5,10 @@
 import { GAME, RANKS, RT_RANKS, estadoRango, estadoRangoRT } from "./state.js";
 import { guardar, borrarGuardado } from "./save.js";
 import { CASOS, numCaso, siguienteCaso } from "./casos.js";
-import { RT_CASOS, numCasoRT } from "./rt-casos.js";
+import { RT_CASOS, numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
-import { BECARIO_CASOS } from "./becario.js";
+import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
   JIMMY_LECCION, JIMMY_PISTA, JIMMY_LAB, JIMMY_FINAL,
@@ -268,26 +268,33 @@ export class UI {
   // ---------- Modo Becario ----------
   mostrarBecario(onCerrar = null) {
     this._becOnCerrar = onCerrar;
-    const cards = BECARIO_CASOS.map((c, i) => `
+    const seccion = (lista, titulo) => lista.map((c, i) => `
       <div class="bec-card">
-        <div class="bec-num">PRÁCTICA ${i + 1}/${BECARIO_CASOS.length}</div>
+        <div class="bec-num">${titulo} ${i + 1}/${lista.length}</div>
         <div class="bec-titulo">${c.titulo}</div>
-        <div class="bec-meta">${c.severidad} · Sin SLA · Sin penalizaciones · 0 XP</div>
+        <div class="bec-meta">${c.severidad} ${c.modo === "rt" ? "· Red Team" : "· SOC"} · Sin penalizaciones · 0 XP</div>
         <div class="bec-brief">${c.briefing.slice(0, 160)}…</div>
       </div>`).join("");
     const html = `
       <div class="modal-title">&#127891; MODO BECARIO — APRENDE CON JIMMY</div>
       ${this.holoHTML("holo-md")}
       <div class="modal-text">
-        ¿Nunca has tocado un SOC? Perfecto: este modo es para ti.
-        Tres <b>prácticas guiadas</b> donde yo te llevo de la mano: en cada paso te digo
-        <b>qué escribir</b> y, sobre todo, <b>por qué se hace</b>. Sin reloj, sin penalizaciones, sin XP.
+        ¿Nunca has tocado un SOC ni un pentest? Perfecto: este modo es para ti.
+        Prácticas guiadas de blue team y red team donde yo te llevo de la mano:
+        en cada paso te digo <b>qué escribir</b> y, sobre todo, <b>por qué se hace</b>.
+        Sin reloj, sin penalizaciones, sin XP.
       </div>
-      <div class="bec-cards">${cards}</div>
-      <div class="jimmy-habla">No se nace analista: se aprende haciendo, paso a paso. — Jimmy</div>
+      <h3 style="color:#8fd39e;margin:10px 0 4px;font-size:13px">&#128737; PRÁCTICAS BLUE TEAM (SOC)</h3>
+      <div class="bec-cards">${seccion(BECARIO_CASOS, "Práctica")}</div>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn-primary" data-action="becario-empezar">&#9654; EMPEZAR PRÁCTICA 1</button>
+      </div>
+      <h3 style="color:#35e0ff;margin:14px 0 4px;font-size:13px">&#127919; PRÁCTICAS RED TEAM (pentest)</h3>
+      <div class="bec-cards">${seccion(BECARIO_RT_CASOS, "Práctica")}</div>
+      <div class="jimmy-habla">No se nace analista ni pentester: se aprende atacando (con permiso), paso a paso. — Jimmy</div>
       <div class="btn-row">
         <button class="btn-secondary" data-action="cerrar-becario">CERRAR</button>
-        <button class="btn-primary" data-action="becario-empezar">&#9654; EMPEZAR PRÁCTICA 1</button>
+        <button class="btn-primary" data-action="becario-rt-empezar">&#9654; EMPEZAR PENTEST GUIADO</button>
       </div>`;
     this.setAcciones({
       "cerrar-becario": () => {
@@ -296,29 +303,42 @@ export class UI {
       },
       "becario-empezar": () => {
         this.cerrarModal();
+        this._becLista = "blue";
         this._onNuevoCaso(BECARIO_CASOS[0], { becario: true });
+      },
+      "becario-rt-empezar": () => {
+        this.cerrarModal();
+        this._becLista = "rt";
+        this._onNuevoCaso(BECARIO_RT_CASOS[0], { becario: true });
       },
     });
     this.abrirModal(html);
   }
 
   mostrarFinBecario() {
-    const hayMas = this._becIdx < BECARIO_CASOS.length - 1;
-    const siguiente = hayMas ? BECARIO_CASOS[this._becIdx + 1] : null;
+    const lista = this._becLista === "rt" ? BECARIO_RT_CASOS : BECARIO_CASOS;
+    const hayMas = this._becIdx < lista.length - 1;
+    const siguiente = hayMas ? lista[this._becIdx + 1] : null;
+    const isRT = this._becLista === "rt";
+    const titleCompletado = isRT ? "PENTEST GUIADO COMPLETADO" : "MODO BECARIO COMPLETADO";
+    const titleSuperado = isRT ? "PENTEST GUIADO SUPERADO" : "PRÁCTICA " + (this._becIdx + 1) + " SUPERADA";
+    const finalMsg = isRT
+      ? "Has completado el pentest guiado. Ya conoces el ciclo ofensivo: contrato → recon → acceso → hallazgo → evidencia. Ahora toca demostrarlo con tu primer pentest real."
+      : "Has completado las tres prácticas guiadas. Ya entiendes la mecánica del SOC: <b>investigar antes de actuar</b>, contener sin pánico y saber cuándo NO pagar. Ahora toca demostrarlo con tu primer incidente real.";
     const html = `
-      <div class="modal-title">&#127891; ${hayMas ? "PRÁCTICA " + (this._becIdx + 1) + " SUPERADA" : "MODO BECARIO COMPLETADO"}</div>
+      <div class="modal-title">${isRT ? "&#127919;" : "&#127891;"} ${hayMas ? titleSuperado : titleCompletado}</div>
       ${this.holoHTML("holo-md")}
       <div class="modal-text">
         ${hayMas
           ? `¡Bien hecho! Has completado la práctica ${this._becIdx + 1}. Prepara el siguiente reto: <b>${siguiente.titulo}</b>.`
-          : `Has completado las tres prácticas guiadas. Ya entiendes la mecánica del SOC: <b>investigar antes de actuar</b>, contener sin pánico y saber cuándo NO pagar. Ahora toca demostrarlo con tu primer incidente real.`}
+          : finalMsg}
       </div>
-      <div class="jimmy-habla">${hayMas ? "Un paso más y dominas el oficio. — Jimmy" : "El SOC confía en ti. Vamos a por tu primer caso de verdad. — Jimmy"}</div>
+      <div class="jimmy-habla">${hayMas ? "Un paso más y dominas el oficio. — Jimmy" : isRT ? "El mejor pentester es el que piensa como atacante y documenta como auditor. — Jimmy" : "El SOC confía en ti. Vamos a por tu primer caso de verdad. — Jimmy"}</div>
       <div class="btn-row">
         <button class="btn-secondary" data-action="cerrar-becario-fin">CERRAR</button>
         ${hayMas
           ? `<button class="btn-primary" data-action="becario-siguiente">&#9654; SIGUIENTE PRÁCTICA</button>`
-          : `<button class="btn-primary" data-action="empezar-campana-bec">&#9654; EMPEZAR CAMPAÑA</button>`}
+          : `<button class="btn-primary" data-action="empezar-campana-bec">&#9654; EMPEZAR ${isRT ? "CAMPAÑA RED TEAM" : "CAMPAÑA"}</button>`}
       </div>`;
     this.setAcciones({
       "cerrar-becario-fin": () => {
@@ -331,11 +351,18 @@ export class UI {
       },
       "empezar-campana-bec": () => {
         this.cerrarModal();
-        const siguienteC = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
-        this._onNuevoCaso(siguienteC);
+        if (isRT) {
+          const sig = siguienteCasoRT(GAME.rtCasosCompletados);
+          if (sig) { this._onNuevoCaso(sig); return; }
+          this.mostrarRedTeam();
+        } else {
+          const siguienteC = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
+          this._onNuevoCaso(siguienteC);
+        }
       },
     });
     this.abrirModal(html);
+    this.actualizarPerfil();
   }
 
   // ---------- HUD ----------
@@ -579,8 +606,13 @@ ${acciones}
   setNuevoCasoHandler(fn) {
     this._onNuevoCaso = (caso, opciones) => {
       if (opciones?.becario) {
-        const idx = BECARIO_CASOS.findIndex((c) => c.id === caso.id);
-        this._becIdx = idx >= 0 ? idx : 0;
+        let idx = BECARIO_CASOS.findIndex((c) => c.id === caso.id);
+        if (idx >= 0) { this._becIdx = idx; this._becLista = "blue"; }
+        else {
+          idx = BECARIO_RT_CASOS.findIndex((c) => c.id === caso.id);
+          if (idx >= 0) { this._becIdx = idx; this._becLista = "rt"; }
+          else this._becIdx = 0;
+        }
       }
       fn(caso, opciones);
     };

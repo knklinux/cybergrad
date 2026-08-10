@@ -552,4 +552,165 @@ export const BEC03 = {
   },
 };
 
+// ---------- BEC-RT-01: pentest guiado (nmap + hydra) ----------
+// Práctica guiada de la campaña RED TEAM: mismo motor que el becario
+// azul, pero con las fases ofensivas: contrato → recon → acceso → hallazgo.
+export const BECRT01 = {
+  id: "bec-rt-01-pentest",
+  modo: "rt",
+  titulo: "Pentest guiado 1/1: reconoce, entra y documenta (nmap + hydra)",
+  nivel: 1,
+  severidad: "MEDIA",
+  sla: 9999,
+  xp: 0,
+  briefing:
+    "Práctica guiada RED TEAM: ACME te ha firmado un contrato de pentest sobre su servidor de backups 10.10.10.20. En este modo te llevo de la mano por las fases ofensivas: leer el contrato, reconocer con nmap, enumerar la web, romper la puerta con hydra, entrar por SSH y documentar el hallazgo. En cada paso te digo el porqué. Sin prisa, sin penalizaciones. Escribe `ver_caso` para empezar.",
+  red: {
+    hosts: {
+      "10.10.10.20": {
+        hostname: "srv-backup.acme.local",
+        os: "Linux Debian 12",
+        puertos: "22/tcp  open  ssh       OpenSSH 9.2p1\n80/tcp  open  http      nginx 1.24.0",
+      },
+    },
+  },
+  web: {
+    "http://10.10.10.20": {
+      raiz: "<html><head><title>ACME Corp - Backup portal</title></head><body><h1>Portal de backups</h1><p>Acceso restringido.</p></body></html>",
+      rutas: { "/admin": "<h1>Panel de administracion</h1><form action='/admin/login' method='POST'><input name='usuario'><input type='password' name='password'><button>Entrar</button></form>" },
+      dirs: ["/admin"],
+      nikto: ["/admin: panel de administracion expuesto sin proteccion adicional"],
+    },
+  },
+  credenciales: [
+    {
+      servicio: "ssh",
+      host: "10.10.10.20",
+      usuario: "admin",
+      password: "Verano2024!",
+      wordlist: "/opt/wordlists/top1000.txt",
+      nota: "Cuenta admin con password predecible. El usuario esta en el diccionario.",
+    },
+  ],
+  fs: {
+    "/opt/wordlists/top1000.txt": [
+      "password", "123456", "admin", "acme", "acme2023", "verano2023",
+      "Verano2024!", "Admin#2024$", "Passw0rd!2024", "clave123",
+      "administrador", "root", "letmein", "backup", "Backup2024", "iloveyou",
+    ].join("\n"),
+    "/home/admin/credenciales.txt": [
+      "=== CREDENCIALES (¡no subir a git!) ===",
+      "ssh srv-fin-01: j.castro / Tr0bador!77",
+      "panel ERP: admin / Admin#2024$",
+      "vpn: m.garcia / VPN-2024-rojo",
+      "TODO: rotar passwords cada 90 dias — pendiente desde 2022",
+    ].join("\n"),
+  },
+  correctas: {
+    recon: ["host:10.10.10.20", "url:http://10.10.10.20/admin"],
+    acceso: ["host:10.10.10.20"],
+    escalada: [],
+    exfiltracion: ["archivo:/home/admin/credenciales.txt"],
+  },
+  incorrectas: ["acceso|host:10.10.10.5"],
+  pistas: [],
+  eventos: [],
+  leccion: {
+    titulo: "Becario red team: pentest guiado",
+    resumen: "Práctica guiada completada.",
+    deteccion: "-",
+    respuesta: "-",
+    aprendizaje: [
+      "Sin contrato firmado y alcance definido no hay pentest: es delito. El documento es tu autorización.",
+      "El reconocimiento (nmap + gobuster) es el 80% del trabajo: no se ataca a ciegas.",
+      "La fuerza bruta funciona donde faltan bloqueos y MFA: el fallo no es la herramienta, es la política.",
+      "Cada dato obtenido se documenta como hallazgo del informe: ese es el producto del pentest.",
+    ],
+    glosario: ["Contrato de pentest", "Reconocimiento", "Enumeración", "Fuerza bruta", "Exfiltración"],
+    mitre: ["T1595", "T1046", "T1110", "T1078", "T1041"],
+  },
+  becario: {
+    pasos: [
+      {
+        cmd: "ver_caso",
+        tipo: "comando",
+        ejemplo: "ver_caso",
+        que: "Lee el contrato y el alcance",
+        porque:
+          "Antes de tocar nada: el contrato de pentest define QUÉ puedes probar y hasta DÓNDE. Atacar fuera del alcance firmado no es un test, es un delito. El alcance te dice el objetivo: el servidor 10.10.10.20.",
+        ok: "Perfecto: contrato firmado y alcance claro — 10.10.10.20, el servidor de backups. Todo lo que hagas de aquí en adelante está autorizado y documentado.",
+        msg: "Fase 1: reconocimiento. Escanea los puertos del servidor: escribe `nmap 10.10.10.20`.",
+        fallback: "Este paso es leer el contrato: escribe `ver_caso`.",
+      },
+      {
+        cmd: "nmap",
+        tipo: "comando",
+        ejemplo: "nmap 10.10.10.20",
+        que: "Reconoce el host con nmap",
+        porque:
+          "El reconocimiento es el 80% del pentest: nmap te dice qué puertos están abiertos y qué servicios corren detrás. Cada puerto abierto es una puerta potencial. Aquí: SSH (22) y HTTP (80). Ya tienes tu superficie de ataque.",
+        ok: "SSH y HTTP abiertos, con versiones exactas. Ya sabes dónde golpear: la web para enumerar, el SSH para probar credenciales.",
+        msg: "Fase 2: enumera la web. Busca directorios ocultos: escribe `gobuster http://10.10.10.20`.",
+        fallback: "Este paso es el escaneo de puertos: escribe `nmap 10.10.10.20`.",
+      },
+      {
+        cmd: "gobuster",
+        tipo: "comando",
+        ejemplo: "gobuster http://10.10.10.20",
+        que: "Enumera directorios ocultos",
+        porque:
+          "Lo que ves en la web no es todo lo que existe: los directorios ocultos (paneles admin, backups, APIs) son la superficie que nadie vigila. gobuster fuerza nombres de directorio y saca a la luz lo que el servidor no anuncia.",
+        ok: "¡Ahí está: /admin! Un panel de administración expuesto en un servidor de backups. Ese es exactamente el tipo de hallazgo que busca un pentest.",
+        msg: "Fase 3: acceso. El SSH no tiene bloqueo por intentos fallidos. Prueba credenciales del diccionario: escribe `hydra ssh 10.10.10.20 -u admin -w /opt/wordlists/top1000.txt`.",
+        fallback: "Este paso es enumerar la web: escribe `gobuster http://10.10.10.20`.",
+      },
+      {
+        cmd: "hydra",
+        tipo: "comando",
+        ejemplo: "hydra ssh 10.10.10.20 -u admin -w /opt/wordlists/top1000.txt",
+        que: "Fuerza bruta contra SSH",
+        porque:
+          "Si el servicio no bloquea los intentos fallidos, un diccionario de passwords comunes es un ataque directo: las passwords humanas son predecibles (estaciones, veranos, palabras). hydra automatiza la prueba de miles de combinaciones en segundos.",
+        ok: "¡Credencial encontrada! admin:Verano2024!. La cuenta admin con una password predecible y sin bloqueo: ese es el hallazgo de severidad alta del informe.",
+        msg: "Fase 4: usa el acceso. Entra por SSH con las credenciales robadas: escribe `ssh admin@10.10.10.20`.",
+        fallback: "Este paso es la fuerza bruta: escribe exactamente `hydra ssh 10.10.10.20 -u admin -w /opt/wordlists/top1000.txt`.",
+      },
+      {
+        cmd: "ssh",
+        tipo: "comando",
+        ejemplo: "ssh admin@10.10.10.20",
+        que: "Entra por SSH",
+        porque:
+          "Una credencial válida es tu acceso autenticado: ya no eres un anónimo en la red, eres admin del servidor. En un pentest real, este es el momento de máxima responsabilidad: lo que hagas dentro define el alcance del daño que documentarás.",
+        ok: "Dentro como admin. El servidor te muestra el contenido del home. Ahora mira qué hay en la puerta de al lado.",
+        msg: "Fase 5: hallazgo. Inspecciona lo que encontró el admin: escribe `cat /home/admin/credenciales.txt`.",
+        fallback: "Este paso es conectar por SSH: escribe `ssh admin@10.10.10.20`.",
+      },
+      {
+        cmd: "cat",
+        tipo: "comando",
+        ejemplo: "cat /home/admin/credenciales.txt",
+        que: "Inspecciona el hallazgo",
+        porque:
+          "Passwords en texto plano en un servidor es un hallazgo de severidad crítica por sí mismo: es la reutilización de credenciales en cadena. Un pentester no solo entra: identifica QUÉ riesgo representa lo que encontró para el informe.",
+        ok: "Ahí está el problema: credenciales de otros sistemas en texto plano, sin rotar desde 2022. Una sola brecha y el atacante tiene las llaves de toda la empresa.",
+        msg: "Fase final: documenta el impacto. Copia el archivo como prueba: escribe `exfiltrar /home/admin/credenciales.txt`.",
+        fallback: "Este paso es inspeccionar el hallazgo: escribe `cat /home/admin/credenciales.txt`.",
+      },
+      {
+        cmd: "exfiltrar",
+        tipo: "comando",
+        ejemplo: "exfiltrar /home/admin/credenciales.txt",
+        que: "Exfiltra una copia como prueba",
+        porque:
+          "En un engagement autorizado, «robar» una copia del dato sensible es la prueba de impacto: demuestra que la información está expuesta y la incluyes en el informe como evidencia. Así se traduce un acceso técnico en un hallazgo que la dirección entiende.",
+        ok: "¡Pentest guiado completado! Has pasado por las fases ofensivas completas: contrato → recon (nmap/gobuster) → acceso (hydra/ssh) → hallazgo (credenciales) → evidencia. Ese es exactamente el ciclo de un engagement real.",
+        msg: "Con esto ya sabes cómo piensa y actúa un atacante: el primer paso para defenderte es conocer su camino.",
+        fallback: "Este paso es copiar la prueba: escribe `exfiltrar /home/admin/credenciales.txt`.",
+      },
+    ],
+  },
+};
+
 export const BECARIO_CASOS = [BEC01, BEC02, BEC03];
+export const BECARIO_RT_CASOS = [BECRT01];

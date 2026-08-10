@@ -465,6 +465,8 @@ export class Engine {
       }
       case "cerrar": return this.hecho.has("cerrar");
       case "escalar": return this.hecho.has("escalar");
+      // Los comandos que completan objetivos (nmap, gobuster, hydra, ssh, exfiltrar...)
+      // se consideran cumplidos si el comando se ejecutó (nombre coincide).
       default: return nombreL === paso.cmd;
     }
   }
