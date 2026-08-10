@@ -3,7 +3,7 @@
 // ============================================================
 
 import { GAME, RANKS, RT_RANKS, estadoRango, estadoRangoRT } from "./state.js";
-import { guardar, borrarGuardado } from "./save.js";
+import { guardar, borrarGuardado, reiniciarCampania } from "./save.js";
 import { CASOS, numCaso, siguienteCaso } from "./casos.js";
 import { RT_CASOS, numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
@@ -923,24 +923,46 @@ ${acciones}
         <div class="modal-text" style="font-size:12.5px">${becHechas || "Ninguna todavía. Abre el modo Becario para empezar."}</div>
       </div>
       <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">💾 Progreso guardado automáticamente en este navegador (localStorage).</div>
+      <div class="modal-section">
+        <h3>♻ REINICIAR PROGRESO</h3>
+        <div class="modal-text" style="font-size:11.5px;color:#5f8a6a;margin-bottom:8px">
+          Borra solo una campaña y conserva la otra intacta, o borra todo.
+          Cada botón pide confirmación antes de actuar.
+        </div>
+        <div class="btn-row">
+          <button class="btn-secondary" data-action="reiniciar-soc">🛡️ SOLO CAMPAÑA SOC</button>
+          <button class="btn-secondary" data-action="reiniciar-rt">🎯 SOLO RED TEAM</button>
+          <button class="btn-danger" data-action="reiniciar">🔄 TODO</button>
+        </div>
+      </div>
       <div class="btn-row">
-        <button class="btn-secondary" data-action="reiniciar">🔄 REINICIAR PROGRESO</button>
         <button class="btn-primary" data-action="cerrar-carrera">CERRAR</button>
       </div>`;
-    let confirmando = false;
+    let confirmando = null; // "soc" | "rt" | "todo"
+    const pedirConfirmacion = (btn, clave, fn) => {
+      if (confirmando !== clave) {
+        confirmando = clave;
+        btn.textContent = "⚠ ¿CONFIRMAS? PULSA OTRA VEZ";
+        btn.style.borderColor = "var(--red)";
+        btn.style.color = "#ff6b6b";
+        return;
+      }
+      fn();
+    };
     this.setAcciones({
       "cerrar-carrera": () => this.cerrarModal(),
-      "reiniciar": (btn) => {
-        if (!confirmando) {
-          confirmando = true;
-          btn.textContent = "⚠ ¿BORRAR TODO? CONFIRMA";
-          btn.style.borderColor = "var(--red)";
-          btn.style.color = "#ff6b6b";
-          return;
-        }
+      "reiniciar-soc": (btn) => pedirConfirmacion(btn, "soc", () => {
+        reiniciarCampania("soc");
+        location.reload();
+      }),
+      "reiniciar-rt": (btn) => pedirConfirmacion(btn, "rt", () => {
+        reiniciarCampania("rt");
+        location.reload();
+      }),
+      "reiniciar": (btn) => pedirConfirmacion(btn, "todo", () => {
         borrarGuardado();
         location.reload();
-      },
+      }),
     });
     this.abrirModal(html);
   }

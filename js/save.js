@@ -7,6 +7,7 @@
 // ============================================================
 
 import { GAME } from "./state.js";
+import { recalcularLogros } from "./logros.js";
 
 export const CLAVE_GUARDADO = "cybergrad_save_v1";
 
@@ -78,4 +79,32 @@ export function borrarGuardado() {
   } catch {
     /* sin soporte de almacenamiento */
   }
+}
+
+// Reinicia UNA campaña y conserva la otra intacta.
+// "soc" limpia XP, casos y lecciones del blue team; "rt" lo mismo para el red team.
+// Los campos compartidos (nombre, puntos, becario, logros) se recalculan:
+// los logros que dependían de la campaña reiniciada se retiran, los demás quedan.
+export function reiniciarCampania(modo) {
+  if (modo === "soc") {
+    GAME.xp = 0;
+    GAME.casosResueltos = 0;
+    GAME.casosCompletados = [];
+    GAME.lecciones = [];
+  } else if (modo === "rt") {
+    GAME.rtXp = 0;
+    GAME.rtCasosResueltos = 0;
+    GAME.rtCasosCompletados = [];
+    GAME.rtLecciones = [];
+  } else {
+    return;
+  }
+  // Estado de ejecución siempre limpio (el caso en curso se abandona)
+  GAME.casoActual = null;
+  GAME.casoIniciadoEn = 0;
+  GAME.reloj = 0;
+  GAME.acciones = [];
+  GAME.pausado = false;
+  recalcularLogros();
+  guardar();
 }

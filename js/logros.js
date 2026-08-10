@@ -56,3 +56,16 @@ export function evaluarLogros() {
   }
   return nuevos;
 }
+
+// Recalcula el conjunto completo de logros desde las condiciones actuales.
+// Se usa al reiniciar una campaña: retira los logros que ya no se cumplen
+// (p. ej. los de rango SOC) y conserva los que sigan vigentes (p. ej. los RT).
+export function recalcularLogros() {
+  GAME.logros = LOGROS.filter((l) => {
+    try {
+      return l.condicion(GAME);
+    } catch {
+      return false;
+    }
+  }).map((l) => l.id);
+}
