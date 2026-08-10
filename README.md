@@ -2,7 +2,7 @@
 
 > Aprende ciberseguridad como si fuera un videojuego: por un lado, entras como **Analista Junior** en un SOC, investigas incidentes realistas con una **terminal funcional** y asciendes hasta **Jefe de CSIRT**. Por el otro, lanzas la campaña **red team**: seis pentests ofensivos con herramientas reales (`nmap`, `hydra`, `sqlmap`, `metasploit`, `mimikatz`) y asciendes de **Aprendiz de Pentester** a **CISO**.
 
-**Sin dependencias. Sin backend.** Juega online en **[knklinux.github.io/cybergrad](https://knklinux.github.io/cybergrad/)** o en local con un pequeño servidor (ver *Arranque rápido*).
+**Sin dependencias. Sin backend.** Juega online en **[knklinux.github.io/cybergrad](https://knklinux.github.io/cybergrad/)** o en local con un pequeño servidor (ver *Arranque rápido*). Dentro del juego, el botón **🔗 Compartir** copia el enlace del juego, el del repo o un mensaje listo para redes.
 
 ## 🤖 Tu director: Jimmy
 

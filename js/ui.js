@@ -35,6 +35,7 @@ export class UI {
     $("btn-tutorial").addEventListener("click", () => this.mostrarTutorial(false));
     $("btn-rt").addEventListener("click", () => this.mostrarRedTeam());
     $("btn-becario").addEventListener("click", () => this.mostrarBecario());
+    $("btn-compartir").addEventListener("click", () => this.mostrarCompartir());
   }
 
   // ---------- Motor gráfico ----------
@@ -872,6 +873,76 @@ ${acciones}
       <div class="btn-row"><button class="btn-primary" data-action="cerrar-glosario">CERRAR</button></div>`;
     this.setAcciones({ "cerrar-glosario": () => this.cerrarModal() });
     this.abrirModal(html);
+  }
+
+  // ---------- Compartir ----------
+  mostrarCompartir() {
+    const urlJuego = "https://knklinux.github.io/cybergrad/";
+    const urlRepo = "https://github.com/knklinux/cybergrad";
+    const mensaje = `Aprende ciberseguridad jugando: CYBERGRAD, simulador de carrera SOC con terminal real, campaña red team y modo becario. 🎮 ${urlJuego}`;
+    const fila = (titulo, texto, clave) => `
+      <h3>${titulo}</h3>
+      <div class="share-row">
+        <span class="share-url">${texto}</span>
+        <button class="btn-secondary share-copy" data-share="${clave}">COPIAR</button>
+      </div>`;
+    const html = `
+      <div class="modal-title">&#128279; COMPARTE CYBERGRAD</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px">
+        Lleva el juego a quien quieras: entrevistadores, compañeros, comunidades de ciberseguridad.
+        Se juega desde el navegador, sin instalar nada.
+      </div>
+      <div class="modal-section">
+        ${fila("JUGAR ONLINE", urlJuego, "juego")}
+        ${fila("CÓDIGO FUENTE (REPO)", urlRepo, "repo")}
+        ${fila("MENSAJE PARA REDES", mensaje, "mensaje")}
+      </div>
+      <div class="jimmy-habla">Un buen analista comparte el conocimiento: cuanta más gente sepa, más difícil lo tendrán los atacantes. — Jimmy</div>
+      <div class="btn-row"><button class="btn-primary" data-action="cerrar-compartir">CERRAR</button></div>`;
+    this.setAcciones({ "cerrar-compartir": () => this.cerrarModal() });
+    this.abrirModal(html);
+    document.querySelectorAll(".share-copy").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const clave = btn.getAttribute("data-share");
+        const texto = clave === "juego" ? urlJuego : clave === "repo" ? urlRepo : mensaje;
+        this._copiarAlPortapapeles(texto, btn);
+      });
+    });
+  }
+
+  // Copia al portapapeles (clipboard API con fallback a execCommand)
+  async _copiarAlPortapapeles(texto, btn) {
+    const ok = await this._clipboard(texto);
+    const original = btn.textContent;
+    btn.textContent = ok ? "✔ COPIADO" : "Selecciona y copia";
+    btn.style.color = ok ? "#33ff66" : "#ffb000";
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.style.color = "";
+    }, 1800);
+  }
+
+  async _clipboard(texto) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(texto);
+        return true;
+      }
+    } catch { /* contextos no seguros o sin permiso: se usa el fallback */ }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = texto;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
   }
 
   mostrarAyuda() {
