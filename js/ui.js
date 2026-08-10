@@ -1090,6 +1090,19 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
     await this._copiarAlPortapapeles(this._resumenMarkdown(), btn);
   }
 
+  // Compartir en LinkedIn: abre el diálogo oficial (muestra la tarjeta del juego
+  // vía Open Graph) y copia un mensaje del resumen al portapapeles. LinkedIn no
+  // permite precargar texto por URL, así que el mensaje se pega con Ctrl+V.
+  compartirLinkedin(btn) {
+    const urlJuego = "https://knklinux.github.io/cybergrad/";
+    const rSOC = estadoRango();
+    const rRT = estadoRangoRT();
+    const mensaje = `Acabo de completar ${GAME.casosResueltos}/6 casos SOC (${rSOC.nombre}) y ${GAME.rtCasosResueltos}/6 pentests red team (${rRT.nombre}) en CYBERGRAD: ${GAME.xp} XP SOC · ${GAME.rtXp} XP RT. Un simulador gratuito para aprender ciberseguridad jugando desde el navegador. ${urlJuego}`;
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(urlJuego)}`, "_blank", "noopener,width=650,height=700");
+    this._copiarAlPortapapeles(mensaje, btn);
+    this.notificar("💼 LINKEDIN", "Diálogo abierto y mensaje copiado: pulsa Ctrl+V en el cuadro de LinkedIn para publicar.", "logro");
+  }
+
   // ---------- Estadísticas ----------
   _formatearTiempo(s) {
     const h = Math.floor(s / 3600);
@@ -1199,9 +1212,11 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
           <button class="btn-secondary" data-action="exportar-resumen">📥 MD</button>
           <button class="btn-secondary" data-action="exportar-json">🧾 JSON</button>
           <button class="btn-secondary" data-action="copiar-resumen">📋 COPIAR</button>
+          <button class="btn-secondary" data-action="compartir-linkedin">💼 LINKEDIN</button>
         </div>
         <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">
-          MD y JSON descargan el resumen. COPIAR lo pone en el portapapeles para pegarlo en redes o en tu CV.
+          MD y JSON descargan el resumen. COPIAR lo pone en el portapapeles. LINKEDIN abre el diálogo de
+          LinkedIn con la tarjeta del juego y copia un mensaje de tu progreso listo para pegar (Ctrl+V).
         </div>
       </div>
       <div class="btn-row">
@@ -1222,6 +1237,7 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
       "exportar-resumen": () => this.exportarResumen(),
       "exportar-json": () => this.exportarJSON(),
       "copiar-resumen": (btn) => this.copiarResumen(btn),
+      "compartir-linkedin": (btn) => this.compartirLinkedin(btn),
       "cerrar-carrera": () => this.cerrarModal(),
       "reiniciar-soc": (btn) => pedirConfirmacion(btn, "soc", () => {
         reiniciarCampania("soc");
