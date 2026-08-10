@@ -519,6 +519,31 @@ body::after {
 .career-rank.current .r-name { color: var(--green); text-shadow: 0 0 10px rgba(51,255,102,0.5); }
 .career-rank.locked { opacity: 0.4; }
 
+/* ---- Estadísticas globales ---- */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.stats-item {
+  display: flex; justify-content: space-between; align-items: center;
+  border: 1px solid var(--line); padding: 6px 10px; border-radius: 4px;
+  background: rgba(0,0,0,0.15); font-size: 11.5px;
+}
+.stats-label { color: #9fd8ab; }
+.stats-val { color: #fff; font-weight: 700; font-family: var(--disp); letter-spacing: 1px; }
+.xp-mini-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.xp-mini-label { font-size: 11px; color: #9fd8ab; width: 52px; flex-shrink: 0; }
+.xp-mini-bar { flex: 1; height: 8px; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.xp-mini-fill { height: 100%; background: linear-gradient(90deg, var(--green-dim), var(--green)); border-radius: 3px; transition: width 0.3s; }
+.xp-mini-fill.rt { background: linear-gradient(90deg, var(--magenta), var(--amber)); }
+.xp-mini-num { font-size: 10px; color: #5f8a6a; width: 70px; text-align: right; font-family: var(--mono); }
+.rating-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.rating-row {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--line); padding: 3px 8px; border-radius: 4px;
+  background: rgba(0,0,0,0.15); font-size: 11.5px;
+}
+.rating-caso { font-family: var(--mono); font-size: 10.5px; color: #5f8a6a; }
+.rating-mod { font-size: 10px; }
+.rating-val { font-family: var(--disp); font-weight: 700; font-size: 12px; letter-spacing: 1px; }
+
 /* ---- Selector de partida ---- */
 .partida-grid { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 .partida-card {

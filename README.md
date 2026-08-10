@@ -74,6 +74,8 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 
 **🏅 Sistema de logros e insignias**: se desbloquean automáticamente por **rango** (Analista SOC, Cazador de amenazas, Jefe de CSIRT, CISO…) y por **hitos** (primer caso, primer pentest, calificación S+, caso sin pistas, campañas completadas, prácticas de becario…). Al ganar uno aparece una **notificación dorada** en pantalla y el botón **🏅 Logros** del HUD muestra un **contador** con los desbloqueados; el panel lista los logros ganados (✔) y los pendientes (🔒). Todo se persiste con tu guardado y se limpia con el reinicio de progreso.
 
+**📊 Estadísticas globales** en el panel Carrera (persistidas con tu guardado): **tiempo total jugado**, **acciones correctas/errores**, **pistas usadas**, la **calificación de cada caso completado** (chips S+ a C con su campaña) y dos **barras de progreso de XP** (SOC y Red Team). Además, el botón **📥 EXPORTAR RESUMEN (MD)** descarga tu informe de carrera completo en Markdown.
+
 ## 🎓 Modo Becario
 
 ¿Nunca has tocado un SOC? El **Modo Becario** es tu rampa de entrada: tres prácticas guiadas de blue team y un **pentest guiado** de red team, donde Jimmy valida comando a comando y un **panel de guía** muestra el paso actual (N/M), el comando exacto y la explicación del **porqué** de cada acción:

@@ -123,6 +123,14 @@ export const GAME = {
   logros: [],                 // ids de logros desbloqueados
   mejorRating: null,          // mejor calificación conseguida ("C" → "S+")
   casoSinPistas: false,       // último caso completado sin usar pistas
+  // ---- Estadísticas globales (acumuladas de todos los casos) ----
+  estadisticas: {
+    tiempoJugado: 0,          // segundos de reloj acumulados
+    accionesOk: 0,            // acciones correctas (total acumulado)
+    accionesErr: 0,           // acciones incorrectas mal ejecutadas (total)
+    pistasUsadas: 0,          // pistas pedidas (total acumulado)
+    ratings: [],              // [{casoId, rating, modo}] por cada caso completado
+  },
 };
 
 export function estadoRango() {

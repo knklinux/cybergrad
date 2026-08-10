@@ -982,6 +982,34 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
     this.notificar("📥 INFORME EXPORTADO", "Resumen de carrera descargado como Markdown (.md)", "logro");
   }
 
+  // ---------- Estadísticas ----------
+  _formatearTiempo(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const seg = s % 60;
+    return h > 0 ? `${h}h ${m}m ${seg}s` : m > 0 ? `${m}m ${seg}s` : `${seg}s`;
+  }
+
+  _renderRatingTable() {
+    const r = GAME.estadisticas?.ratings || [];
+    if (!r.length) return '<div class="modal-text" style="font-size:11.5px;color:#5f8a6a;margin-top:6px">Sin casos completados todavía.</div>';
+    const filas = r.map((e) => {
+      const num = e.modo === "rt"
+        ? `RT-${String(numCasoRT(e.casoId) || "?").padStart(2, "0")}`
+        : `#${String(numCaso(e.casoId) || "?").padStart(2, "0")}`;
+      const color = e.rating === "S+" ? "var(--green)" : e.rating === "S" ? "var(--cyan)" : e.rating === "A" ? "var(--amber)" : e.rating === "B" ? "#9fd8ab" : "var(--red-dim)";
+      return `<div class="rating-row">
+        <span class="rating-caso">${num}</span>
+        <span class="rating-mod">${e.modo === "rt" ? "🎯" : "🛡️"}</span>
+        <span class="rating-val" style="color:${color}">${e.rating}</span>
+      </div>`;
+    }).join("");
+    return `
+      <h3 style="margin-top:10px">⭐ CALIFICACIONES</h3>
+      <div class="rating-grid">${filas}</div>
+      <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:4px">Último: ${r[r.length - 1]?.rating} en ${r[r.length - 1]?.casoId}</div>`;
+  }
+
   // ---------- Carrera ----------
   mostrarCarrera() {
     const esRT = GAME.modo === "rt";
@@ -1021,6 +1049,28 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
       <div class="modal-section">
         <h3>🎓 PRÁCTICAS DE BECARIO</h3>
         <div class="modal-text" style="font-size:12.5px">${becHechas || "Ninguna todavía. Abre el modo Becario para empezar."}</div>
+      </div>
+      <div class="modal-section">
+        <h3>📊 ESTADÍSTICAS GLOBALES</h3>
+        <div class="stats-grid">
+          <div class="stats-item"><span class="stats-label">&#9202; Tiempo jugado</span><span class="stats-val">${this._formatearTiempo(GAME.estadisticas?.tiempoJugado || 0)}</span></div>
+          <div class="stats-item"><span class="stats-label">&#9989; Acciones correctas</span><span class="stats-val">${GAME.estadisticas?.accionesOk || 0}</span></div>
+          <div class="stats-item"><span class="stats-label">&#10060; Errores</span><span class="stats-val">${GAME.estadisticas?.accionesErr || 0}</span></div>
+          <div class="stats-item"><span class="stats-label">&#128161; Pistas usadas</span><span class="stats-val">${GAME.estadisticas?.pistasUsadas || 0}</span></div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="xp-mini-row">
+            <span class="xp-mini-label">&#128737;&#65039; SOC XP</span>
+            <div class="xp-mini-bar"><div class="xp-mini-fill" style="width:${Math.min(100, (GAME.xp / 2400) * 100)}%"></div></div>
+            <span class="xp-mini-num">${GAME.xp} / 2.400</span>
+          </div>
+          <div class="xp-mini-row">
+            <span class="xp-mini-label">&#127919; RT XP</span>
+            <div class="xp-mini-bar"><div class="xp-mini-fill rt" style="width:${Math.min(100, (GAME.rtXp / 2600) * 100)}%"></div></div>
+            <span class="xp-mini-num">${GAME.rtXp} / 2.600</span>
+          </div>
+        </div>
+        ${this._renderRatingTable()}
       </div>
       <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">💾 Progreso guardado automáticamente en este navegador (localStorage) · Partida ${slotActual()}.</div>
       <div class="modal-section">

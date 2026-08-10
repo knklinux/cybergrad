@@ -628,6 +628,9 @@ export class Engine {
       caso,
     };
 
+    // Acumular estadísticas globales
+    this._acumularStats(rating);
+
     // Aplicar (en laboratorio no se suma XP: práctica libre sin impacto en la carrera)
     if (!this.lab) {
       if (this.modoRT) addRTXP(xp); else addXP(xp);
@@ -688,7 +691,21 @@ export class Engine {
     this.ui.siguienteCasoDisponible(GAME.casosCompletados);
   }
 
+  _acumularStats(rating) {
+    if (!GAME.estadisticas) {
+      GAME.estadisticas = { tiempoJugado: 0, accionesOk: 0, accionesErr: 0, pistasUsadas: 0, ratings: [] };
+    }
+    GAME.estadisticas.tiempoJugado += GAME.reloj || 0;
+    GAME.estadisticas.accionesOk += GAME.acciones.filter((a) => a.ok).length;
+    GAME.estadisticas.accionesErr += this.errores || 0;
+    GAME.estadisticas.pistasUsadas += this.pistasUsadas || 0;
+    if (rating) {
+      GAME.estadisticas.ratings.push({ casoId: this.caso?.id, rating, modo: this.modoRT ? "rt" : "soc" });
+    }
+  }
+
   fracasarCaso(motivo) {
+    this._acumularStats(null);
     this._limpiarTimers();
     addPuntos(PUNTOS.slaSuperado);
     guardar();

@@ -43,6 +43,7 @@ const CAMPOS = [
   "logros",
   "mejorRating",
   "casoSinPistas",
+  "estadisticas",
 ];
 
 export function hayGuardado(slot = 1) {
@@ -93,6 +94,11 @@ export function cargar(slot = 1) {
     for (const arr of ["casosCompletados", "lecciones", "rtCasosCompletados", "rtLecciones", "becarioCompletadas", "logros"]) {
       if (!Array.isArray(GAME[arr])) GAME[arr] = [];
     }
+    // Estadísticas: objeto con sub-array ratings
+    if (!GAME.estadisticas || typeof GAME.estadisticas !== "object") {
+      GAME.estadisticas = { tiempoJugado: 0, accionesOk: 0, accionesErr: 0, pistasUsadas: 0, ratings: [] };
+    }
+    if (!Array.isArray(GAME.estadisticas.ratings)) GAME.estadisticas.ratings = [];
     GAME.casoActual = null;
     GAME.casoIniciadoEn = 0;
     GAME.reloj = 0;
