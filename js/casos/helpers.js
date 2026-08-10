@@ -80,7 +80,6 @@ export function dnsLogTunel(dominio, consultas = 24) {
 // Genera eventos EDR para el caso de ransomware
 export function edrRansomware(hosts) {
   const ev = [];
-  const progreso = ["created", "modified", "renamed", "deleted"];
   for (const h of hosts) {
     ev.push(`{"ts":"2026-02-11T03:${Math.floor(Math.random() * 59)}:12Z","host":"${h}","event":"process_start","proc":"C:\\\\Windows\\\\Temp\\\\svch0st.exe","parent":"\\\\Device\\\\HarddiskVolume2\\\\Windows\\\\System32\\\\cmd.exe","hash":"a1b2c3d4e5f60718293a4b5c6d7e8f901234567890abcdef1234567890abcdef"}`);
     ev.push(`{"ts":"2026-02-11T03:${Math.floor(Math.random() * 59)}:40Z","host":"${h}","event":"file_write","path":"C:\\\\Users\\\\Public\\\\Documents\\\\nómina_Q1.xlsx.lcrypt","size":184320}`);

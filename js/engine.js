@@ -4,7 +4,7 @@
 // temporizados, puntuación y evaluación del informe.
 // ============================================================
 
-import { GAME, addXP, addRTXP, addPuntos, registrarAccion, resetAccionesCaso, estadoRango, xpNecesariaParaSiguiente } from "./state.js";
+import { GAME, addXP, addRTXP, addPuntos, registrarAccion, resetAccionesCaso } from "./state.js";
 import { numCaso } from "./casos.js";
 import { numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 
@@ -276,7 +276,6 @@ export class Engine {
   bloquear(arg) {
     const obj = this.normalizarObjetivo(arg);
     if (!obj) return this.term.printErr("Uso: bloquear <dominio|ip|url>:<valor>  (ej: bloquear dominio:malo.example)");
-    const clave = this._clave(obj.tipo, obj.valor);
     const correcta = this._buscarCorrecta("bloquear", obj.tipo, obj.valor);
     const incorrecta = this._buscarIncorrecta("bloquear", obj.tipo, obj.valor);
 
@@ -416,7 +415,7 @@ export class Engine {
 
   // ---------- Práctica guiada (tutorial / becario) ----------
   // Se llama tras cada comando: valida si el jugador ha completado el paso actual
-  chequearTutorial(nombre, args) {
+  chequearTutorial(nombre, _args) {
     if (!this.caso || !this._guiado() || this.tutorialFin) return;
     const pasos = this._pasosGuiados();
     const paso = pasos[this.tutorialIdx];

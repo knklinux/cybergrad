@@ -1,0 +1,18 @@
+{
+  "name": "cybergrad",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simulador de carrera SOC: aprende ciberseguridad defensiva resolviendo incidentes realistas desde una terminal.",
+  "type": "module",
+  "scripts": {
+    "start": "node serve.js",
+    "check": "node ci/check-syntax.mjs",
+    "lint": "eslint js serve.js ci",
+    "test:smoke": "node ci/smoke.mjs",
+    "test": "npm run check && npm run lint && npm run test:smoke"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0",
+    "playwright": "^1.49.0"
+  }
+}

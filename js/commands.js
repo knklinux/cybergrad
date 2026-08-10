@@ -3,7 +3,7 @@
 // Cada comando recibe (args, ctx) y escribe en el terminal.
 // ============================================================
 
-import { normalizar, listar, leer, buscar } from "./filesystem.js";
+import { listar, leer, buscar } from "./filesystem.js";
 import { GAME, estadoRango, estadoRangoRT } from "./state.js";
 import { numCaso } from "./casos.js";
 import { numCasoRT } from "./rt-casos.js";
@@ -137,7 +137,7 @@ export function crearComandos(ctx) {
     date() { out(new Date().toLocaleString("es-ES")); },
     echo(a) { out(a || ""); },
 
-    "ver_caso"(a) {
+    "ver_caso"() {
       const c = engine.caso;
       const num = c.modo === "rt" ? numCasoRT(c.id) : numCaso(c.id);
       term.separator(`${c.modo === "rt" ? "PENTEST" : "CASO"} #${String(num).padStart(2, "0")} — ${c.titulo}`);
@@ -181,7 +181,7 @@ export function crearComandos(ctx) {
       }
     },
 
-    alertas(a) {
+    alertas() {
       const alertas = engine.caso.alertas || [];
       if (alertas.length === 0) { out("Sin alertas registradas.", "t-out-dim"); return; }
       term.separator(`ALERTAS SIEM (${alertas.length})`);
@@ -352,7 +352,7 @@ export function crearComandos(ctx) {
         return;
       }
       // Buscar dominio por IP
-      for (const [dom, info] of Object.entries(dominios)) {
+      for (const [, info] of Object.entries(dominios)) {
         if (info.ip === obj) {
           out(info.whois || `${obj}: ${info.registrador || "sin datos"}`, "t-out");
           return;

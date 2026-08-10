@@ -55,7 +55,6 @@ export function md5(str) {
     const M = new Uint32Array(16);
     for (let j = 0; j < 16; j++) M[j] = dv.getUint32(i + j * 4, true);
     let a = a0, b = b0, c = c0, d = d0;
-    const AA = a, BB = b, CC = c, DD = d;
     // Ronda 1
     a = _ff(a, b, c, d, M[0], _S[0], _K[0]); d = _ff(d, a, b, c, M[1], _S[1], _K[1]); c = _ff(c, d, a, b, M[2], _S[2], _K[2]); b = _ff(b, c, d, a, M[3], _S[3], _K[3]);
     a = _ff(a, b, c, d, M[4], _S[4], _K[4]); d = _ff(d, a, b, c, M[5], _S[5], _K[5]); c = _ff(c, d, a, b, M[6], _S[6], _K[6]); b = _ff(b, c, d, a, M[7], _S[7], _K[7]);

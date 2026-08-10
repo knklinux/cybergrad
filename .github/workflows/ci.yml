@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Sintaxis (node --check sobre todos los .js)
+        run: npm run check
+
+      - name: Linter básico (ESLint)
+        run: npm run lint
+
+      - name: Instalar navegador Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test (carga sin errores de consola)
+        run: npm run test:smoke

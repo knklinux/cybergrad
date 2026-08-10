@@ -9,10 +9,10 @@ import { RT_CASOS, numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
-import { LOGROS, logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
+import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
-  JIMMY_LECCION, JIMMY_PISTA, JIMMY_LAB, JIMMY_FINAL,
+  JIMMY_LECCION, JIMMY_LAB, JIMMY_FINAL,
 } from "./jimmy.js";
 
 const $ = (id) => document.getElementById(id);
