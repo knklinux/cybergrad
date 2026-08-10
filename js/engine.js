@@ -49,17 +49,24 @@ export class Engine {
     this._bloqueado = false;      // evita acciones dobles durante modales
     this.lab = false;             // modo laboratorio (práctica libre)
     this.tutorial = false;        // micro-tutorial guiado
+    this.becario = false;         // modo becario (práctica guiada paso a paso)
     this.tutorialIdx = 0;
     this.tutorialFin = false;
   }
 
-  _gratis() { return this.lab || this.tutorial; }
-  _gratisLabel() { return this.lab ? "laboratorio" : "tutorial"; }
+  _gratis() { return this.lab || this.tutorial || this.becario; }
+  _gratisLabel() { return this.lab ? "laboratorio" : this.becario ? "becario" : "tutorial"; }
+  _guiado() { return this.tutorial || this.becario; }
   // Sufijo de mensaje: sin penalización en modos de práctica
   _sinPenalizacion() {
     if (this.lab) return " (sin penalización: laboratorio)";
-    if (this.tutorial) return " (sin penalización: tutorial)";
+    if (this._guiado()) return " (sin penalización: " + this._gratisLabel() + ")";
     return "";
+  }
+  // Nombre del paso guiado según el modo
+  _pasosGuiados() {
+    if (!this.caso) return [];
+    return this.caso.becario?.pasos || this.caso.tutorial?.pasos || [];
   }
 
   // ---------- Ciclo de vida ----------
@@ -69,6 +76,7 @@ export class Engine {
     GAME.modo = this.modoRT ? "rt" : "soc";
     this.lab = !!opciones.lab;
     this.tutorial = !!opciones.tutorial;
+    this.becario = !!opciones.becario;
     this.tutorialIdx = 0;
     this.tutorialFin = false;
     GAME.casoActual = caso.id;
@@ -81,7 +89,7 @@ export class Engine {
     this._limpiarTimers();
     this.vtRuntime = {};
     this.ui.setTemaCaso(temaParaCaso(caso));
-    this.ui.setModoLab(this.lab, this.tutorial);
+    this.ui.setModoLab(this.lab, this.tutorial, this.becario);
 
     // Splash de incidente → briefing de Jimmy → arranque
     this.ui.mostrarSplash(caso, () => {
@@ -105,13 +113,23 @@ export class Engine {
 
     this.ui.mostrarCaso(caso, this.hecho);
     this.ui.actualizarPerfil();
-    this.ui.feed(`Caso #${caso.id} asignado (${caso.severidad})${this.lab ? " · LAB" : this.tutorial ? " · TUTORIAL" : this.modoRT ? " · PENTEST" : ""}`, "new-msg");
+    this.ui.feed(`Caso #${caso.id} asignado (${caso.severidad})${this.lab ? " · LAB" : this.tutorial ? " · TUTORIAL" : this.becario ? " · BECARIO" : this.modoRT ? " · PENTEST" : ""}`, "new-msg");
     if (this.lab) {
       this.ui.jimmyDice("Modo Laboratorio activo: sin SLA, sin penalizaciones, pistas gratis. Practica con fluidez.");
+    } else if (this.becario) {
+      this.ui.jimmyDice("Modo Becario: te explico cada paso y el porqué. Sin prisa, sin penalizaciones. Sigue la guía.");
     } else if (this.tutorial) {
       this.ui.jimmyDice("Modo tutorial: te guío paso a paso. Empieza escribiendo `mail`.");
     } else if (this.modoRT) {
       this.ui.jimmyDice("Contrato de pentest activo. Entra antes de que lo haga un atacante real.");
+    }
+
+    // Panel de guía (tutorial / becario)
+    if (this._guiado()) {
+      const pasos = this._pasosGuiados();
+      if (pasos.length) this.ui.mostrarGuia(pasos[0], 0, pasos.length, this._gratisLabel());
+    } else {
+      this.ui.ocultarGuia();
     }
 
     // Reloj + SLA (en laboratorio/tutorial no hay SLA)
@@ -127,8 +145,8 @@ export class Engine {
   _tick() {
     if (GAME.pausado || !this.caso) return;
     GAME.reloj++;
-    if (this.lab || this.tutorial) {
-      // En laboratorio/tutorial el SLA se muestra pero no hace fallar el caso
+    if (this._gratis()) {
+      // En laboratorio/tutorial/becario el SLA se muestra pero no hace fallar el caso
       this.ui.actualizarReloj(GAME.reloj, this.caso.sla * 10);
       return;
     }
@@ -393,19 +411,17 @@ export class Engine {
     this.term.printWarn(`💡 Pista ${this.pistasUsadas}/${this.caso.pistas.length}${this._gratis() ? ` (gratis en ${this._gratisLabel()})` : ` (-${Math.abs(PUNTOS.pista)} pts)`}: ${p}`);
   }
 
-  // ---------- Tutorial guiado ----------
+  // ---------- Práctica guiada (tutorial / becario) ----------
   // Se llama tras cada comando: valida si el jugador ha completado el paso actual
   chequearTutorial(nombre, args) {
-    if (!this.caso || !this.caso.tutorial || this.tutorialFin) return;
-    const pasos = this.caso.tutorial.pasos || [];
+    if (!this.caso || !this._guiado() || this.tutorialFin) return;
+    const pasos = this._pasosGuiados();
     const paso = pasos[this.tutorialIdx];
     if (!paso) return;
     const nombreL = String(nombre || "").toLowerCase();
     const esComandoDePaso = pasos.some((p) => p.cmd === nombreL);
 
-    const cumple = paso.tipo === "bloquear"
-      ? this.hecho.has(`bloquear:dominio:${paso.objetivo}`)
-      : nombreL === paso.cmd;
+    const cumple = this._pasoCumplido(paso, nombreL);
 
     if (cumple) {
       this.tutorialIdx++;
@@ -413,18 +429,42 @@ export class Engine {
       if (this.tutorialIdx >= pasos.length) {
         this.tutorialFin = true;
         this._limpiarTimers();
-        this.ui.mostrarFinTutorial();
+        this.ui.ocultarGuia();
+        if (this.becario) this.ui.mostrarFinBecario();
+        else this.ui.mostrarFinTutorial();
       } else {
         const siguiente = pasos[this.tutorialIdx];
+        this.ui.mostrarGuia(siguiente, this.tutorialIdx, pasos.length, this._gratisLabel());
         if (siguiente.msg) {
           this.ui.jimmyDice(siguiente.msg);
           this.term.print(`⬇ ${siguiente.msg}`, "t-out-dim");
         }
       }
     } else if (esComandoDePaso) {
-      const fb = paso.fallback || `Prueba exactamente: ${paso.cmd}${paso.tipo === "bloquear" ? " " + paso.objetivo : ""}`;
+      const fb = paso.fallback || `Prueba exactamente: ${paso.cmd}${paso.tipo !== "comando" ? " " + paso.objetivo : ""}`;
       this.term.printWarn(fb);
       this.ui.jimmyDice(fb);
+    }
+  }
+
+  // ¿Se ha completado el paso actual? (tipo comando = el nombre coincide;
+  // acciones = la acción correcta ya está en `hecho`)
+  _pasoCumplido(paso, nombreL) {
+    switch (paso.tipo) {
+      case "bloquear":
+      case "aislar":
+      case "deshabilitar": {
+        // Las claves de `hecho` preservan mayúsculas (ej: aislar:host:HOST-104)
+        const prefijo = paso.tipo + ":";
+        const obj = String(paso.objetivo || "").toLowerCase();
+        for (const k of this.hecho) {
+          if (k.startsWith(prefijo) && k.toLowerCase().endsWith(":" + obj)) return true;
+        }
+        return false;
+      }
+      case "cerrar": return this.hecho.has("cerrar");
+      case "escalar": return this.hecho.has("escalar");
+      default: return nombreL === paso.cmd;
     }
   }
 
@@ -461,7 +501,7 @@ export class Engine {
 
   // ---------- Informe ----------
   _sugerirInforme() {
-    if (this.tutorial) return; // el tutorial guiado no necesita informe
+    if (this._guiado()) return; // tutorial/becario guiado no necesita informe
     const completados = this.modoRT ? GAME.rtCasosCompletados : GAME.casosCompletados;
     if (this._requisitosCumplidos() && !completados.includes(this.caso.id)) {
       this.term.printHi("✔ Has cubierto todos los requisitos. Redacta el informe con `informe` para cerrar el caso.");
@@ -485,8 +525,8 @@ export class Engine {
 
   abrirInforme() {
     if (this._bloqueado) return;
-    if (this.tutorial) {
-      this.term.printInfo("Modo tutorial: aquí no hace falta informe. Sigue los pasos guiados de Jimmy.");
+    if (this._guiado()) {
+      this.term.printInfo("Modo " + this._gratisLabel() + ": aquí no hace falta informe. Sigue los pasos guiados de Jimmy.");
       return;
     }
     this._bloqueado = true;

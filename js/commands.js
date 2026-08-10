@@ -339,16 +339,18 @@ export function crearComandos(ctx) {
       const obj = (a || "").trim().toLowerCase();
       if (!obj) { term.printErr("Uso: whois <dominio|ip>"); return; }
       const c = engine.caso;
-      if (c.dominios[obj] && c.dominios[obj].whois) {
-        out(c.dominios[obj].whois, "t-out");
+      const dominios = c.dominios || {};
+      const ips = c.ips || {};
+      if (dominios[obj] && dominios[obj].whois) {
+        out(dominios[obj].whois, "t-out");
         return;
       }
-      if (c.ips[obj] && c.ips[obj].whois) {
-        out(c.ips[obj].whois, "t-out");
+      if (ips[obj] && ips[obj].whois) {
+        out(ips[obj].whois, "t-out");
         return;
       }
       // Buscar dominio por IP
-      for (const [dom, info] of Object.entries(c.dominios)) {
+      for (const [dom, info] of Object.entries(dominios)) {
         if (info.ip === obj) {
           out(info.whois || `${obj}: ${info.registrador || "sin datos"}`, "t-out");
           return;

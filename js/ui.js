@@ -7,6 +7,7 @@ import { CASOS, numCaso, siguienteCaso } from "./casos.js";
 import { RT_CASOS, numCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
+import { BECARIO_CASOS } from "./becario.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
   JIMMY_LECCION, JIMMY_PISTA, JIMMY_LAB, JIMMY_FINAL,
@@ -21,6 +22,7 @@ export class UI {
     this.fx = fx || null;
     this._sla = 0;
     this._acciones = {};
+    this._becIdx = 0;
     this._bindBotones();
   }
 
@@ -31,6 +33,7 @@ export class UI {
     $("btn-lab").addEventListener("click", () => this.mostrarLaboratorio());
     $("btn-tutorial").addEventListener("click", () => this.mostrarTutorial(false));
     $("btn-rt").addEventListener("click", () => this.mostrarRedTeam());
+    $("btn-becario").addEventListener("click", () => this.mostrarBecario());
   }
 
   // ---------- Motor gráfico ----------
@@ -41,9 +44,10 @@ export class UI {
     if (this.fx) this.fx.pulsoAlerta(intensidad);
   }
 
-  setModoLab(lab, tutorial) {
+  setModoLab(lab, tutorial, becario) {
     this._modoLab = lab;
     this._modoTutorial = tutorial;
+    this._modoBecario = becario;
     $("btn-lab").classList.toggle("on", lab);
     this._renderModo();
   }
@@ -51,7 +55,26 @@ export class UI {
   _renderModo() {
     const mode = $("sla-mode");
     if (!mode) return;
-    mode.textContent = this._modoTutorial ? "MODO TUTORIAL — GUIADO" : this._modoLab ? "MODO LABORATORIO — SIN SLA" : "";
+    mode.textContent = this._modoBecario ? "MODO BECARIO — GUIADO" : this._modoTutorial ? "MODO TUTORIAL — GUIADO" : this._modoLab ? "MODO LABORATORIO — SIN SLA" : "";
+  }
+
+  // ---------- Panel de guía (tutorial / becario) ----------
+  mostrarGuia(paso, idx, total, modo) {
+    const el = $("guia-panel");
+    if (!el) return;
+    const cmd = paso.ejemplo || (paso.tipo !== "comando" && paso.objetivo ? `${paso.cmd} ${paso.objetivo}` : paso.cmd);
+    el.innerHTML = `
+      <div class="guia-head">${modo === "becario" ? "&#127891; BECARIO" : "&#129517; TUTORIAL"} · PASO ${idx + 1}/${total}</div>
+      <div class="guia-que">${paso.que || `Haz: ${cmd}`}</div>
+      <div class="guia-cmd">&#9654; <span class="mono">${cmd}</span></div>
+      ${paso.porque ? `<div class="guia-porque"><b>¿POR QUÉ?</b> ${paso.porque}</div>` : ""}
+    `;
+    el.classList.remove("hidden");
+  }
+
+  ocultarGuia() {
+    const el = $("guia-panel");
+    if (el) el.classList.add("hidden");
   }
 
   // ---------- Jimmy ----------
@@ -153,10 +176,12 @@ export class UI {
       </div>
       <div class="btn-row">
         <button class="btn-secondary" data-action="ver-tutorial">&#129517; TUTORIAL RÁPIDO</button>
+        <button class="btn-secondary" data-action="ver-becario">&#127891; MODO BECARIO</button>
         <button class="btn-primary" id="btn-empezar" data-action="empezar">EMPEZAR TURNO</button>
       </div>`;
     this.setAcciones({
       "ver-tutorial": () => this.mostrarTutorial(true, () => this.onboarding(cb)),
+      "ver-becario": () => this.mostrarBecario(() => this.onboarding(cb)),
       "empezar": () => {
         const nombre = ($("input-nombre")?.value || "").trim() || "Analista";
         GAME.nombre = nombre;
@@ -232,6 +257,79 @@ export class UI {
         this.cerrarModal();
         const siguiente = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
         this._onNuevoCaso(siguiente);
+      },
+    });
+    this.abrirModal(html);
+  }
+
+  // ---------- Modo Becario ----------
+  mostrarBecario(onCerrar = null) {
+    this._becOnCerrar = onCerrar;
+    const cards = BECARIO_CASOS.map((c, i) => `
+      <div class="bec-card">
+        <div class="bec-num">PRÁCTICA ${i + 1}/${BECARIO_CASOS.length}</div>
+        <div class="bec-titulo">${c.titulo}</div>
+        <div class="bec-meta">${c.severidad} · Sin SLA · Sin penalizaciones · 0 XP</div>
+        <div class="bec-brief">${c.briefing.slice(0, 160)}…</div>
+      </div>`).join("");
+    const html = `
+      <div class="modal-title">&#127891; MODO BECARIO — APRENDE CON JIMMY</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text">
+        ¿Nunca has tocado un SOC? Perfecto: este modo es para ti.
+        Dos <b>prácticas guiadas</b> donde yo te llevo de la mano: en cada paso te digo
+        <b>qué escribir</b> y, sobre todo, <b>por qué se hace</b>. Sin reloj, sin penalizaciones, sin XP.
+      </div>
+      <div class="bec-cards">${cards}</div>
+      <div class="jimmy-habla">No se nace analista: se aprende haciendo, paso a paso. — Jimmy</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cerrar-becario">CERRAR</button>
+        <button class="btn-primary" data-action="becario-empezar">&#9654; EMPEZAR PRÁCTICA 1</button>
+      </div>`;
+    this.setAcciones({
+      "cerrar-becario": () => {
+        this.cerrarModal();
+        if (this._becOnCerrar) this._becOnCerrar();
+      },
+      "becario-empezar": () => {
+        this.cerrarModal();
+        this._onNuevoCaso(BECARIO_CASOS[0], { becario: true });
+      },
+    });
+    this.abrirModal(html);
+  }
+
+  mostrarFinBecario() {
+    const hayMas = this._becIdx < BECARIO_CASOS.length - 1;
+    const siguiente = hayMas ? BECARIO_CASOS[this._becIdx + 1] : null;
+    const html = `
+      <div class="modal-title">&#127891; ${hayMas ? "PRÁCTICA " + (this._becIdx + 1) + " SUPERADA" : "MODO BECARIO COMPLETADO"}</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text">
+        ${hayMas
+          ? `¡Bien hecho! Has completado la práctica ${this._becIdx + 1}. Prepara el siguiente reto: <b>${siguiente.titulo}</b>.`
+          : `Has completado las dos prácticas guiadas. Ya entiendes la mecánica del SOC: <b>investigar antes de actuar</b>. Ahora toca demostrarlo con tu primer incidente real.`}
+      </div>
+      <div class="jimmy-habla">${hayMas ? "Un paso más y dominas el oficio. — Jimmy" : "El SOC confía en ti. Vamos a por tu primer caso de verdad. — Jimmy"}</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cerrar-becario-fin">CERRAR</button>
+        ${hayMas
+          ? `<button class="btn-primary" data-action="becario-siguiente">&#9654; SIGUIENTE PRÁCTICA</button>`
+          : `<button class="btn-primary" data-action="empezar-campana-bec">&#9654; EMPEZAR CAMPAÑA</button>`}
+      </div>`;
+    this.setAcciones({
+      "cerrar-becario-fin": () => {
+        this.cerrarModal();
+        if (this._becOnCerrar) this._becOnCerrar();
+      },
+      "becario-siguiente": () => {
+        this.cerrarModal();
+        this._onNuevoCaso(siguiente, { becario: true });
+      },
+      "empezar-campana-bec": () => {
+        this.cerrarModal();
+        const siguienteC = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
+        this._onNuevoCaso(siguienteC);
       },
     });
     this.abrirModal(html);
@@ -476,7 +574,13 @@ ${acciones}
   }
 
   setNuevoCasoHandler(fn) {
-    this._onNuevoCaso = fn;
+    this._onNuevoCaso = (caso, opciones) => {
+      if (opciones?.becario) {
+        const idx = BECARIO_CASOS.findIndex((c) => c.id === caso.id);
+        this._becIdx = idx >= 0 ? idx : 0;
+      }
+      fn(caso, opciones);
+    };
   }
 
   fracasarCaso(motivo, onReintentar, onSaltar) {
