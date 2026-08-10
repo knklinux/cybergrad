@@ -4,6 +4,8 @@
 
 **Sin dependencias. Sin backend.** Juega online en **[knklinux.github.io/cybergrad](https://knklinux.github.io/cybergrad/)** o en local con un pequeño servidor (ver *Arranque rápido*). Dentro del juego, el botón **🔗 Compartir** copia el enlace del juego, el del repo o un mensaje listo para redes.
 
+[![CI](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml/badge.svg)](https://github.com/knklinux/cybergrad/actions) [![GitHub Pages](https://img.shields.io/github/deployments/knklinux/cybergrad/github-pages?label=GitHub%20Pages&logo=github)](https://github.com/knklinux/cybergrad/deployments)
+
 ## 🤖 Tu director: Jimmy
 
 Cada turno lo abre **Jimmy**, el director del SOC y tu socio sintético: te recibe con un briefing holográfico, comenta tus resultados, te da pistas con su estilo y aparece en los momentos clave (splash de incidente, lecciones, final de campaña). El fondo animado (red de nodos, partículas, radar) reacciona al tipo de ataque de cada caso. *(Personaje ficticio inspirado en el proyecto Aion Sincro de Ark & Jimmy.)*
