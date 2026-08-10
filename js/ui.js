@@ -9,6 +9,7 @@ import { RT_CASOS, numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
+import { LOGROS, logrosDesbloqueados, logrosPendientes, totalLogros } from "./logros.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
   JIMMY_LECCION, JIMMY_PISTA, JIMMY_LAB, JIMMY_FINAL,
@@ -29,6 +30,7 @@ export class UI {
 
   _bindBotones() {
     $("btn-carrera").addEventListener("click", () => this.mostrarCarrera());
+    $("btn-logros").addEventListener("click", () => this.mostrarLogros());
     $("btn-glosario").addEventListener("click", () => this.mostrarGlosario());
     $("btn-ayuda").addEventListener("click", () => this.mostrarAyuda());
     $("btn-lab").addEventListener("click", () => this.mostrarLaboratorio());
@@ -387,6 +389,15 @@ export class UI {
     }
     $("puntos").textContent = GAME.puntos;
     $("casos-resueltos").textContent = esRT ? GAME.rtCasosResueltos : GAME.casosResueltos;
+    this.actualizarContadorLogros();
+  }
+
+  actualizarContadorLogros() {
+    const badge = $("badge-logros");
+    if (!badge) return;
+    const n = logrosDesbloqueados().length;
+    badge.textContent = n;
+    badge.classList.toggle("has", n > 0);
   }
 
   mostrarCaso(caso, hecho) {
@@ -835,6 +846,40 @@ ${acciones}
         this._onNuevoCaso(caso, { lab: true });
       });
     });
+  }
+
+  // ---------- Logros ----------
+  mostrarLogros() {
+    const hechos = logrosDesbloqueados();
+    const pendientes = logrosPendientes();
+    const card = (l, hecho) => `
+      <div class="logro-card ${hecho ? "desbloqueado" : "locked"}">
+        <span class="l-icon">${hecho ? l.icono : "&#128274;"}</span>
+        <div style="flex:1">
+          <div class="l-name">${l.nombre}</div>
+          <div class="l-desc">${l.desc}</div>
+        </div>
+        ${hecho ? `<span class="l-ok">✔</span>` : ""}
+      </div>`;
+    const html = `
+      <div class="modal-title">&#127941; LOGROS E INSIGNIAS</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px;margin-bottom:6px">
+        <b>${hechos.length}/${totalLogros()}</b> desbloqueados. Se ganan por rango y por hitos:
+        primer caso, primer pentest, S+, sin pistas, campañas completadas…
+      </div>
+      <div class="modal-section">
+        <h3>DESBLOQUEADOS (${hechos.length})</h3>
+        ${hechos.map((l) => card(l, true)).join("") || "<div class='modal-text' style='font-size:12px;color:#5f8a6a'>Todavía ninguno. ¡Resuelve tu primer caso!</div>"}
+      </div>
+      <div class="modal-section">
+        <h3>PENDIENTES (${pendientes.length})</h3>
+        ${pendientes.map((l) => card(l, false)).join("")}
+      </div>
+      <div class="jimmy-habla">Las insignias no se regalan: se ganan resolviendo incidentes de verdad. — Jimmy</div>
+      <div class="btn-row"><button class="btn-primary" data-action="cerrar-logros">CERRAR</button></div>`;
+    this.setAcciones({ "cerrar-logros": () => this.cerrarModal() });
+    this.abrirModal(html);
   }
 
   // ---------- Carrera ----------

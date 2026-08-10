@@ -70,6 +70,8 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 
 **💾 Tu progreso se guarda automáticamente** en el navegador (localStorage): nombre, XP de ambas carreras, puntos, casos y pentests resueltos, lecciones vistas y **prácticas de becario superadas** (se marcan con ✔ en el selector). Al volver, el juego te recibe con "Bienvenido de vuelta" y te asigna el siguiente caso pendiente. Puedes **reiniciar el progreso** desde el panel de Carrera (botón 🎖 → 🔄 REINICIAR PROGRESO, con doble confirmación). El caso en curso no se guarda a medias: el progreso se consolida al cerrar cada caso.
 
+**🏅 Sistema de logros e insignias**: se desbloquean automáticamente por **rango** (Analista SOC, Cazador de amenazas, Jefe de CSIRT, CISO…) y por **hitos** (primer caso, primer pentest, calificación S+, caso sin pistas, campañas completadas, prácticas de becario…). Al ganar uno aparece una **notificación dorada** en pantalla y el botón **🏅 Logros** del HUD muestra un **contador** con los desbloqueados; el panel lista los logros ganados (✔) y los pendientes (🔒). Todo se persiste con tu guardado y se limpia con el reinicio de progreso.
+
 ## 🎓 Modo Becario
 
 ¿Nunca has tocado un SOC? El **Modo Becario** es tu rampa de entrada: tres prácticas guiadas de blue team y un **pentest guiado** de red team, donde Jimmy valida comando a comando y un **panel de guía** muestra el paso actual (N/M), el comando exacto y la explicación del **porqué** de cada acción:
@@ -157,7 +159,8 @@ cybergrad/
     ├── hash.js           # MD5 y SHA-256 en JS puro (sin dependencias)
     ├── state.js          # XP, rangos y progresión (blue team y red team)
     ├── save.js           # Persistencia del progreso con localStorage
-    ├── ui.js             # HUD, modales, splash, lecciones, laboratorio, tutorial, panel RT
+    ├── logros.js         # Sistema de logros e insignias (rango + hitos)
+    ├── ui.js             # HUD, modales, splash, lecciones, laboratorio, tutorial, panel RT, logros
     ├── fx.js             # Motor gráfico canvas (red, partículas, radar, tema por ataque)
     ├── jimmy.js          # Personaje Jimmy: frases, briefing, reacciones
     ├── tutorial.js       # Mini tutorial: slides de contexto + micro-caso guiado
@@ -196,7 +199,6 @@ cybergrad/
 - Más familias de malware y TTPs (APT, supply chain, web attacks)
 - Más pentests red team (active directory, phishing ofensivo, movimiento lateral en dominio)
 - Más prácticas guiadas de becario (más escenarios paso a paso: BEC, web attacks, respuesta a incidentes)
-- Sistema de logros e insignias por rango
 - Ranking entre jugadores
 - Más personajes sintéticos con voz propia (Ark y otros)
 

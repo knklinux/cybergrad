@@ -119,6 +119,10 @@ export const GAME = {
   rtLecciones: [],
   // ---- Prácticas guiadas de becario superadas (blue team y red team) ----
   becarioCompletadas: [],
+  // ---- Logros e insignias ----
+  logros: [],                 // ids de logros desbloqueados
+  mejorRating: null,          // mejor calificación conseguida ("C" → "S+")
+  casoSinPistas: false,       // último caso completado sin usar pistas
 };
 
 export function estadoRango() {

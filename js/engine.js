@@ -24,6 +24,7 @@ import { md5, sha256 } from "./hash.js";
 import { temaParaCaso } from "./fx.js";
 import { JIMMY_PISTA } from "./jimmy.js";
 import { guardar } from "./save.js";
+import { evaluarLogros } from "./logros.js";
 
 const PUNTOS = {
   accionCorrecta: 30,
@@ -82,6 +83,7 @@ export class Engine {
     this.tutorialFin = false;
     GAME.casoActual = caso.id;
     GAME.reloj = 0;
+    GAME.casoSinPistas = false;
     resetAccionesCaso();
     this.hecho = new Set();
     this.errores = 0;
@@ -435,6 +437,7 @@ export class Engine {
           // Registra la práctica superada (persistida con el guardado)
           if (this.caso?.id && !GAME.becarioCompletadas.includes(this.caso.id)) {
             GAME.becarioCompletadas.push(this.caso.id);
+            this._notificarLogros();
             guardar();
           }
           this.ui.mostrarFinBecario();
@@ -506,6 +509,17 @@ export class Engine {
     const valor = canon.slice(canon.indexOf(":") + 1);
     const T = TIPOS_OBJETIVO[tipo];
     return T ? T.etiqueta(valor) : `${tipo}: ${valor}`;
+  }
+
+  // ---------- Logros ----------
+  // Evalúa los logros pendientes, notifica los nuevos y refresca el HUD
+  _notificarLogros() {
+    const nuevos = evaluarLogros();
+    for (const l of nuevos) {
+      this.ui.notificar("🏅 NUEVO LOGRO", `${l.icono} ${l.nombre} — ${l.desc}`, "logro");
+    }
+    if (nuevos.length && this.ui.actualizarPerfil) this.ui.actualizarPerfil();
+    return nuevos;
   }
 
   // ---------- Informe ----------
@@ -593,6 +607,13 @@ export class Engine {
       mult = 0.6;
     }
 
+    // Registro de hitos para logros (mejor calificación y caso sin pistas)
+    const ORDEN_RATING = ["C", "B", "A", "S", "S+"];
+    if (ORDEN_RATING.indexOf(rating) > ORDEN_RATING.indexOf(GAME.mejorRating || "C")) {
+      GAME.mejorRating = rating;
+    }
+    GAME.casoSinPistas = this.pistasUsadas === 0;
+
     const xp = Math.round(caso.xp * mult);
     const resultado = {
       rating,
@@ -630,6 +651,7 @@ export class Engine {
       GAME.lecciones.push(caso.id);
     }
     this._limpiarTimers();
+    this._notificarLogros();
     guardar();
     this.ui.mostrarResultado(resultado, () =>
       this.ui.mostrarLeccion(caso, () => this._siguienteCaso())

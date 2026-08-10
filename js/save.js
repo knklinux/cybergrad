@@ -24,6 +24,9 @@ const CAMPOS = [
   "rtLecciones",
   "modo",
   "becarioCompletadas",
+  "logros",
+  "mejorRating",
+  "casoSinPistas",
 ];
 
 export function hayGuardado() {
@@ -54,7 +57,7 @@ export function cargar() {
       if (datos[c] !== undefined) GAME[c] = datos[c];
     }
     // Garantías: arrays válidos y estado de ejecución siempre limpio
-    for (const arr of ["casosCompletados", "lecciones", "rtCasosCompletados", "rtLecciones", "becarioCompletadas"]) {
+    for (const arr of ["casosCompletados", "lecciones", "rtCasosCompletados", "rtLecciones", "becarioCompletadas", "logros"]) {
       if (!Array.isArray(GAME[arr])) GAME[arr] = [];
     }
     GAME.casoActual = null;
