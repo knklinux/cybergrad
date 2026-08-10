@@ -139,16 +139,19 @@ cybergrad/
 ├── index.html            # Página principal (canvas, HUD, modales)
 ├── serve.js              # Servidor de desarrollo sin caché (node)
 ├── CYBERGRAD.bat         # Lanzador de Windows (acceso directo)
+├── make-cover.ps1        # Genera la portada Open Graph (1200x630)
+├── make-icons.ps1        # Genera favicon, apple-touch-icon y portada cuadrada
 ├── css/style.css         # Estética de terminal / HUD / hologramas
-├── assets/               # Avatar de Jimmy (recortado y centrado)
+├── assets/               # Avatar de Jimmy, favicon, iconos y portadas
 └── js/
-    ├── main.js           # Arranque
+    ├── main.js           # Arranque (restaura la partida guardada si existe)
     ├── terminal.js       # Motor de terminal (entrada, historial, autocompletado)
     ├── engine.js         # Motor del juego: acciones, SLA, eventos, puntuación (ambos modos)
     ├── commands.js       # Implementación de los comandos del terminal
     ├── filesystem.js     # Sistema de archivos virtual del caso
     ├── hash.js           # MD5 y SHA-256 en JS puro (sin dependencias)
     ├── state.js          # XP, rangos y progresión (blue team y red team)
+    ├── save.js           # Persistencia del progreso con localStorage
     ├── ui.js             # HUD, modales, splash, lecciones, laboratorio, tutorial, panel RT
     ├── fx.js             # Motor gráfico canvas (red, partículas, radar, tema por ataque)
     ├── jimmy.js          # Personaje Jimmy: frases, briefing, reacciones
