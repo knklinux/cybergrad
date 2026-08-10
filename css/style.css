@@ -519,6 +519,22 @@ body::after {
 .career-rank.current .r-name { color: var(--green); text-shadow: 0 0 10px rgba(51,255,102,0.5); }
 .career-rank.locked { opacity: 0.4; }
 
+/* ---- Selector de partida ---- */
+.partida-grid { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.partida-card {
+  border: 1px solid var(--line); border-left: 3px solid var(--green);
+  padding: 12px 14px; border-radius: 6px; background: rgba(0,0,0,0.25);
+  transition: all 0.2s;
+}
+.partida-card:hover { transform: translateX(3px); border-color: var(--green-dim); box-shadow: 0 0 14px rgba(51,255,102,0.12); }
+.partida-card .p-num {
+  font-family: var(--disp); font-size: 10px; letter-spacing: 2px; color: var(--amber);
+  margin-bottom: 4px;
+}
+.partida-card .p-nombre { font-family: var(--disp); font-weight: 700; color: #fff; font-size: 15px; letter-spacing: 1px; margin-bottom: 5px; }
+.partida-card .p-meta { font-size: 11.5px; color: #9fd8ab; line-height: 1.7; }
+.partida-card .btn-primary { margin-top: 9px; font-size: 11px; padding: 8px 16px; }
+
 /* ---- Logros ---- */
 .logro-card {
   display: flex; align-items: center; gap: 12px;

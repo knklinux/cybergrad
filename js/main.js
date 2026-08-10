@@ -10,7 +10,7 @@ import { FX } from "./fx.js";
 import { GAME } from "./state.js";
 import { CASOS, siguienteCaso } from "./casos.js";
 import { siguienteCasoRT } from "./rt-casos.js";
-import { hayGuardado, cargar } from "./save.js";
+import { listarGuardados, cargar, nuevaPartida } from "./save.js";
 
 const BANNER = [
   "  ██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ",
@@ -57,10 +57,6 @@ function procesar(linea) {
 ui.setNuevoCasoHandler((caso, opciones) => engine.iniciarCaso(caso, opciones));
 
 // ---- Arranque ----
-// Si hay partida guardada, se restaura y se continúa sin onboarding
-const tieneGuardado = hayGuardado();
-if (tieneGuardado) cargar();
-
 ui.actualizarPerfil();
 term.print(BANNER, "t-out-hi");
 term.print("");
@@ -68,7 +64,26 @@ term.print("Simulador de carrera SOC — aprende ciberseguridad defensiva resolv
 term.print("© CYBERGRAD · Uso educativo · Personajes y empresas ficticios", "t-out-dim");
 term.print("");
 
-if (tieneGuardado) {
+// Si hay partidas guardadas se muestra el selector (continuar / empezar de cero);
+// si no, se entra directo al onboarding de una partida nueva.
+const guardados = listarGuardados();
+if (guardados.length > 0) {
+  ui.mostrarSelectorPartida(guardados, {
+    onContinuar: (slot) => {
+      cargar(slot);
+      continuarPartida();
+    },
+    onNueva: () => {
+      nuevaPartida();
+      empezarNueva();
+    },
+  });
+} else {
+  empezarNueva();
+}
+
+// Retoma una partida existente: sin onboarding, con bienvenida y el caso pendiente
+function continuarPartida() {
   term.printSec(`Bienvenido de vuelta, ${GAME.nombre}. Progreso restaurado.`);
   term.printInfo(`${GAME.xp} XP (SOC) · ${GAME.rtXp} XP (Red Team) · ${GAME.puntos} puntos · ${GAME.casosResueltos + GAME.rtCasosResueltos} casos resueltos`);
   term.print("");
@@ -79,7 +94,10 @@ if (tieneGuardado) {
     term.print("Ambas campañas completadas. Abre Carrera para repasar tu trayectoria o reiniciar el progreso.", "t-out-dim");
     ui.mostrarCarrera();
   }
-} else {
+}
+
+// Partida nueva desde cero: onboarding y primer caso
+function empezarNueva() {
   ui.onboarding((nombre) => {
     term.printSec(`Bienvenido al turno, ${nombre}.`);
     term.printSec("Estado del SOC: monitorizando 4.200 endpoints · 1 incidente pendiente de asignación.");

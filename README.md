@@ -68,7 +68,9 @@ Cada caso tiene **SLA** (tiempo real), **eventos en vivo** (el ataque avanza mie
 
 El progreso red team es independiente del blue team: XP, rango y campaña propios.
 
-**💾 Tu progreso se guarda automáticamente** en el navegador (localStorage): nombre, XP de ambas carreras, puntos, casos y pentests resueltos, lecciones vistas y **prácticas de becario superadas** (se marcan con ✔ en el selector). Al volver, el juego te recibe con "Bienvenido de vuelta" y te asigna el siguiente caso pendiente. Puedes **reiniciar el progreso** desde el panel de Carrera (botón 🎖 → sección ♻): **🛡️ SOLO CAMPAÑA SOC**, **🎯 SOLO RED TEAM** o **🔄 TODO**, cada uno con doble confirmación. Reiniciar una campaña conserva la otra intacta (nombre, puntos, becario y logros que sigan vigentes se mantienen; los logros de la campaña reiniciada se retiran). El caso en curso no se guarda a medias: el progreso se consolida al cerrar cada caso.
+**💾 Tu progreso se guarda automáticamente** en el navegador (localStorage): nombre, XP de ambas carreras, puntos, casos y pentests resueltos, lecciones vistas y **prácticas de becario superadas** (se marcan con ✔ en el selector).
+
+**🎮 Selector de partida al arranque**: si hay partidas guardadas, al abrir el juego se muestra un selector con cada partida (nombre, XP, casos y logros) y dos caminos: **▶ CONTINUAR** (cualquiera de las partidas, con "Bienvenido de vuelta" y el siguiente caso pendiente) o **✨ EMPEZAR DE CERO** (partida nueva **sin borrar las existentes**: se guarda en la segunda ranura; si ambas están llenas, sustituye a la menos reciente en cuanto hagas tu primer progreso). Puedes **reiniciar el progreso** desde el panel de Carrera (botón 🎖 → sección ♻): **🛡️ SOLO CAMPAÑA SOC**, **🎯 SOLO RED TEAM** o **🔄 TODO**, cada uno con doble confirmación. Reiniciar una campaña conserva la otra intacta (nombre, puntos, becario y logros que sigan vigentes se mantienen; los logros de la campaña reiniciada se retiran). El caso en curso no se guarda a medias: el progreso se consolida al cerrar cada caso.
 
 **🏅 Sistema de logros e insignias**: se desbloquean automáticamente por **rango** (Analista SOC, Cazador de amenazas, Jefe de CSIRT, CISO…) y por **hitos** (primer caso, primer pentest, calificación S+, caso sin pistas, campañas completadas, prácticas de becario…). Al ganar uno aparece una **notificación dorada** en pantalla y el botón **🏅 Logros** del HUD muestra un **contador** con los desbloqueados; el panel lista los logros ganados (✔) y los pendientes (🔒). Todo se persiste con tu guardado y se limpia con el reinicio de progreso.
 
@@ -158,7 +160,7 @@ cybergrad/
     ├── filesystem.js     # Sistema de archivos virtual del caso
     ├── hash.js           # MD5 y SHA-256 en JS puro (sin dependencias)
     ├── state.js          # XP, rangos y progresión (blue team y red team)
-    ├── save.js           # Persistencia del progreso con localStorage + reinicio por campaña
+    ├── save.js           # Persistencia del progreso con localStorage: 2 ranuras de partida + reinicio por campaña
     ├── logros.js         # Sistema de logros e insignias (rango + hitos)
     ├── ui.js             # HUD, modales, splash, lecciones, laboratorio, tutorial, panel RT, logros
     ├── fx.js             # Motor gráfico canvas (red, partículas, radar, tema por ataque)

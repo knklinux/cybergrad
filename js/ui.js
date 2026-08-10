@@ -3,7 +3,7 @@
 // ============================================================
 
 import { GAME, RANKS, RT_RANKS, estadoRango, estadoRangoRT } from "./state.js";
-import { guardar, borrarGuardado, reiniciarCampania } from "./save.js";
+import { guardar, borrarGuardado, reiniciarCampania, slotActual } from "./save.js";
 import { CASOS, numCaso, siguienteCaso } from "./casos.js";
 import { RT_CASOS, numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { GLOSARIO } from "./glosario.js";
@@ -155,6 +155,44 @@ export class UI {
       </div>`;
     this.setAcciones({
       "aceptar-briefing": () => { this.cerrarModal(); cb(); },
+    });
+    this.abrirModal(html);
+  }
+
+  // ---------- Selector de partida (arranque con guardado) ----------
+  mostrarSelectorPartida(guardados, { onContinuar, onNueva }) {
+    const card = (g) => `
+      <div class="partida-card">
+        <div class="p-num">PARTIDA ${g.slot}</div>
+        <div class="p-nombre">${g.datos.nombre || "Analista"}</div>
+        <div class="p-meta">&#128737;&#65039; ${g.datos.xp || 0} XP SOC · ${g.datos.casosResueltos || 0}/6 casos</div>
+        <div class="p-meta">&#127919; ${g.datos.rtXp || 0} XP Red Team · ${g.datos.rtCasosResueltos || 0}/6 pentests</div>
+        <div class="p-meta">&#127941; ${(g.datos.logros || []).length} logros · &#11088; ${g.datos.puntos || 0} puntos</div>
+        <button class="btn-primary" data-action="continuar-${g.slot}">&#9654; CONTINUAR PARTIDA ${g.slot}</button>
+      </div>`;
+    const html = `
+      <div class="modal-title">&#127918; SELECTOR DE PARTIDA</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px">
+        Tienes <b>${guardados.length} ${guardados.length === 1 ? "partida guardada" : "partidas guardadas"}</b> en este navegador.
+        ¿Continuamos donde lo dejaste o empiezas una aventura nueva?
+      </div>
+      <div class="partida-grid">${guardados.map(card).join("")}</div>
+      <div class="modal-section">
+        <h3>✨ EMPEZAR DE CERO</h3>
+        <div class="modal-text" style="font-size:11.5px;color:#5f8a6a;margin-bottom:8px">
+          Crea una partida nueva <b>sin borrar las existentes</b>: se guardará en un hueco libre.
+          Si no hay hueco, sustituirá a la partida menos reciente en cuanto hagas tu primer progreso.
+        </div>
+        <button class="btn-secondary" data-action="nueva-partida">✨ EMPEZAR DE CERO</button>
+      </div>
+      <div class="jimmy-habla">Un buen analista no borra evidencias: conserva y elige. — Jimmy</div>
+      <div class="btn-row"><button class="btn-secondary" data-action="cerrar-selector">CERRAR</button></div>`;
+    this.setAcciones({
+      "continuar-1": () => { this.cerrarModal(); onContinuar(1); },
+      "continuar-2": () => { this.cerrarModal(); onContinuar(2); },
+      "nueva-partida": () => { this.cerrarModal(); onNueva(); },
+      "cerrar-selector": () => this.cerrarModal(),
     });
     this.abrirModal(html);
   }
@@ -922,7 +960,7 @@ ${acciones}
         <h3>🎓 PRÁCTICAS DE BECARIO</h3>
         <div class="modal-text" style="font-size:12.5px">${becHechas || "Ninguna todavía. Abre el modo Becario para empezar."}</div>
       </div>
-      <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">💾 Progreso guardado automáticamente en este navegador (localStorage).</div>
+      <div class="modal-text" style="font-size:11px;color:#5f8a6a;margin-top:6px">💾 Progreso guardado automáticamente en este navegador (localStorage) · Partida ${slotActual()}.</div>
       <div class="modal-section">
         <h3>♻ REINICIAR PROGRESO</h3>
         <div class="modal-text" style="font-size:11.5px;color:#5f8a6a;margin-bottom:8px">
