@@ -58,7 +58,7 @@ ui.setNuevoCasoHandler((caso, opciones) => engine.iniciarCaso(caso, opciones));
 
 // ---- Arranque ----
 ui.actualizarPerfil();
-term.print(BANNER, "t-out-hi");
+term.print(BANNER, "t-out-hi t-banner");
 term.print("");
 term.print("Simulador de carrera SOC — aprende ciberseguridad defensiva resolviendo incidentes realistas.", "t-out-info");
 term.print("© CYBERGRAD · Uso educativo · Personajes y empresas ficticios", "t-out-dim");
