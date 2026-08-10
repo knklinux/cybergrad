@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# ============================================================
+#  Gitleaks pre-commit hook — bloquea secretos en lo staged
+#  Escanea los cambios preparados con Gitleaks y aborta el
+#  commit si detecta un secreto, ANTES de que llegue a GitHub.
+#
+#  - Si gitleaks no está instalado, se descarga la release
+#    oficial a $HOME/.cache/gitleaks/ (bootstrap automático).
+#  - Variable GITLEAKS_VERSION para fijar la versión.
+#  - Salto puntual (solo si sabes lo que haces):
+#        git commit --no-verify
+# ============================================================
+set -u
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null | tr -d '\r\n')"
+[ -n "$ROOT" ] || ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT" || { echo "  ✘ [gitleaks] No se pudo resolver el root del repo"; exit 1; }
+
+GITLEAKS=""
+if command -v gitleaks >/dev/null 2>&1; then
+    GITLEAKS="$(command -v gitleaks)"
+else
+    CACHE="${GITLEAKS_CACHE:-$HOME/.cache/gitleaks}"
+    for c in "$CACHE/gitleaks" "$CACHE/gitleaks.exe"; do
+        [ -x "$c" ] && GITLEAKS="$c" && break
+    done
+    if [ -z "$GITLEAKS" ]; then
+        echo ""
+        echo "  🔒 GITLEAKS no está instalado — descargando release oficial a $CACHE/"
+        mkdir -p "$CACHE" || { echo "  ✘ No se pudo crear $CACHE"; exit 1; }
+        VER="${GITLEAKS_VERSION:-v8.30.1}"
+        OS="$(uname -s)"
+        case "$OS" in
+            MINGW*|MSYS*|CYGWIN*) OS="windows" ;;
+            Linux) OS="linux" ;;
+            Darwin) OS="darwin" ;;
+            *) echo "  ✘ SO no soportado ($OS): instala gitleaks manualmente."; exit 0 ;;
+        esac
+        ARCH="$(uname -m)"
+        case "$ARCH" in
+            x86_64|amd64) ARCH="x64" ;;
+            aarch64|arm64) ARCH="arm64" ;;
+            *) echo "  ✘ Arquitectura no soportada ($ARCH): instala gitleaks manualmente."; exit 0 ;;
+        esac
+        EXT="tar.gz"
+        [ "$OS" = "windows" ] && EXT="zip"
+        URL="https://github.com/gitleaks/gitleaks/releases/download/$VER/gitleaks_${VER#v}_${OS}_${ARCH}.$EXT"
+        TMP="$(mktemp -d 2>/dev/null || echo "$CACHE/.tmp")"
+        if command -v curl >/dev/null 2>&1 && curl -fsSL "$URL" -o "$TMP/gitleaks.$EXT"; then
+            if [ "$OS" = "windows" ]; then
+                if command -v unzip >/dev/null 2>&1; then
+                    unzip -o -j "$TMP/gitleaks.zip" -d "$CACHE" "gitleaks.exe" >/dev/null 2>&1
+                fi
+            else
+                tar -xzf "$TMP/gitleaks.tar.gz" -C "$CACHE" gitleaks 2>/dev/null
+            fi
+            rm -rf "$TMP"
+            for c in "$CACHE/gitleaks" "$CACHE/gitleaks.exe"; do
+                [ -x "$c" ] && GITLEAKS="$c" && break
+            done
+        fi
+        if [ -z "$GITLEAKS" ]; then
+            echo "  ✘ No se pudo descargar gitleaks. Se omite el chequeo en este commit."
+            echo "    Instálalo manualmente: https://github.com/gitleaks/gitleaks/releases"
+            exit 0
+        fi
+    fi
+fi
+
+echo ""
+echo "  🔒 GITLEAKS: escaneando cambios preparados…"
+if ! "$GITLEAKS" protect --staged --redact --verbose; then
+    echo ""
+    echo "  ✘✘ GITLEAKS: se detectaron posibles secretos en los cambios preparados."
+    echo "     Elimina o rota los secretos y vuelve a intentar el commit."
+    echo "     (Falso positivo: añade la regla a .gitleaks.toml en allowlist.)"
+    exit 1
+fi
+echo "  ✔ GITLEAKS: sin secretos en los cambios preparados."
+exit 0
