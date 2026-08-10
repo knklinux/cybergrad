@@ -30,6 +30,9 @@ jobs:
       - name: Test unitario esc() — escape HTML (XSS)
         run: npm run test:unit
 
+      - name: Test serve.js (URL malformada → 400 sin caerse)
+        run: npm run test:serve
+
       - name: Smoke test (carga sin errores de consola)
         run: npm run test:smoke
 

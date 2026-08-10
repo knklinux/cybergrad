@@ -10,8 +10,9 @@
     "lint": "eslint js serve.js ci",
     "test:smoke": "node ci/smoke.mjs",
     "test:unit": "node ci/test-esc.mjs",
+    "test:serve": "node ci/serve-test.mjs",
     "test:xss": "node ci/xss-test.mjs",
-    "test": "npm run check && npm run lint && npm run test:unit && npm run test:smoke && npm run test:xss"
+    "test": "npm run check && npm run lint && npm run test:unit && npm run test:serve && npm run test:smoke && npm run test:xss"
   },
   "devDependencies": {
     "eslint": "^9.17.0",
