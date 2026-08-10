@@ -1,0 +1,10 @@
+# Dependencias y logs
+node_modules/
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Foto original de móvil (el juego usa el avatar recortado assets/jimmy-avatar.jpg)
+assets/jimmy.jpg

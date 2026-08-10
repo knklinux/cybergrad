@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYBERGRAD — Simulador de Carrera SOC</title>
+  <meta name="description" content="Simulador de ciberseguridad tipo videojuego: empieza como analista junior, investiga incidentes realistas con una terminal funcional y asciende hasta jefe de CSIRT. Dirigido por Jimmy." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- Fondo animado (motor gráfico) -->
+  <canvas id="bg-fx" aria-hidden="true"></canvas>
+  <div id="vignette" aria-hidden="true"></div>
+
+  <div id="app">
+    <!-- Barra superior -->
+    <header id="topbar">
+      <div class="brand">
+        <span class="brand-logo">&#129513;</span>
+        <span class="brand-name">CYBERGRAD</span>
+        <span class="brand-sub">SIMULADOR DE CARRERA SOC</span>
+      </div>
+      <div class="topbar-center">
+        <span id="empresa">ACME Corp</span>
+        <span class="sep">|</span>
+        <span id="reloj">00:00:00</span>
+      </div>
+      <div class="topbar-right">
+        <button id="btn-lab" class="btn-ghost" title="Modo Laboratorio: práctica libre, sin SLA ni penalizaciones">&#128300; Laboratorio</button>
+        <button id="btn-tutorial" class="btn-ghost" title="Mini tutorial para ponerte en contexto">&#129517; Tutorial</button>
+        <button id="btn-carrera" class="btn-ghost" title="Ver tu carrera profesional">&#127891; Carrera</button>
+        <button id="btn-glosario" class="btn-ghost" title="Glosario de términos">&#128214; Glosario</button>
+        <button id="btn-ayuda" class="btn-ghost" title="Ayuda">&#10067;</button>
+      </div>
+    </header>
+
+    <!-- Cuerpo -->
+    <main id="main">
+      <!-- Terminal -->
+      <section id="terminal-wrap">
+        <div id="terminal" tabindex="0" aria-label="Terminal de trabajo"></div>
+      </section>
+
+      <!-- Panel derecho: HUD -->
+      <aside id="hud">
+        <div class="panel" id="panel-perfil">
+          <div class="panel-title">&#128100; ANALISTA</div>
+          <div class="perfil-nombre" id="perfil-nombre">Analista</div>
+          <div class="perfil-rango" id="perfil-rango">Analista Junior</div>
+          <div class="xp-row">
+            <span class="xp-label">XP</span>
+            <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+            <span class="xp-num" id="xp-num">0 / 450</span>
+          </div>
+          <div class="perfil-extra">
+            <span>&#11088; Puntos: <b id="puntos">0</b></span>
+            <span>Casos: <b id="casos-resueltos">0</b>/6</span>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-jimmy">
+          <div class="panel-title">&#129302; DIRECTOR DEL SOC</div>
+          <div class="jimmy-mini">
+            <div class="holo-avatar holo-sm">
+              <img src="assets/jimmy-avatar.jpg" alt="Jimmy" />
+            </div>
+            <div class="jimmy-mini-txt">
+              <div class="jimmy-mini-nombre">Jimmy</div>
+              <div class="jimmy-mini-msg" id="jimmy-msg">Coordinando el SOC. Todo en calma… por ahora.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-caso">
+          <div class="panel-title">&#128220; CASO ACTUAL</div>
+          <div id="caso-info">
+            <div class="caso-vacio">Sin caso asignado.<br/>Jimmy te asignará el primero.</div>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-sla">
+          <div class="panel-title">&#9202; SLA</div>
+          <div class="sla-timer" id="sla-timer">--:--</div>
+          <div class="sla-bar"><div class="sla-fill" id="sla-fill"></div></div>
+          <div id="sla-mode" class="sla-mode"></div>
+        </div>
+
+        <div class="panel" id="panel-eventos">
+          <div class="panel-title">&#128276; FLUJO DE EVENTOS</div>
+          <div id="feed"></div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Modal genérico -->
+    <div id="modal-overlay" class="hidden">
+      <div id="modal-box">
+        <div id="modal-content"></div>
+      </div>
+    </div>
+
+    <!-- Splash de incidente -->
+    <div id="splash" class="hidden" aria-hidden="true">
+      <div class="splash-inner">
+        <div class="splash-tag" id="splash-tag">ALERTA DE SEGURIDAD</div>
+        <div class="splash-titulo" id="splash-titulo"></div>
+        <div class="splash-sev" id="splash-sev"></div>
+        <div class="splash-line"></div>
+      </div>
+    </div>
+
+    <!-- Notificaciones -->
+    <div id="notif-wrap"></div>
+  </div>
+
+  <script type="module" src="js/main.js?v=12"></script>
+</body>
+</html>

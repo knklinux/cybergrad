@@ -1,0 +1,96 @@
+// ============================================================
+// state.js — Estado global del juego, rangos, XP y puntuación
+// ============================================================
+
+export const RANKS = [
+  {
+    id: 0, nombre: "Analista Junior", icono: "🌱",
+    xpRequerida: 0,
+    desc: "Primera línea del SOC. Filtra alertas, lee correos y tria incidentes básicos.",
+  },
+  {
+    id: 1, nombre: "Analista SOC", icono: "🔍",
+    xpRequerida: 450,
+    desc: "Investiga incidentes reales, contiene amenazas y redacta informes.",
+  },
+  {
+    id: 2, nombre: "Analista Senior", icono: "🛡️",
+    xpRequerida: 1100,
+    desc: "Caza amenazas avanzadas, responde a intrusiones y coordina la contención.",
+  },
+  {
+    id: 3, nombre: "Líder de Equipo", icono: "🎖️",
+    xpRequerida: 1600,
+    desc: "Dirige el CSIRT, prioriza la respuesta y toma decisiones en crisis.",
+  },
+  {
+    id: 4, nombre: "Jefe de CSIRT", icono: "🏆",
+    xpRequerida: 2400,
+    desc: "Responsable de la ciberseguridad de la organización. Fin de la campaña.",
+  },
+];
+
+export const RANK_MAX = RANKS.length - 1;
+
+export function rangoActual(xp) {
+  let r = 0;
+  for (let i = 0; i < RANKS.length; i++) {
+    if (xp >= RANKS[i].xpRequerida) r = i;
+  }
+  return r;
+}
+
+export function xpNecesariaParaSiguiente(xp) {
+  const r = rangoActual(xp);
+  if (r >= RANK_MAX) return 0;
+  return RANKS[r + 1].xpRequerida - xp;
+}
+
+export const GAME = {
+  nombre: "Analista",
+  xp: 0,
+  puntos: 0,
+  casosResueltos: 0,
+  casosCompletados: [],       // ids de casos completados
+  lecciones: [],              // ids de lecciones desbloqueadas
+  casoActual: null,           // id del caso en curso
+  casoIniciadoEn: 0,          // timestamp real de inicio
+  reloj: 0,                   // segundos de reloj del juego (avanza en tiempo real)
+  acciones: [],               // registro de acciones del caso actual
+  pausado: false,
+};
+
+export function estadoRango() {
+  const idx = rangoActual(GAME.xp);
+  return { indice: idx, ...RANKS[idx] };
+}
+
+export function addXP(n) {
+  const antes = estadoRango();
+  GAME.xp = Math.max(0, GAME.xp + n);
+  const despues = estadoRango();
+  if (despues.indice > antes.indice) {
+    return { ascendido: true, desde: antes, hasta: despues };
+  }
+  return { ascendido: false };
+}
+
+export function addPuntos(n) {
+  GAME.puntos = Math.max(0, GAME.puntos + n);
+}
+
+// Registro de acciones del caso actual (para el informe y la puntuación)
+export function registrarAccion(tipo, detalle, ok, puntos) {
+  GAME.acciones.push({
+    t: tipo,
+    detalle,
+    ok,
+    puntos,
+    tiempo: GAME.reloj,
+  });
+  if (puntos) addPuntos(puntos);
+}
+
+export function resetAccionesCaso() {
+  GAME.acciones = [];
+}
