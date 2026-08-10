@@ -7,6 +7,11 @@
   <meta name="description" content="Aprende ciberseguridad defensiva jugando: investiga incidentes realistas desde una terminal, responde ataques y asciende de analista junior a jefe de CSIRT. Con tutorial guiado y Jimmy, tu director de SOC sintético." />
   <meta name="author" content="knklinux" />
   <meta name="theme-color" content="#050d0a" />
+  <!-- Content-Security-Policy: capa de defensa en profundidad contra XSS.
+       Sin scripts inline (solo main.js y el bloque ld+json de datos) ni eval,
+       así que script-src 'self' basta. Los estilos inline del juego y las
+       fuentes de Google se permiten explícitamente. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" />
   <link rel="canonical" href="https://knklinux.github.io/cybergrad/" />
 
   <!-- Open Graph (tarjeta para LinkedIn, Facebook, WhatsApp...) -->
@@ -108,7 +113,7 @@
           </div>
           <div class="perfil-extra">
             <span>&#11088; Puntos: <b id="puntos">0</b></span>
-            <span>Casos: <b id="casos-resueltos">0</b>/6</span>
+            <span>Casos: <b id="casos-resueltos">0</b>/<span id="casos-total">9</span></span>
           </div>
         </div>
 

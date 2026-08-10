@@ -26,7 +26,16 @@ const MIME = {
 };
 
 const server = http.createServer((req, res) => {
-  const urlPath = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  // decodeURIComponent lanza URIError con % malformado (p. ej. /%zz): si no
+  // se captura, la excepción tumba el servidor con cualquier GET malicioso.
+  let urlPath;
+  try {
+    urlPath = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  } catch {
+    res.writeHead(400);
+    res.end("Bad request");
+    return;
+  }
   let filePath = path.join(ROOT, urlPath === "/" ? "index.html" : urlPath);
 
   // Evita salir del directorio del proyecto

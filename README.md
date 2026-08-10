@@ -14,7 +14,7 @@ Cada turno lo abre **Jimmy**, el director del SOC y tu socio sintético: te reci
 
 CYBERGRAD tiene **dos campañas completas**:
 
-- **🛡️ Blue team (SOC):** 6 casos basados en ataques reales (phishing, ransomware, BEC, fuerza bruta, exfiltración por túnel DNS…). El incidente llega, tú investigas con comandos reales y respondes.
+- **🛡️ Blue team (SOC):** 9 casos basados en ataques reales (phishing, ransomware, BEC, fuerza bruta, exfiltración por túnel DNS, **APT con beaconing y movimiento lateral**, **insider que exfiltra RRHH**, **spear phishing avanzado con robo de sesión**…). El incidente llega, tú investigas con comandos reales y respondes.
 - **🎯 Red team:** 6 pentests ofensivos con contrato firmado. Enumeras, ganas acceso, escalas privilegios y exfiltas datos con herramientas reales simuladas, y entregas un **informe de pentest** ejecutivo.
 
 Cada caso de ambas campañas termina con una **lección** explicando la anatomía del ataque, cómo detectarlo, cómo responder y su mapeo a **MITRE ATT&CK**.
@@ -96,7 +96,7 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 
 ## 🔬 Modo Laboratorio
 
-El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del laboratorio que plantea Jimmy): elige cualquiera de los 6 casos y repítelo tantas veces como quieras.
+El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del laboratorio que plantea Jimmy): elige cualquiera de los 9 casos y repítelo tantas veces como quieras.
 
 - **Sin SLA**, **sin penalizaciones** y **pistas gratis**.
 - La calificación y la lección se muestran igual, pero **no suma XP ni avanza la campaña**: es para experimentar sin consecuencias.

@@ -27,8 +27,14 @@ jobs:
       - name: Instalar navegador Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
+      - name: Test unitario esc() — escape HTML (XSS)
+        run: npm run test:unit
+
       - name: Smoke test (carga sin errores de consola)
         run: npm run test:smoke
+
+      - name: Test XSS E2E (nombre malicioso nunca se ejecuta)
+        run: npm run test:xss
 
   gitleaks:
     runs-on: ubuntu-latest

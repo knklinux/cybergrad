@@ -10,8 +10,11 @@ import caso3 from "./casos/caso-03-falso-positivo.js";
 import caso4 from "./casos/caso-04-ransomware.js";
 import caso5 from "./casos/caso-05-fuerza-bruta.js";
 import caso6 from "./casos/caso-06-dns-exfil.js";
+import caso7 from "./casos/caso-07-apt.js";
+import caso8 from "./casos/caso-08-insider.js";
+import caso9 from "./casos/caso-09-phishing-avanzado.js";
 
-export const CASOS = [caso1, caso2, caso3, caso4, caso5, caso6];
+export const CASOS = [caso1, caso2, caso3, caso4, caso5, caso6, caso7, caso8, caso9];
 
 export function casoPorId(id) {
   return CASOS.find((c) => c.id === id) || null;

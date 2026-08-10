@@ -68,11 +68,11 @@ export function authLogFuerzaBruta(opts = {}) {
 }
 
 // Genera un log de DNS con subdominios largos (posible túnel DNS)
-export function dnsLogTunel(dominio, consultas = 24) {
+export function dnsLogTunel(dominio, consultas = 24, cliente = "10.1.3.42") {
   const lineas = [];
   for (let i = 0; i < consultas; i++) {
     const hex = Array.from({ length: 24 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    lineas.push(`Feb 14 02:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")} dns01 queries: info: client 10.1.3.42#53000: query: ${hex}.${dominio} IN TXT + (10.0.0.53)`);
+    lineas.push(`Feb 14 02:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")} dns01 queries: info: client ${cliente}#53000: query: ${hex}.${dominio} IN TXT + (10.0.0.53)`);
   }
   return lineas.join("\n");
 }

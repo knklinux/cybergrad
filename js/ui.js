@@ -18,6 +18,14 @@ import {
 const $ = (id) => document.getElementById(id);
 const alea = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
+// Escapa texto de usuario (p. ej. el nombre del analista, persistido en
+// localStorage) antes de interpolar en HTML. Sin esto, un nombre como
+// <img src=x onerror=...> se ejecutaría al renderizar modales (XSS).
+// Exportado para tests unitarios (ci/test-esc.mjs): la función es pura.
+export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+));
+
 export class UI {
   constructor(term, fx) {
     this.term = term;
@@ -209,9 +217,9 @@ export class UI {
     const card = (g) => `
       <div class="partida-card">
         <div class="p-num">PARTIDA ${g.slot}</div>
-        <div class="p-nombre">${g.datos.nombre || "Analista"}</div>
-        <div class="p-meta">&#128737;&#65039; ${g.datos.xp || 0} XP SOC · ${g.datos.casosResueltos || 0}/6 casos</div>
-        <div class="p-meta">&#127919; ${g.datos.rtXp || 0} XP Red Team · ${g.datos.rtCasosResueltos || 0}/6 pentests</div>
+        <div class="p-nombre">${esc(g.datos.nombre || "Analista")}</div>
+        <div class="p-meta">&#128737;&#65039; ${g.datos.xp || 0} XP SOC · ${g.datos.casosResueltos || 0}/${CASOS.length} casos</div>
+        <div class="p-meta">&#127919; ${g.datos.rtXp || 0} XP Red Team · ${g.datos.rtCasosResueltos || 0}/${RT_CASOS.length} pentests</div>
         <div class="p-meta">&#127941; ${(g.datos.logros || []).length} logros · &#11088; ${g.datos.puntos || 0} puntos</div>
         <button class="btn-primary" data-action="continuar-${g.slot}">&#9654; CONTINUAR PARTIDA ${g.slot}</button>
       </div>`;
@@ -472,6 +480,8 @@ export class UI {
     }
     $("puntos").textContent = GAME.puntos;
     $("casos-resueltos").textContent = esRT ? GAME.rtCasosResueltos : GAME.casosResueltos;
+    const casosTotal = $("casos-total");
+    if (casosTotal) casosTotal.textContent = esRT ? RT_CASOS.length : CASOS.length;
     this.actualizarContadorLogros();
   }
 
@@ -569,7 +579,7 @@ export class UI {
       ? `INFORME DE PENTEST — ENGAGEMENT #RT-${String(numCasoRT(caso.id)).padStart(2, "0")}
 ============================================
 Título: ${caso.titulo}
-Pentester: ${GAME.nombre} (${r.nombre})
+Pentester: ${esc(GAME.nombre)} (${r.nombre})
 Fecha: ${new Date().toLocaleString("es-ES")}
 Alcance: ${Object.keys(caso.red?.hosts || {}).join(", ") || "n/d"} | SLA: ${caso.sla}s
 
@@ -593,7 +603,7 @@ Alcance: ${Object.keys(caso.red?.hosts || {}).join(", ") || "n/d"} | SLA: ${caso
       : `INFORME DE INCIDENTE — CASO #${numCaso(caso.id)}
 ============================================
 Título: ${caso.titulo}
-Analista: ${GAME.nombre} (${r.nombre})
+Analista: ${esc(GAME.nombre)} (${r.nombre})
 Fecha: ${new Date().toLocaleString("es-ES")}
 Severidad: ${caso.severidad} | SLA: ${caso.sla}s
 
@@ -740,7 +750,7 @@ ${acciones}
         Has resuelto los <b>${CASOS.length} casos</b> de la campaña y has llegado a
         <b>${r.icono} ${r.nombre}</b> con ${GAME.xp} XP y ${GAME.puntos} puntos.
         <br/><br/>
-        <b>${GAME.nombre}</b>, esto es solo el principio. En el mundo real, los incidentes no
+        <b>${esc(GAME.nombre)}</b>, esto es solo el principio. En el mundo real, los incidentes no
         tienen pistas ni calificaciones: tienen víctimas reales. Cada lección de estos casos
         es una habilidad que te llevas al trabajo.
       </div>
@@ -877,7 +887,7 @@ ${acciones}
         Has completado los <b>6 pentests</b> autorizados y has llegado a
         <b>${r.icono} ${r.nombre}</b> con ${GAME.rtXp} XP y ${GAME.puntos} puntos.
         <br/><br/>
-        <b>${GAME.nombre}</b>, el informe que has aprendido a entregar es la diferencia
+        <b>${esc(GAME.nombre)}</b>, el informe que has aprendido a entregar es la diferencia
         entre una empresa que descubre sus fallos por ti o por un atacante real.
       </div>
       <div class="jimmy-habla">El atacante real no pide permiso ni avisa. Lo que has entrenado aquí es lo que separa una brecha de un susto. — Jimmy</div>
@@ -998,8 +1008,8 @@ ${acciones}
 | Puntos | ${GAME.puntos} |
 | Rango SOC | ${rSOC.icono} ${rSOC.nombre} |
 | Rango Red Team | ${rRT.icono} ${rRT.nombre} |
-| Casos SOC | ${GAME.casosResueltos} / 6 |
-| Pentests | ${GAME.rtCasosResueltos} / 6 |
+| Casos SOC | ${GAME.casosResueltos} / ${CASOS.length} |
+| Pentests | ${GAME.rtCasosResueltos} / ${RT_CASOS.length} |
 | Logros | ${logs.length} / ${totalLogros()} |
 
 ## ✅ Casos completados (SOC)
@@ -1035,7 +1045,10 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
   }
 
   _nombreBase() {
-    return `cybergrad-carrera-${GAME.nombre.toLowerCase().replace(/\s+/g, "-")}`;
+    // Solo [a-z0-9-] en el nombre de archivo: un nombre con /, : o \\ daría
+    // un download raro o ambiguo (el navegador lo sanea, pero por higiene).
+    const limpio = GAME.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return `cybergrad-carrera-${limpio || "analista"}`;
   }
 
   exportarResumen() {
@@ -1100,11 +1113,11 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
     let mensaje;
     if (GAME.casosResueltos === 0 && GAME.rtCasosResueltos === 0) {
       // Aún no hay casos completados: resumen corto de presentación
-      mensaje = `Acabo de crear CYBERGRAD: un simulador gratuito para aprender ciberseguridad jugando desde el navegador, con terminal funcional, 12 casos (SOC + red team), modo becario guiado y lecciones MITRE ATT&CK. ${urlJuego}`;
+      mensaje = `Acabo de crear CYBERGRAD: un simulador gratuito para aprender ciberseguridad jugando desde el navegador, con terminal funcional, ${CASOS.length + RT_CASOS.length} casos (SOC + red team), modo becario guiado y lecciones MITRE ATT&CK. ${urlJuego}`;
     } else {
       const rSOC = estadoRango();
       const rRT = estadoRangoRT();
-      let progreso = `Acabo de completar ${GAME.casosResueltos}/6 casos SOC (${rSOC.nombre}) y ${GAME.rtCasosResueltos}/6 pentests red team (${rRT.nombre}) en CYBERGRAD: ${GAME.xp} XP SOC · ${GAME.rtXp} XP RT`;
+      let progreso = `Acabo de completar ${GAME.casosResueltos}/${CASOS.length} casos SOC (${rSOC.nombre}) y ${GAME.rtCasosResueltos}/${RT_CASOS.length} pentests red team (${rRT.nombre}) en CYBERGRAD: ${GAME.xp} XP SOC · ${GAME.rtXp} XP RT`;
       if (mejor === "S+" || mejor === "S") progreso += ` · mejor calificación ${mejor}`;
       if (nLogros > 0) progreso += ` · ${nLogros} logros desbloqueados`;
       mensaje = `${progreso}. Un simulador gratuito para aprender ciberseguridad jugando desde el navegador. ${urlJuego}`;
@@ -1171,7 +1184,7 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
     const html = `
       <div class="modal-title">🎖 ${esRT ? "TU CARRERA EN RED TEAM" : "TU CARRERA EN EL SOC"}</div>
       <div class="modal-text" style="margin-bottom:8px">
-        <b>${GAME.nombre}</b> · ${xp} XP · ${GAME.puntos} puntos · ${resueltos}/${total} ${esRT ? "pentests" : "casos"} resueltos
+        <b>${esc(GAME.nombre)}</b> · ${xp} XP · ${GAME.puntos} puntos · ${resueltos}/${total} ${esRT ? "pentests" : "casos"} resueltos
       </div>
       <div class="career-path">${filas}</div>
       <div class="modal-section">

@@ -42,3 +42,25 @@ Este repositorio participa del esquema de protección de secretos de la cuenta
 El secret scanning nativo de GitHub en repos **privados** requiere GitHub Advanced
 Security (plan de pago); en los públicos es gratis. Donde no está disponible, la
 cobertura la dan las capas 1, 2 y 4 (hook + CI + allowlist).
+
+## Cabeceras HTTP / CSP
+
+Hay dos capas de Content-Security-Policy, según el host:
+
+| Capa | Dónde actúa | Estado |
+|------|-------------|--------|
+| **Meta CSP** | `index.html` — GitHub Pages | ✅ efectiva (ver nota) |
+| **`_headers`** | Cloudflare Pages / Netlify | ✅ lista (ver nota) |
+
+- **GitHub Pages ignora `_headers`**: el fichero es una convención de Netlify y
+  Cloudflare Pages. El staff de GitHub lo confirma en la discusión oficial
+  (orgs/community #54257 y #157852): no hay mecanismo de cabeceras propias en
+  Pages; la `<meta http-equiv="Content-Security-Policy">` es el único camino.
+- En GitHub Pages la capa efectiva es la **meta CSP** de `index.html`. Cubre
+  `default-src/script-src/style-src/font-src/img-src/connect-src/base-uri/form-action/object-src`.
+  Único matiz: `frame-ancestors` **no funciona en `<meta>`** (el navegador lo ignora).
+- El fichero `_headers` de la raíz activa la **CSP completa como cabecera HTTP**
+  (incluido `frame-ancestors 'none'` + `X-Frame-Options: DENY` + `nosniff` +
+  `Referrer-Policy`) si se despliega a **Cloudflare Pages o Netlify** — mismos
+  ficheros estáticos, sin tocar nada más. Si algún día CYBERGRAD sale de GitHub
+  Pages, esa es la vía para la cabecera real.

@@ -73,4 +73,16 @@ export const GLOSARIO = {
   "Hash": { def: "Huella digital de un archivo (MD5, SHA-256). Sirve para identificar malware de forma inequívoca." },
   "Whois": { def: "Consulta de registro de un dominio o IP: titular, fechas, servidores DNS. Clave para validar indicadores." },
   "Triage": { def: "Versión inglesa de triaje: priorizar y clasificar alertas en función del riesgo." },
+  // ---- Campaña ampliada (APT, insider, phishing avanzado) ----
+  "APT": { def: "Advanced Persistent Threat. Grupo organizado que mantiene acceso a la red durante semanas o meses, con paciencia y movimiento lateral." },
+  "Dwell time": { def: "Tiempo que un atacante permanece dentro de la red sin ser detectado. Cuanto menor, menor el daño." },
+  "Tarea programada": { def: "Acción que el sistema ejecuta automáticamente (schtasks en Windows, cron en Linux). Los atacantes la usan como persistencia silenciosa." },
+  "Insider": { def: "Amenaza interna: empleado o persona con acceso legítimo que abusa de él. Usa credenciales válidas, por eso es difícil de detectar." },
+  "UEBA": { def: "User and Entity Behavior Analytics. Detecta anomalías de comportamiento (volumen, horario, destino) sobre el baseline del usuario." },
+  "Cadena de custodia": { def: "Registro cronológico de quién, cuándo y cómo tocó cada evidencia. Imprescindible si el caso acaba en juicio o sanción laboral." },
+  "Mínimo privilegio": { def: "Principio de dar a cada cuenta solo los permisos imprescindibles para su trabajo. Limita el daño de un abuso o compromiso." },
+  "Thread hijacking": { def: "Secuestro de hilo de correo: responder dentro de una conversación real para que el mensaje falso parezca parte de ella." },
+  "Robo de sesión": { def: "Reutilización del token de sesión de una víctima (robado con un portal falso o malware) sin necesidad de su contraseña ni MFA." },
+  "Regla de reenvío": { def: "Regla de buzón que redirige correos a otra cuenta. Los atacantes la crean en buzones ejecutivos para exfiltrar en silencio." },
+  "OAuth": { def: "Protocolo de autorización por consentimiento: una app pide acceso a tu cuenta (correo, archivos). El consentimiento malicioso es un vector real." },
 };

@@ -5,6 +5,8 @@
 // ============================================================
 
 import { GAME } from "./state.js";
+import { CASOS } from "./casos.js";
+import { RT_CASOS } from "./rt-casos.js";
 
 export const LOGROS = [
   // ---- Rangos (blue team / SOC) ----
@@ -18,11 +20,11 @@ export const LOGROS = [
   { id: "rango-rt-ciso", icono: "🏆", nombre: "CISO", desc: "Corona la campaña red team (2.600 XP RT)", condicion: (g) => g.rtXp >= 2600 },
   // ---- Hitos de juego ----
   { id: "primer-caso", icono: "📋", nombre: "Primer incidente", desc: "Resuelve tu primer caso de la campaña SOC", condicion: (g) => g.casosResueltos >= 1 },
-  { id: "soc-completa", icono: "🎓", nombre: "Campaña SOC completada", desc: "Resuelve los 6 casos del blue team", condicion: (g) => g.casosCompletados.length >= 6 },
+  { id: "soc-completa", icono: "🎓", nombre: "Campaña SOC completada", desc: `Resuelve los ${CASOS.length} casos del blue team`, condicion: (g) => g.casosCompletados.length >= CASOS.length },
   { id: "primer-smas", icono: "🏅", nombre: "Excelencia", desc: "Consigue tu primera calificación S+", condicion: (g) => g.mejorRating === "S+" },
   { id: "sin-pistas", icono: "🧠", nombre: "Instinto de analista", desc: "Completa un caso sin usar ninguna pista", condicion: (g) => !!g.casoSinPistas },
   { id: "primer-pentest", icono: "🎯", nombre: "Primer pentest", desc: "Completa tu primer pentest red team", condicion: (g) => g.rtCasosResueltos >= 1 },
-  { id: "rt-completa", icono: "🏴", nombre: "Campaña red team completada", desc: "Completa los 6 pentests autorizados", condicion: (g) => g.rtCasosCompletados.length >= 6 },
+  { id: "rt-completa", icono: "🏴", nombre: "Campaña red team completada", desc: `Completa los ${RT_CASOS.length} pentests autorizados`, condicion: (g) => g.rtCasosCompletados.length >= RT_CASOS.length },
   { id: "becario", icono: "🎓", nombre: "Aprendiz aplicado", desc: "Supera tu primera práctica guiada de becario", condicion: (g) => g.becarioCompletadas.length >= 1 },
   { id: "becario-todas", icono: "📚", nombre: "Becario graduado", desc: "Supera todas las prácticas guiadas (blue team + red team)", condicion: (g) => g.becarioCompletadas.length >= 4 },
   { id: "puntos-1000", icono: "💰", nombre: "Banco de puntos", desc: "Acumula 1.000 puntos", condicion: (g) => g.puntos >= 1000 },

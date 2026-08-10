@@ -36,18 +36,6 @@ export class Terminal {
     return div;
   }
 
-  printHTML(html, cls = "") {
-    const div = document.createElement("div");
-    div.className = "t-line";
-    const span = document.createElement("span");
-    span.className = cls;
-    span.innerHTML = html;
-    div.appendChild(span);
-    this.el.appendChild(div);
-    this._scrollBottom();
-    return div;
-  }
-
   printOk(msg)  { this.print("✔ " + msg, "t-ok"); }
   printErr(msg) { this.print("✘ " + msg, "t-out-err"); }
   printWarn(msg){ this.print("⚠ " + msg, "t-out-warn"); }
