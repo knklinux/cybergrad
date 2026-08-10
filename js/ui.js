@@ -280,7 +280,7 @@ export class UI {
       ${this.holoHTML("holo-md")}
       <div class="modal-text">
         ¿Nunca has tocado un SOC? Perfecto: este modo es para ti.
-        Dos <b>prácticas guiadas</b> donde yo te llevo de la mano: en cada paso te digo
+        Tres <b>prácticas guiadas</b> donde yo te llevo de la mano: en cada paso te digo
         <b>qué escribir</b> y, sobre todo, <b>por qué se hace</b>. Sin reloj, sin penalizaciones, sin XP.
       </div>
       <div class="bec-cards">${cards}</div>
@@ -311,7 +311,7 @@ export class UI {
       <div class="modal-text">
         ${hayMas
           ? `¡Bien hecho! Has completado la práctica ${this._becIdx + 1}. Prepara el siguiente reto: <b>${siguiente.titulo}</b>.`
-          : `Has completado las dos prácticas guiadas. Ya entiendes la mecánica del SOC: <b>investigar antes de actuar</b>. Ahora toca demostrarlo con tu primer incidente real.`}
+          : `Has completado las tres prácticas guiadas. Ya entiendes la mecánica del SOC: <b>investigar antes de actuar</b>, contener sin pánico y saber cuándo NO pagar. Ahora toca demostrarlo con tu primer incidente real.`}
       </div>
       <div class="jimmy-habla">${hayMas ? "Un paso más y dominas el oficio. — Jimmy" : "El SOC confía en ti. Vamos a por tu primer caso de verdad. — Jimmy"}</div>
       <div class="btn-row">

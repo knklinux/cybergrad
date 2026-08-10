@@ -53,6 +53,8 @@ const AYUDA = {
   "deshabilitar": "deshabilitar <usuario> — deshabilita una cuenta comprometida",
   "escalar": "escalar — escala el incidente a CSIRT / Nivel 2",
   "cerrar_caso": "cerrar_caso [razón] — cierra el caso (solo si es falso positivo)",
+  "vssadmin": "vssadmin list shadows — muestra las copias de sombra del host (el ransomware las borra)",
+  "pagar": "pagar — decide si pagas el rescate (spoiler: no se paga)",
   "informe": "informe — redacta el informe del incidente y lo entrega",
   "tutorial": "tutorial — mini tutorial para ponerte en contexto",
   "estado": "estado — muestra tu progreso y estadísticas",
@@ -692,6 +694,26 @@ export function crearComandos(ctx) {
       if (v.familia) out(`Familia: ${v.familia}`, "t-out-hi");
       if (v.comentarios) out(`Comentario: ${v.comentarios}`, "t-out-info");
       if (reporte.nota) out(`Nota: ${reporte.nota}`, "t-out-warn");
+    },
+
+    vssadmin(a) {
+      const c = engine.caso;
+      if (!c?.vss) { term.printWarn("No hay datos de copias de sombra para este caso."); return; }
+      if (a && !/list/i.test(a)) { term.printErr("Uso: vssadmin list shadows"); return; }
+      const v = c.vss;
+      out("vssadmin 1.1 — Administrador de copias de sombra de volumen", "t-out");
+      out("(c) Microsoft Corporation", "t-out-dim");
+      term.separator("COPIA DE SOMBRA DEL VOLUMEN (VSS)");
+      out(`Host: ${v.host || "n/d"}`, "t-out");
+      out(`Estado: ${v.estado || "n/d"}`, String(v.estado || "").toLowerCase().includes("eliminad") ? "t-out-err" : "t-out");
+      if (v.detalle) out(`Detalle: ${v.detalle}`, "t-out-warn");
+      if (v.nota) { term.print(""); out(`Nota del analista: ${v.nota}`, "t-out-info"); }
+    },
+
+    pagar() {
+      term.printWarn("✋ NO PAGAS EL RESCATE.");
+      out("Pagar no garantiza recuperar nada: una parte importante de las víctimas que pagan nunca recibe el descifrador, y cada pago financia la siguiente campaña contra otra empresa — quizá la tuya.", "t-out");
+      out("La recuperación sale de los backups limpios (offline/inalterables) y del plan de restauración. Decisión registrada: NO pagar.", "t-out-info");
     },
 
     pista() { engine.pista(); },

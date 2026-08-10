@@ -42,6 +42,8 @@ export const GLOSARIO = {
   "RAT": { def: "Remote Access Trojan. Malware que da control remoto del equipo infectado al atacante." },
   "IOC": { def: "Indicator of Compromise. Evidencia de intrusión: dominios, IPs, hashes, URLs, comportamientos." },
   "Ransomware": { def: "Malware que cifra los archivos de la víctima y exige un rescate para devolverlos." },
+  "Rescate": { def: "Pago exigido por el ransomware. No se paga: sin garantía de descifrado, y financia la siguiente campaña." },
+  "VSS": { def: "Volume Shadow Copy: copias de sombra de Windows. El ransomware las borra con vssadmin para impedir la restauración local." },
   "C2": { def: "Command & Control. Infraestructura del atacante para controlar los equipos infectados." },
   "Copias de sombra": { def: "Snapshot del sistema Windows usado para recuperar archivos. El ransomware las borra para impedir la recuperación." },
   "Living Off the Land": { def: "Técnica de usar herramientas legítimas del sistema (PowerShell, WMI, mshta) para pasar desapercibido." },

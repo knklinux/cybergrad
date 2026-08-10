@@ -46,7 +46,7 @@ python -m http.server 8000
 1. **Entra al SOC** como Analista Junior (0 XP). Jimmy te da la bienvenida.
 2. **¿Primera vez?** Tienes dos puertas de entrada:
    - **🧭 Tutorial Rápido** (pantalla de bienvenida o botón 🧭 del menú): 6 pantallas de contexto + una micro-práctica guiada (`mail` → `alertas` → `bloquear`).
-   - **🎓 Modo Becario** (pantalla de bienvenida o botón 🎓 del menú): **2 prácticas guiadas completas** donde Jimmy te lleva de la mano y en cada paso te explica **qué escribir y, sobre todo, POR QUÉ** — pensado para quien llega sin haber tocado un SOC en su vida. Sin SLA, sin penalizaciones, sin XP.
+   - **🎓 Modo Becario** (pantalla de bienvenida o botón 🎓 del menú): **3 prácticas guiadas completas** donde Jimmy te lleva de la mano y en cada paso te explica **qué escribir y, sobre todo, POR QUÉ** — pensado para quien llega sin haber tocado un SOC en su vida. Sin SLA, sin penalizaciones, sin XP.
 3. Recibe un incidente: **splash cinemático** + briefing de Jimmy. Acepta el caso.
 4. **Investiga** con el terminal: correos, logs, DNS, hashes, VirusTotal…
 5. **Responde**: bloquea indicadores, aísla hosts, deshabilita cuentas, escala.
@@ -72,14 +72,15 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 
 ## 🎓 Modo Becario
 
-¿Nunca has tocado un SOC? El **Modo Becario** es tu rampa de entrada: dos prácticas guiadas donde Jimmy valida comando a comando y un **panel de guía** muestra el paso actual (N/M), el comando exacto y la explicación del **porqué** de cada acción:
+¿Nunca has tocado un SOC? El **Modo Becario** es tu rampa de entrada: tres prácticas guiadas donde Jimmy valida comando a comando y un **panel de guía** muestra el paso actual (N/M), el comando exacto y la explicación del **porqué** de cada acción:
 
 1. **«El correo que huele mal»** — phishing: `mail` → `alertas` → `whois` → `bloquear` → `aislar` → `deshabilitar`. Aprendes el ciclo completo de respuesta: identificar, contener y neutralizar.
 2. **«La alerta que gritaba lobo»** — triaje de un falso positivo: `alertas` → `ls`/`cat` de logs → `cat /etc/crontab` → `whois` → `cerrar_caso`. Aprendes la habilidad nº1 del analista: **investigar antes de actuar** (por qué esa «exfiltración» de 40 GB es el backup de cada noche).
+3. **«LockCrypt»** — ransomware paso a paso: `alertas` → `cat` de la nota del rescate → `vssadmin list shadows` → `aislar` → `bloquear` el C2 → `deshabilitar` la cuenta → `pagar`. Aprendes la secuencia de oro: **contener sin pánico**, por qué el ransomware borra las copias de sombra (y por qué el backup offline es la única defensa) y por qué **NO se paga el rescate**.
 
 - **Sin SLA, sin penalizaciones y sin XP**: es práctica pura para equivocarte a gusto.
 - Si te saltas un paso o te equivocas, Jimmy te reencamina con calma.
-- Al terminar las dos prácticas, te lanza directo a la campaña real.
+- Al terminar las tres prácticas, te lanza directo a la campaña real.
 
 ## 🔬 Modo Laboratorio
 
@@ -156,7 +157,7 @@ cybergrad/
     ├── fx.js             # Motor gráfico canvas (red, partículas, radar, tema por ataque)
     ├── jimmy.js          # Personaje Jimmy: frases, briefing, reacciones
     ├── tutorial.js       # Mini tutorial: slides de contexto + micro-caso guiado
-    ├── becario.js        # Modo Becario: 2 prácticas guiadas con el porqué de cada paso
+    ├── becario.js        # Modo Becario: 3 prácticas guiadas con el porqué de cada paso
     ├── glosario.js       # Diccionario del analista
     ├── casos/            # Un archivo por caso blue team (fácil de ampliar)
     ├── rt-casos.js       # Catálogo de la campaña red team
@@ -190,7 +191,7 @@ cybergrad/
 
 - Más familias de malware y TTPs (APT, supply chain, web attacks)
 - Más pentests red team (active directory, phishing ofensivo, movimiento lateral en dominio)
-- Más prácticas guiadas de becario (más escenarios paso a paso)
+- Más prácticas guiadas de becario (más escenarios paso a paso: BEC, web attacks, respuesta a incidentes)
 - Sistema de logros e insignias por rango
 - Ranking entre jugadores
 - Más personajes sintéticos con voz propia (Ark y otros)
