@@ -7,6 +7,7 @@ import { listar, leer, buscar } from "./filesystem.js";
 import { GAME, estadoRango, estadoRangoRT } from "./state.js";
 import { numCaso } from "./casos.js";
 import { numCasoRT } from "./rt-casos.js";
+import { explicarTutor, EXPLICAR_AYUDA } from "./tutor.js";
 
 const AYUDA = {
   "ayuda": "ayuda [comando] — lista los comandos disponibles o explica uno",
@@ -35,6 +36,7 @@ const AYUDA = {
   "curl": "curl <url> — obtiene la respuesta de una URL",
   "vt": "vt <hash> — consulta VirusTotal por hash",
   "pista": "pista — pide una pista al supervisor (cuesta puntos)",
+  "explicar": EXPLICAR_AYUDA,
   "nmap": "nmap <ip|rango> — escanea puertos y servicios (red team)",
   "gobuster": "gobuster <url> — descubre directorios en un servidor web",
   "nikto": "nikto <url> — analiza vulnerabilidades del servidor web",
@@ -717,6 +719,15 @@ export function crearComandos(ctx) {
     },
 
     pista() { engine.pista(); },
+
+    explicar(a) {
+      const texto = explicarTutor(engine.caso, a);
+      if (texto) {
+        term.separator("📚 MODO TUTOR");
+        out(texto, "t-out");
+      }
+    },
+    tutor: (a) => cmds.explicar(a),
 
     bloquear(a) { engine.bloquear(a); },
     aislar(a) { engine.aislar(a); },

@@ -96,6 +96,21 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 - Si te saltas un paso o te equivocas, Jimmy te reencamina con calma.
 - Al terminar, te lanza directo a la campaña que corresponda (SOC o Red Team).
 
+## 🎓 Modo Tutor
+
+¿Por qué esa evidencia importa? El comando **`explicar`** es tu tutor bajo demanda: explica **qué es, por qué importa y qué señales mirar** en cualquier evidencia del caso actual.
+
+- `explicar` — menú de todo lo que puedes pedir que te explique
+- `explicar caso` — la historia del ataque, las técnicas MITRE y qué se espera de ti
+- `explicar <ruta>` — un archivo del filesystem (dns.log, proxy.log, edr.json, cabeceras…): tipo, relevancia y **señales detectadas en su contenido** (periodicidad, entropía, IOCs cruzados con la base del caso)
+- `explicar mail <n>` — análisis del correo: dominio del remitente, urgencia, enlaces, ingeniería social
+- `explicar alerta <id>` — la alerta del SIEM: qué fuente la generó y cómo interpretarla
+- `explicar <dominio|ip|url|hash>` — el indicador: whois, VirusTotal, familia y la **acción esperada**
+- `explicar comando <nombre>` — qué hace el comando y **por qué importa en un incidente real** (con ejemplo y lado del juego: defensa/ataque); `explicar comando` lista todos los explicables
+- En red team además: `explicar <ip>` traduce los **puertos** a superficie de ataque y `explicar <url>` desglosa el servidor web (directorios, hallazgos de nikto, login)
+
+El tutor **no juega por ti**: te enseña el porqué para que aprendas a razonarlo tú. Pensado para estudiar con el juego, caso a caso.
+
 ## 🔬 Modo Laboratorio
 
 El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del laboratorio que plantea Jimmy): elige cualquiera de los 9 casos y repítelo tantas veces como quieras.
@@ -115,7 +130,7 @@ El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del l
 | Red | `whois`, `dig`, `host`, `nslookup`, `curl` |
 | Respuesta | `bloquear`, `aislar`, `deshabilitar`, `escalar`, `cerrar_caso`, `informe` |
 | **Red team** | `nmap`, `gobuster`, `nikto`, `searchsploit`, `hydra`, `ssh`, `sqlmap`, `msf`, `mimikatz`, `john`/`hashcat`, `nc`, `exfiltrar`, `escalar_priv` |
-| Sistema | `ayuda`, `tutorial`, `clear`, `history`, `carrera`, `glosario`, `whoami`, `date` |
+| Sistema | `ayuda`, `tutorial`, `explicar`, `clear`, `history`, `carrera`, `glosario`, `whoami`, `date` |
 
 > 💡 `Tab` autocompleta · ↑/↓ historial · Ctrl+L limpia.
 
