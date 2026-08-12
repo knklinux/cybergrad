@@ -9,7 +9,7 @@ export const PASOS_TUTORIAL = [
     icono: "🛡️",
     titulo: "¿QUÉ ES ESTO?",
     texto:
-      "<b>CYBERGRAD</b> es un simulador de carrera en un <b>SOC</b> (Security Operations Center): el centro de operaciones donde se detectan y responden los ciberataques de una empresa.<br/><br/>Tú eres un <b>analista de seguridad</b> en ACME Corp. Cada turno llega un incidente realista y tu trabajo es investigarlo y responderlo, igual que en un SOC de verdad.",
+      "<b>CYBERGRAD</b> es un simulador de carrera en un <b>SOC</b> (Security Operations Center): el centro de operaciones donde se detectan y responden los ciberataques de una empresa.<br/><br/>Tú eres un <b>analista de seguridad</b> en ACME Corp. Cada turno llega un incidente realista y tu trabajo es investigarlo y responderlo, igual que en un SOC de verdad.<br/><br/>¿Quieres cambiar de bando? La campaña <b>Red Team</b> te convierte en <b>pentester</b>: pentests ofensivos autorizados con herramientas reales (nmap, hydra, Metasploit…).",
     ejemplo: "SOC = Security Operations Center · El 'bombero digital' de la empresa",
   },
   {
@@ -37,7 +37,7 @@ export const PASOS_TUTORIAL = [
     icono: "📈",
     titulo: "PROGRESIÓN",
     texto:
-      "Cada caso resuelto te da <b>XP</b> y subes de rango:<br/><br/>🌱 Analista Junior → 🔍 Analista SOC → 🔬 Senior → 🧠 Líder de Equipo → 👑 Jefe de CSIRT<br/><br/>Cada caso termina con una <b>lección</b>: la anatomía del ataque, cómo detectarlo y su mapeo a <b>MITRE ATT&CK</b> (la taxonomía mundial de ciberataques).",
+      "Cada caso resuelto te da <b>XP</b> y subes de rango:<br/><br/>🌱 Analista Junior → 🔍 Analista SOC → 🛡️ Analista Senior → 🎖️ Líder de Equipo → 🏆 Jefe de CSIRT<br/><br/>Y en la campaña <b>Red Team</b>: 🌱 Aprendiz de Pentester → 🕷️ Pentester Junior → 🥷 Pentester → 🔥 Pentester Senior → 👑 Líder Red Team → 🏆 CISO<br/><br/>Cada caso termina con una <b>lección</b>: la anatomía del ataque, cómo detectarlo y su mapeo a <b>MITRE ATT&CK</b> (la taxonomía mundial de ciberataques).",
     ejemplo: "MITRE ATT&CK · El catálogo de técnicas de ataque que usan los profesionales",
   },
   {

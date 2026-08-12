@@ -129,8 +129,9 @@ export function crearComandos(ctx) {
     cls() { term.clear(); },
 
     whoami() {
-      const r = estadoRango();
-      out(`${GAME.nombre} — ${r.icono} ${r.nombre} del SOC de ACME Corp`, "t-out-info");
+      const esRT = GAME.modo === "rt";
+      const r = esRT ? estadoRangoRT() : estadoRango();
+      out(`${GAME.nombre} — ${r.icono} ${r.nombre} ${esRT ? "de la Unidad Red Team de ACME Corp" : "del SOC de ACME Corp"}`, "t-out-info");
     },
     id() {
       out("uid=1001(analista) gid=1001(soc) groups=1001(soc),1002(incidentes)", "t-out");

@@ -2,7 +2,7 @@
   "name": "cybergrad",
   "version": "1.0.0",
   "private": true,
-  "description": "Simulador de carrera SOC: aprende ciberseguridad defensiva resolviendo incidentes realistas desde una terminal.",
+  "description": "Simulador de carrera SOC + Red Team: aprende ciberseguridad resolviendo incidentes realistas y ejecutando pentests desde una terminal.",
   "type": "module",
   "scripts": {
     "start": "node serve.js",
@@ -12,7 +12,8 @@
     "test:unit": "node ci/test-esc.mjs",
     "test:serve": "node ci/serve-test.mjs",
     "test:xss": "node ci/xss-test.mjs",
-    "test": "npm run check && npm run lint && npm run test:unit && npm run test:serve && npm run test:smoke && npm run test:xss"
+    "test:whoami": "node ci/whoami-test.mjs",
+    "test": "npm run check && npm run lint && npm run test:unit && npm run test:serve && npm run test:smoke && npm run test:xss && npm run test:whoami"
   },
   "devDependencies": {
     "eslint": "^9.17.0",
