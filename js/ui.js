@@ -574,7 +574,7 @@ export class UI {
     const caso = engine.caso;
     const esRT = caso.modo === "rt";
     const r = esRT ? estadoRangoRT() : estadoRango();
-    const acciones = GAME.acciones.map((a) => `  - [${a.tiempo}s] ${a.tipo}: ${a.detalle}`).join("\n");
+    const acciones = GAME.acciones.map((a) => `  - [${a.tiempo}s] ${a.t}: ${a.detalle}`).join("\n");
     const plantilla = esRT
       ? `INFORME DE PENTEST — ENGAGEMENT #RT-${String(numCasoRT(caso.id)).padStart(2, "0")}
 ============================================
@@ -1300,7 +1300,7 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
   mostrarCompartir() {
     const urlJuego = "https://knklinux.github.io/cybergrad/";
     const urlRepo = "https://github.com/knklinux/cybergrad";
-    const mensaje = `Aprende ciberseguridad jugando: CYBERGRAD, simulador de carrera SOC con terminal real, campaña red team y modo becario. 🎮 ${urlJuego}`;
+    const mensaje = `Aprende ciberseguridad jugando: CYBERGRAD, simulador de carrera SOC + Red Team con terminal real y modo becario. 🎮 ${urlJuego}`;
     const fila = (titulo, texto, clave) => `
       <h3>${titulo}</h3>
       <div class="share-row">
