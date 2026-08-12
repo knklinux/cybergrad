@@ -39,6 +39,9 @@ jobs:
       - name: Test XSS E2E (nombre malicioso nunca se ejecuta)
         run: npm run test:xss
 
+      - name: Test whoami E2E (SOC vs Red Team)
+        run: npm run test:whoami
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:
