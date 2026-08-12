@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   checks:
@@ -44,6 +45,33 @@ jobs:
 
       - name: Test banner (CYBERGRAD completo y sin glifos de otra letra)
         run: npm run test:banner
+
+  # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
+  # sirve el banner correcto (mismo canónico que el test local). Solo corre
+  # en push a main y manualmente (workflow_dispatch): en un PR la URL de
+  # producción no refleja el código del PR, así que no tendría sentido.
+  # El propio test reintenta hasta 5 min por si el deploy de Pages aún está
+  # en curso cuando arranca el job.
+  integracion:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar navegador Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Test banner E2E en la version desplegada (GitHub Pages)
+        run: npm run test:banner-prod
 
   gitleaks:
     runs-on: ubuntu-latest

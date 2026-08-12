@@ -14,6 +14,7 @@
     "test:xss": "node ci/xss-test.mjs",
     "test:whoami": "node ci/whoami-test.mjs",
     "test:banner": "node ci/banner-test.mjs",
+    "test:banner-prod": "node ci/banner-prod-test.mjs",
     "test": "npm run check && npm run lint && npm run test:unit && npm run test:serve && npm run test:smoke && npm run test:xss && npm run test:whoami && npm run test:banner"
   },
   "devDependencies": {
