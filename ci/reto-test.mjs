@@ -41,26 +41,47 @@ check("el modo se conserva (soc)", a1.modo !== "rt");
 check("el dominio original cambia (acme-facturas.info)", !json1.includes("acme-facturas.info"));
 check("el subdominio cambia (mail.acme-facturas.info)", !json1.includes("mail.acme-facturas.info"));
 check("los correos cambian (m.garcia@acme.com)", !json1.includes("m.garcia@acme.com"));
-check("el usuario del correo se conserva (m.garcia)", json1.includes("m.garcia"));
 check("las URLs se varían solo en el dominio (http://.../payment.exe)", !json1.includes("http://acme-facturas.info") && json1.includes("/payment.exe"));
-check("el whitelist protege archivos (alerts.json, proxy.log, powershell.exe)", json1.includes("alerts.json") && json1.includes("proxy.log") && json1.includes("powershell.exe"));
-check("el whitelist protege el usuario m.garcia", json1.includes("m.garcia"));
-// Los falsos positivos que no viven en el phishing se comprueban en los
-// casos que sí los contienen: update.exe y r.gutierrez (caso-07 APT),
-// l.fuentes (caso-08 insider).
-const j7 = JSON.stringify(variarCaso(CASOS[6], "2026-08-13").caso);
-const j8 = JSON.stringify(variarCaso(CASOS[7], "2026-08-13").caso);
-check("el whitelist protege update.exe y r.gutierrez (caso-07)", j7.includes("update.exe") && j7.includes("r.gutierrez"));
-check("el whitelist protege l.fuentes (caso-08)", j8.includes("l.fuentes"));
+check("powershell.exe suelto (sin ruta) sigue intacto", json1.includes("powershell.exe"));
+check("la ruta /var/log/proxy.log varía como ruta (no como dominio)", !json1.includes("/var/log/proxy.log") && !!a1b.mapas.ruta.get("/var/log/proxy.log"));
 
+// ---------- Usuarios con punto ----------
+const uVar = a1b.mapas.usuario.get("m.garcia");
+check("el usuario m.garcia varía", !!uVar && uVar !== "m.garcia");
+check("la variante de usuario está en el caso (deshabilitar m.garcia incluido)", !!uVar && json1.includes(uVar));
+check("la variante de usuario NO re-casa con el patrón (tiene dígito)", !!uVar && /\d/.test(uVar));
+check("la variante de usuario conserva la longitud", !!uVar && uVar.length === "m.garcia".length);
+const uVarCorreo = a1b.mapas.correo.get("m.garcia@acme.com");
+check("el correo comparte el usuario variado", !!uVarCorreo && uVarCorreo.startsWith(uVar + "@"));
 // El dominio de un correo comparte variante con el dominio suelto
 const mapaDom = a1b.mapas.dominio;
 check("el correo y el dominio suelto comparten variante", a1b.mapas.correo.get("facturacion@acme-facturas.info") === "facturacion@" + mapaDom.get("acme-facturas.info"));
+// update.exe (archivo de varias letras) sigue intacto; los usuarios con
+// punto de otros casos (r.gutierrez en caso-07, l.fuentes en caso-08) varían.
+const j7 = JSON.stringify(variarCaso(CASOS[6], "2026-08-13").caso);
+const j8 = JSON.stringify(variarCaso(CASOS[7], "2026-08-13").caso);
+check("update.exe sigue protegido y r.gutierrez varía (caso-07)", j7.includes("update.exe") && !j7.includes("r.gutierrez"));
+check("l.fuentes varía (caso-08)", !j8.includes("l.fuentes"));
+
+// ---------- Rutas de archivo ----------
+const rutaVar = a1b.mapas.ruta.get("/opt/siem/alerts.json");
+check("la ruta /opt/siem/alerts.json varía", !!rutaVar && rutaVar !== "/opt/siem/alerts.json" && json1.includes(rutaVar));
+check("la ruta conserva extensión y longitud", !!rutaVar && rutaVar.endsWith(".json") && rutaVar.length === "/opt/siem/alerts.json".length);
+// Consistencia de segmentos DENTRO del mismo caso (rt-02: wordlists + su dir)
+const rt2 = variarCaso(RT_CASOS[1], "2026-08-13");
+const wlVar = rt2.mapas.ruta.get("/opt/wordlists/top1000.txt");
+const wlDir = rt2.mapas.ruta.get("/opt/wordlists/");
+const segOpt = rt2.mapas.segmento.get("opt");
+check("rt-02: /opt/wordlists/top1000.txt varía conservando .txt", !!wlVar && wlVar.endsWith(".txt") && wlVar !== "/opt/wordlists/top1000.txt");
+check("rt-02: el directorio /opt/wordlists/ comparte el segmento opt", !!wlDir && !!segOpt && wlDir.startsWith("/" + segOpt + "/") && wlVar.startsWith("/" + segOpt + "/"));
+check("la ruta fija del motor no se varía (searchsploit)", JSON.stringify(variarCaso(RT_CASOS[3], "2026-08-13").caso).includes("/opt/exploitdb/searchsploit.txt"));
+check("los directorios systemd con puntos quedan intactos (bruteforce-01)", JSON.stringify(variarCaso(CASOS[4], "2026-08-13").caso).includes("/etc/systemd/system/multi-user.target.wants/svc_scan.timer"));
+check("las rutas variantes NO re-casan (dígito en todos los segmentos)", [...a1b.mapas.ruta.values()].every((v) => v.replace(/\/$/, "").split("/").filter(Boolean).every((s) => /\d/.test(s))));
 
 // ---------- Reversibilidad ----------
 // Biyección: ninguna variante se repite dentro de cada mapa
 const biyectivo = (m) => new Set([...m.values()]).size === m.size && m.size > 0;
-check("los mapas son biyectivos (sin variantes repetidas)", biyectivo(a1b.mapas.dominio) && biyectivo(a1b.mapas.correo) && biyectivo(a1b.mapas.ip) && biyectivo(a1b.mapas.host));
+check("los mapas son biyectivos (sin variantes repetidas)", biyectivo(a1b.mapas.dominio) && biyectivo(a1b.mapas.correo) && biyectivo(a1b.mapas.ip) && biyectivo(a1b.mapas.host) && biyectivo(a1b.mapas.ruta) && biyectivo(a1b.mapas.usuario));
 
 // Idempotencia estructural de dominios: las variantes nunca terminan en
 // un TLD del whitelist, así que una segunda pasada no las re-variaría.
@@ -103,10 +124,11 @@ check("retoDelDia expone los mapas de variación", !!r1.mapas && r1.mapas.domini
 const inds = resumenIndicadores(r1.mapas);
 check("resumenIndicadores devuelve filas solo para tokens cambiados", inds.length > 0 && inds.every((f) => f.original !== f.variante));
 check("cada fila lleva tipo, original y variante", inds.every((f) => f.tipo && f.original && f.variante));
-check("los tipos son IP/Host/Dominio/Correo", inds.every((f) => ["IP", "Host", "Dominio", "Correo"].includes(f.tipo)));
+check("los tipos son IP/Host/Dominio/Correo/Ruta/Usuario", inds.every((f) => ["IP", "Host", "Dominio", "Correo", "Ruta", "Usuario"].includes(f.tipo)));
+check("la ficha incluye rutas y usuarios variados", inds.some((f) => f.tipo === "Ruta") && inds.some((f) => f.tipo === "Usuario"));
 const corr = inds.find((f) => f.tipo === "Correo");
 if (corr) check("el usuario del correo se conserva en la ficha", corr.original.split("@")[0] === corr.variante.split("@")[0]);
-const totalCambiados = [...r1.mapas.ip.entries(), ...r1.mapas.host.entries(), ...r1.mapas.dominio.entries(), ...r1.mapas.correo.entries()].filter(([o, v]) => o !== v).length;
+const totalCambiados = [...r1.mapas.ip.entries(), ...r1.mapas.host.entries(), ...r1.mapas.dominio.entries(), ...r1.mapas.correo.entries(), ...r1.mapas.ruta.entries(), ...r1.mapas.usuario.entries()].filter(([o, v]) => o !== v).length;
 check("la ficha cubre TODOS los tokens cambiados", inds.length === totalCambiados);
 check("resumenIndicadores con mapas vacíos → []", resumenIndicadores({}).length === 0 && resumenIndicadores(null).length === 0);
 check("la ficha es determinista (misma semilla → misma lista)", JSON.stringify(inds) === JSON.stringify(resumenIndicadores(retoDelDia(new Date("2026-08-13T12:00:00Z")).mapas)));

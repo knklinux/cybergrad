@@ -2,7 +2,9 @@
 // reto.js — Reto diario de CYBERGRAD
 // Cada día, el mismo incidente con indicadores distintos:
 // se clona un caso base y se varían de forma DETERMINISTA a
-// partir de la fecha: IPs, hosts, DOMINIOS y CORREOS.
+// partir de la fecha: IPs, hosts, DOMINIOS, CORREOS, RUTAS de
+// archivo (/data/..., /home/admin/...) y USUARIOS con punto
+// (m.garcia, l.fuentes).
 //
 // Invariante de seguridad: las sustituciones conservan la
 // LONGITUD exacta de cada cadena, para que cualquier contenido
@@ -11,11 +13,12 @@
 //
 // Reversibilidad: la variación es una BIYECCIÓN determinista.
 //   - Las variantes se generan con etiquetas que NUNCA terminan
-//     en un TLD del whitelist, así que volver a variar un caso
-//     ya variado no cambia nada (idempotencia).
+//     en un TLD del whitelist (dominios) o que incluyen un dígito
+//     en cada segmento (rutas) / en el apellido (usuarios): volver
+//     a variar un caso ya variado no cambia nada (idempotencia).
 //   - `mapas` registra original → variante (IP, host, dominio,
-//     correo) y `desvariarCaso` reconstruye el caso original
-//     exacto a partir del variado (inversa).
+//     correo, ruta, usuario) y `desvariarCaso` reconstruye el caso
+//     original exacto a partir del variado (inversa).
 // ============================================================
 
 import { CASOS } from "./casos.js";
@@ -54,6 +57,34 @@ export function casoBaseDelDia(fechaStr = fechaReto()) {
 const RE_IP = /\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/g;
 const RE_HOST = /\bHOST-\d{3}\b/g;
 
+// Rutas de archivo: /seg/seg/archivo.ext o /seg/ (directorio). El segmento
+// de directorio NO admite puntos (las rutas reales del juego no los tienen);
+// el último segmento (archivo) sí. Se exige que el carácter anterior NO sea
+// alfanumérico NI '/': así las URLs (http://host/ruta, cuyo /ruta va
+// precedido de otro / o del host) quedan fuera y solo se varían rutas reales.
+const RE_RUTA = /(?<![A-Za-z0-9/])\/((?:[a-z0-9_-]+\/)*)([a-z0-9._-]+)\/?/gi;
+
+// Usuarios con punto: inicial + apellido (m.garcia, l.fuentes). NO casan con
+// archivos tipo payment.exe/alerts.json (primera etiqueta multiletra) ni con
+// código JS (ath.random, lineas.push) ni con versiones (v2.0, nginx 1.24.0).
+const RE_USUARIO = /\b[a-z]\.[a-z]{2,}\b/g;
+
+// Rutas fijas que el MOTOR consulta con el literal original (p. ej.
+// searchsploit lee /opt/exploitdb/searchsploit.txt): no se varían para no
+// romper esos comandos en el reto. Todo lo demás del caso sí se varía.
+const RUTAS_FIJAS = new Set(["/opt/exploitdb/", "/opt/exploitdb/searchsploit.txt"]);
+
+// Extensiones de archivo reconocidas: un último segmento con punto SOLO se
+// varía si lo que sigue al último punto es una de estas. Todo lo demás con
+// punto (directorios tipo multi-user.target.wants, unidades systemd como
+// svc_scan.timer, nombres de archivo con punto interno) se deja intacto.
+const EXTENSIONES = new Set([
+  "txt", "log", "json", "db", "sqlite", "dat", "exe", "dll", "sys", "bat", "ps1", "sh", "py",
+  "js", "conf", "cfg", "ini", "env", "xml", "yml", "yaml", "html", "htm", "css", "md", "csv",
+  "doc", "docm", "docx", "xls", "xlsx", "pdf", "zip", "tar", "gz", "7z", "rar", "png",
+  "jpg", "jpeg", "gif", "pcap", "evtx", "pem", "key", "crt", "cer", "sql", "bak", "tmp",
+]);
+
 // TLDs reconocidos por el juego (whitelist): SOLO los dominios/correos
 // cuyo último label está en esta lista se varían. Así no se tocan los
 // falsos positivos típicos: `payment.exe`, `alerts.json`, `proxy.log`,
@@ -91,6 +122,108 @@ function variarHost(host, rand) {
   return "HOST-" + String(n);
 }
 
+// Token aleatorio determinista de la MISMA longitud que `palabra`. Con
+// `conDigito` garantiza al menos un dígito: así las variantes de ruta y de
+// usuario no vuelven a casar con sus patrones (idempotencia → reversibilidad).
+function variarToken(palabra, rand, conDigito) {
+  let out = "";
+  let tieneDigito = false;
+  for (let j = 0; j < palabra.length; j++) {
+    const c = CHARS[Math.floor(rand() * CHARS.length)];
+    if (/\d/.test(c)) tieneDigito = true;
+    out += c;
+  }
+  if (conDigito && !tieneDigito) {
+    const pos = Math.floor(rand() * out.length);
+    out = out.slice(0, pos) + CHARS[26 + Math.floor(rand() * 10)] + out.slice(pos + 1);
+  }
+  return out;
+}
+
+// Variante de una palabra con Mapa de coherencia (misma palabra → misma
+// variante) y sin colisiones. Siempre con dígito (idempotencia).
+function variarPalabra(palabra, rand, mapa) {
+  if (mapa.has(palabra)) return mapa.get(palabra);
+  let variante = palabra;
+  for (let i = 0; i < 60; i++) {
+    const cand = variarToken(palabra, rand, true);
+    if (cand !== palabra && ![...mapa.values()].includes(cand)) { variante = cand; break; }
+  }
+  mapa.set(palabra, variante);
+  return variante;
+}
+
+// ¿La ruta YA es una variante nuestra? Formato: TODOS sus segmentos llevan
+// un dígito. Las rutas originales del juego no lo tienen (salvo stems como
+// top1000, que no cuentan: se mira el segmento entero pero la comprobación
+// exige dígito en TODOS los segmentos, y las originales no lo cumplen).
+function pareceVarianteRuta(ruta) {
+  const segs = ruta.replace(/\/$/, "").split("/").filter(Boolean);
+  return segs.length > 0 && segs.every((s) => /\d/.test(s));
+}
+
+// ¿El último segmento es candidato a variarse? Sin punto → sí (directorio o
+// archivo sin extensión). Con punto → solo si es `nombre.ext` con EXTENSIÓN
+// conocida (se conserva la extensión). Así quedan intactos los directorios
+// con punto (multi-user.target.wants), las unidades systemd (svc_scan.timer)
+// y los archivos con puntos internos (doble extensión).
+function ultimoSegmentoViable(seg) {
+  if (!seg.includes(".")) return true;
+  const m = /^(.+)\.([a-z0-9]{1,6})$/i.exec(seg);
+  return !!m && EXTENSIONES.has(m[2].toLowerCase());
+}
+
+// Sustituye una RUTA por una variante determinista de la MISMA longitud:
+// cada segmento de directorio y el stem del archivo se varían con un MAPA
+// COMPARTIDO de segmentos (así `/data/` y `/data/crown.db` casan), la
+// extensión se conserva y la ruta entera se registra en `mapas.ruta` para la
+// inversa. Reglas de seguridad: las rutas fijas del motor (RUTAS_FIJAS), las
+// que ya son variantes y las que contienen puntos en segmentos no finales
+// (directorios tipo multi-user.target.wants) o un último segmento sin
+// extensión reconocida se dejan intactas.
+function variarRuta(ruta, rand, mapas) {
+  if (RUTAS_FIJAS.has(ruta)) return ruta;
+  if (mapas.ruta.has(ruta)) return mapas.ruta.get(ruta);
+  if (pareceVarianteRuta(ruta)) return ruta;
+  const conSlash = ruta.endsWith("/");
+  const cuerpo = conSlash ? ruta.slice(0, -1) : ruta;
+  const segmentos = cuerpo.split("/"); // ["", "data", "crown.db"]
+  // Directorio con punto en mitad de la ruta → intacta (no fiarnos de la
+  // tokenización: el regex de rutas solo admite puntos en el último segmento).
+  for (let i = 1; i < segmentos.length - 1; i++) {
+    if (segmentos[i].includes(".")) return ruta;
+  }
+  const ultimo = segmentos[segmentos.length - 1];
+  if (!ultimoSegmentoViable(ultimo)) return ruta;
+  const variado = segmentos.map((seg, idx) => {
+    if (idx === 0) return seg; // segmento vacío inicial
+    const m = /^(.+)\.([a-z0-9]{1,6})$/i.exec(seg);
+    if (m) return variarPalabra(m[1], rand, mapas.segmento) + "." + m[2];
+    return variarPalabra(seg, rand, mapas.segmento);
+  }).join("/");
+  const resultado = variado + (conSlash ? "/" : "");
+  mapas.ruta.set(ruta, resultado);
+  return resultado;
+}
+
+// Sustituye un USUARIO con punto (m.garcia → q.riv3ra): misma longitud, se
+// conserva la posición del punto y se inyecta un dígito en el apellido (la
+// variante no vuelve a casar con el patrón de usuario). Mapa compartido con
+// los correos (variarCorreo usa el mismo mapa.usuario).
+function variarUsuario(usuario, rand, mapa) {
+  if (mapa.has(usuario)) return mapa.get(usuario);
+  if (!/^[a-z]\.[a-z]{2,}$/.test(usuario)) return usuario;
+  const idx = usuario.indexOf(".");
+  const apellido = usuario.slice(idx + 1);
+  let variante = usuario;
+  for (let i = 0; i < 60; i++) {
+    const cand = CHARS[Math.floor(rand() * 26)] + "." + variarToken(apellido, rand, true);
+    if (cand !== usuario && ![...mapa.values()].includes(cand)) { variante = cand; break; }
+  }
+  mapa.set(usuario, variante);
+  return variante;
+}
+
 // Genera la variante de un dominio: misma longitud y misma posición de
 // guiones, con etiquetas aleatorias deterministas. El último label se
 // genera hasta que NO sea un TLD del whitelist: así la variante nunca
@@ -116,16 +249,20 @@ function variarDominio(dominio, rand, mapa) {
   return variante;
 }
 
-// Varía un correo conservando el usuario: solo cambia el dominio (a
-// través del MISMO mapa de dominios, para que `m.garcia@acme.com` y el
-// `acme.com` suelto compartan variante). Si el dominio ya no es un TLD
-// reconocido (es una variante), el correo se deja intacto (idempotente).
-function variarCorreo(correo, rand, mapa) {
+// Varía un correo: el dominio cambia (a través del MISMO mapa de dominios,
+// para que `m.garcia@acme.com` y el `acme.com` suelto compartan variante) y
+// el USUARIO con punto también (a través del mismo mapa.usuario, para que
+// `m.garcia@acme.com` y `deshabilitar m.garcia` compartan variante). Si el
+// dominio ya no es un TLD reconocido (es una variante), el correo se deja
+// intacto (idempotente).
+function variarCorreo(correo, rand, mapas) {
   const idx = correo.lastIndexOf("@");
-  const usuario = correo.slice(0, idx);
+  let usuario = correo.slice(0, idx);
   const dominio = correo.slice(idx + 1);
   if (!esTLDReconocido(dominio)) return correo;
-  return usuario + "@" + variarDominio(dominio, rand, mapa);
+  const uVar = variarUsuario(usuario, rand, mapas.usuario);
+  if (uVar !== usuario) usuario = uVar;
+  return usuario + "@" + variarDominio(dominio, rand, mapas.dominio);
 }
 
 // Clona en profundidad un caso y le aplica las variaciones
@@ -133,7 +270,10 @@ function variarCorreo(correo, rand, mapa) {
 // el registro de sustituciones (original → variante) por tipo.
 export function variarCaso(casoBase, semilla = fechaReto()) {
   const rand = rng("cybergrad-reto:" + semilla);
-  const mapas = { ip: new Map(), host: new Map(), dominio: new Map(), correo: new Map() };
+  const mapas = {
+    ip: new Map(), host: new Map(), dominio: new Map(), correo: new Map(),
+    ruta: new Map(), usuario: new Map(), segmento: new Map(),
+  };
 
   const transformar = (s) => {
     if (typeof s !== "string") return s;
@@ -147,11 +287,14 @@ export function variarCaso(casoBase, semilla = fechaReto()) {
       if (!mapas.host.has(h)) mapas.host.set(h, variarHost(h, rand));
       return mapas.host.get(h);
     });
+    // Rutas de archivo: /seg/archivo.ext → variante (longitud y extensión
+    // conservadas; las URLs y las rutas fijas del motor quedan intactas)
+    s = s.replace(RE_RUTA, (tok) => variarRuta(tok, rand, mapas));
     // Dominios y correos: una sola pasada (el correo gana a su dominio
     // interno, y las variantes con TLD no reconocido se dejan intactas)
     s = s.replace(RE_DOMINIO_O_CORREO, (tok) => {
       if (tok.includes("@")) {
-        const variado = variarCorreo(tok, rand, mapas.dominio);
+        const variado = variarCorreo(tok, rand, mapas);
         if (variado !== tok && !mapas.correo.has(tok)) mapas.correo.set(tok, variado);
         return variado;
       }
@@ -159,6 +302,13 @@ export function variarCaso(casoBase, semilla = fechaReto()) {
       // variante, o es un falso positivo tipo `payment.exe`) se deja intacto.
       if (!esTLDReconocido(tok)) return tok;
       return variarDominio(tok, rand, mapas.dominio);
+    });
+    // Usuarios con punto (m.garcia, l.fuentes): después de los correos, para
+    // no pisar el usuario ya variado dentro de un email (los sueltos sí se
+    // varían, con el MISMO mapa que los de dentro de los correos).
+    s = s.replace(RE_USUARIO, (u) => {
+      if (!mapas.usuario.has(u)) variarUsuario(u, rand, mapas.usuario);
+      return mapas.usuario.get(u) || u;
     });
     return s;
   };
@@ -215,11 +365,15 @@ export function variarCasoVerificado(casoBase, semilla = fechaReto()) {
   return { caso: variado, ok: errores.length === 0, errores, mapas };
 }
 
-// Invierte los mapas de variación: variante → original.
+// Invierte los mapas de variación: variante → original. El mapa interno de
+// segmentos no se invierte (solo sirve para generar); los públicos (incluidos
+// ruta y usuario) sí.
 export function invertirMapas(mapas) {
-  const inv = { ip: new Map(), host: new Map(), dominio: new Map(), correo: new Map() };
-  for (const tipo of Object.keys(mapas)) {
-    for (const [orig, variante] of mapas[tipo]) inv[tipo].set(variante, orig);
+  const inv = { ip: new Map(), host: new Map(), dominio: new Map(), correo: new Map(), ruta: new Map(), usuario: new Map() };
+  for (const tipo of Object.keys(inv)) {
+    const m = mapas[tipo];
+    if (!(m instanceof Map)) continue;
+    for (const [orig, variante] of m) inv[tipo].set(variante, orig);
   }
   return inv;
 }
@@ -229,14 +383,14 @@ export function invertirMapas(mapas) {
 // subdominios). Devuelve el caso base exacto (sin las marcas del reto).
 export function desvariarCaso(casoVariado, mapas) {
   const inv = invertirMapas(mapas);
-  const tokens = [...inv.correo.keys(), ...inv.dominio.keys(), ...inv.host.keys(), ...inv.ip.keys()]
+  const tokens = [...inv.correo.keys(), ...inv.ruta.keys(), ...inv.dominio.keys(), ...inv.usuario.keys(), ...inv.host.keys(), ...inv.ip.keys()]
     .sort((a, b) => b.length - a.length);
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const sustituir = (s) => {
     if (typeof s !== "string") return s;
     let out = s;
     for (const t of tokens) {
-      out = out.replace(new RegExp(`(?<![A-Za-z0-9])${esc(t)}(?![A-Za-z0-9])`, "g"), inv.correo.get(t) || inv.dominio.get(t) || inv.host.get(t) || inv.ip.get(t));
+      out = out.replace(new RegExp(`(?<![A-Za-z0-9])${esc(t)}(?![A-Za-z0-9])`, "g"), inv.correo.get(t) || inv.ruta.get(t) || inv.dominio.get(t) || inv.usuario.get(t) || inv.host.get(t) || inv.ip.get(t));
     }
     return out;
   };
@@ -305,7 +459,7 @@ export function filasRankingReto(historial = []) {
 // Función pura (los Mapas se leen sin mutarlos) y testeable en Node.
 export function resumenIndicadores(mapas) {
   const m0 = mapas || {}; // tolera null/undefined (sin mapas → sin indicadores)
-  const TIPOS = [["ip", "IP"], ["host", "Host"], ["dominio", "Dominio"], ["correo", "Correo"]];
+  const TIPOS = [["ip", "IP"], ["host", "Host"], ["dominio", "Dominio"], ["correo", "Correo"], ["ruta", "Ruta"], ["usuario", "Usuario"]];
   const filas = [];
   for (const [clave, etiqueta] of TIPOS) {
     const m = m0[clave];
