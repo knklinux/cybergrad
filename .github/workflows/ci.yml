@@ -1,5 +1,18 @@
 name: CI
 
+# ── Por qué checkout@v5 / setup-node@v5 / gitleaks-action@v3 ────────────
+# GitHub deprecó Node.js 20 en los runners (sept. 2025): las actions que
+# apuntaban a Node 20 se veían forzadas a correr en Node 24 con warnings de
+# deprecación en cada run. Subimos a las primeras versiones con runtime
+# Node 24 (checkout/setup-node v4→v5, gitleaks v2→v3); no cambian inputs ni
+# comportamiento, solo el runtime, así que la migración es de una línea.
+#
+# Nota: el job `build` del deploy de GitHub Pages sigue mostrando una
+# warning de Node 20 — pero ese workflow lo gestiona GitHub internamente
+# (usa checkout@v4 y upload-artifact@v4 por dentro; no viven en este repo,
+# por eso no se pueden actualizar aquí). La warning desaparecerá sola
+# cuando GitHub migre su workflow interno de Pages al runtime Node 24;
+# no requiere ninguna acción por nuestra parte.
 on:
   push:
   pull_request:
