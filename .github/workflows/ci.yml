@@ -9,9 +9,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -111,9 +111,9 @@ jobs:
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -142,12 +142,13 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Historial completo: gitleaks detect escanea TODOS los commits,
           # no solo el último (caza secretos ya subidos en el pasado).
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      # v3 = migración Node 20 → Node 24 (sin cambios de inputs ni comportamiento).
+      - uses: gitleaks/gitleaks-action@v3
         env:
           # Token automático del runner: no hace falta crear ninguno.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
