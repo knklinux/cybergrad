@@ -42,6 +42,7 @@ const CAMPOS = [
   "becarioCompletadas",
   "logros",
   "mejorRating",
+  "mejorExamen",
   "casoSinPistas",
   "secretos",
   "estadisticas",
@@ -72,6 +73,9 @@ export function listarGuardados() {
 }
 
 export function guardar() {
+  // Modo presentador: el estado demo vive solo en memoria; jamás se escribe
+  // sobre el progreso real del jugador.
+  if (GAME.demo) return;
   try {
     const datos = {};
     for (const c of CAMPOS) datos[c] = GAME[c];
@@ -95,11 +99,14 @@ export function cargar(slot = 1) {
     for (const arr of ["casosCompletados", "lecciones", "rtCasosCompletados", "rtLecciones", "becarioCompletadas", "logros", "secretos"]) {
       if (!Array.isArray(GAME[arr])) GAME[arr] = [];
     }
-    // Estadísticas: objeto con sub-array ratings
+    // Estadísticas: objeto con sub-array ratings y campos de modos especiales
     if (!GAME.estadisticas || typeof GAME.estadisticas !== "object") {
       GAME.estadisticas = { tiempoJugado: 0, accionesOk: 0, accionesErr: 0, pistasUsadas: 0, ratings: [] };
     }
     if (!Array.isArray(GAME.estadisticas.ratings)) GAME.estadisticas.ratings = [];
+    if (GAME.estadisticas.reto === undefined) GAME.estadisticas.reto = null;
+    if (!Array.isArray(GAME.estadisticas.examenes)) GAME.estadisticas.examenes = [];
+    GAME.demo = false;
     GAME.casoActual = null;
     GAME.casoIniciadoEn = 0;
     GAME.reloj = 0;
@@ -144,8 +151,10 @@ export function nuevaPartida() {
   GAME.becarioCompletadas = [];
   GAME.logros = [];
   GAME.mejorRating = null;
+  GAME.mejorExamen = null;
   GAME.casoSinPistas = false;
   GAME.secretos = [];
+  GAME.demo = false;
   GAME.casoActual = null;
   GAME.casoIniciadoEn = 0;
   GAME.reloj = 0;

@@ -80,6 +80,15 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 
 **🥚 Huevo de pascua**: hay un **logro oculto** que no aparece en la lista de pendientes… pero la curiosidad tiene premio. Pulsa **3 veces seguidas el avatar de Jimmy** (en el HUD o en cualquier panel) y verás qué pasa. (Pista: Jimmy aprecia a los que investigan.)
 
+## 🔥 Reto diario, 🎓 Examen, 🎬 Presentador y más
+
+- **🔥 Reto diario** (botón 🔥 o comando `reto`): cada día el juego elige un caso (SOC o Red Team) y le cambia los **indicadores con una semilla basada en la fecha** — las IPs y los hosts son distintos cada día. Las sustituciones conservan la **longitud exacta** de cada cadena (incluidas claves de objetos), así que nada se rompe: base64 de PowerShell, hashes y consultas `whois`/`dig` siguen funcionando con los indicadores variados. Sin pistas y con el SLA real. El resultado de cada día se registra en tus estadísticas. Aprender el patrón, no memorizar respuestas.
+- **🎓 Modo examen** (botón 🎓 o comando `examen`): un caso al azar, sin pistas y a contrarreloj. Tu informe se califica igual (S+ a C) y, si apruebas con **A o mejor**, se desbloquea un **certificado descargable (PNG)** con tu nombre, tu calificación y la firma de Jimmy. El examen **no toca tu carrera** (ni XP ni casos completados): es una certificación independiente que sí guarda tu mejor nota.
+- **🎬 Modo presentador** (botón 🎬 o comando `demo`): carga en **memoria** un estado avanzado (rangos máximos, casos completados, logros) para enseñar CYBERGRAD en entrevistas o demos sin grindear. **Nunca se guarda**: en modo demo `guardar()` es un no-op, tu progreso real queda intacto.
+- **🧠 Jimmy responde preguntas libres** (comando `preguntar` o `jimmy`): pregúntale en lenguaje natural sobre el caso actual — «¿qué hago?» (objetivos pendientes con el comando exacto), «¿qué es T1566?» (técnica MITRE con su táctica), un término del glosario o un archivo del caso (busca y te cita las líneas de evidencia). 100 % local y determinista, sin backend.
+- **🧭 Árbol de habilidades MITRE** (botón 🧭 o comando `habilidades`): el mapa de tácticas y técnicas del juego. Cada técnica se desbloquea al completar el caso que la enseña; el árbol muestra cuántas dominas por táctica y qué caso te falta para desbloquear cada una.
+- **🔊 Sonido y vibración** (botón 🔊 o comando `sonido on|off|estado`): efectos sintetizados con Web Audio (correcto, error, alerta, caso resuelto) y vibración en móvil. El estado se persiste en el navegador.
+
 ## 🎓 Modo Becario
 
 ¿Nunca has tocado un SOC? El **Modo Becario** es tu rampa de entrada: tres prácticas guiadas de blue team y un **pentest guiado** de red team, donde Jimmy valida comando a comando y un **panel de guía** muestra el paso actual (N/M), el comando exacto y la explicación del **porqué** de cada acción:
@@ -130,7 +139,7 @@ El botón **Laboratorio** del HUD abre un modo de práctica libre (la idea del l
 | Red | `whois`, `dig`, `host`, `nslookup`, `curl` |
 | Respuesta | `bloquear`, `aislar`, `deshabilitar`, `escalar`, `cerrar_caso`, `informe` |
 | **Red team** | `nmap`, `gobuster`, `nikto`, `searchsploit`, `hydra`, `ssh`, `sqlmap`, `msf`, `mimikatz`, `john`/`hashcat`, `nc`, `exfiltrar`, `escalar_priv` |
-| Sistema | `ayuda`, `tutorial`, `explicar`, `clear`, `history`, `carrera`, `glosario`, `whoami`, `date` |
+| Sistema | `ayuda`, `tutorial`, `explicar`, `preguntar`/`jimmy`, `reto`, `examen`, `sonido`, `habilidades`, `demo`, `clear`, `history`, `carrera`, `glosario`, `whoami`, `date` |
 
 > 💡 `Tab` autocompleta · ↑/↓ historial · Ctrl+L limpia.
 
@@ -173,7 +182,7 @@ cybergrad/
 ├── make-icons.ps1        # Genera favicon, apple-touch-icon y portada cuadrada
 ├── css/style.css         # Estética de terminal / HUD / hologramas
 ├── assets/               # Avatar de Jimmy, favicon, iconos y portadas
-├── ci/                   # Tests del CI: unit, serve, smoke, XSS, whoami, banner, visual (+ prod-test de integración en producción)
+├── ci/                   # Tests del CI: unit, serve, smoke, XSS, whoami, banner, visual, reto, examen, jimmy-ia, presentador, sonido, habilidades (+ prod-test de integración en producción)
 └── js/
     ├── main.js           # Arranque (restaura la partida guardada si existe)
     ├── terminal.js       # Motor de terminal (entrada, historial, autocompletado)
@@ -190,6 +199,14 @@ cybergrad/
     ├── tutorial.js       # Mini tutorial: slides de contexto + micro-caso guiado
     ├── becario.js        # Modo Becario: 3 prácticas blue team + 1 pentest guiado
     ├── glosario.js       # Diccionario del analista
+    ├── mitre.js          # Base de conocimiento MITRE ATT&CK (tácticas y técnicas del juego)
+    ├── reto.js           # Reto diario: variación determinista de indicadores por semilla
+    ├── examen.js         # Modo examen: caso aleatorio sin pistas y certificación
+    ├── certificado.js    # Certificado del examen: dibujo en canvas y descarga PNG
+    ├── jimmy-ia.js       # Jimmy-IA: respuestas en lenguaje natural sobre el caso actual
+    ├── presentador.js    # Modo presentador: estado demo en memoria (nunca se guarda)
+    ├── sonido.js         # Sonido sintetizado (Web Audio) y vibración, con toggle persistido
+    ├── habilidades.js    # Árbol de habilidades MITRE (técnicas desbloqueadas por caso)
     ├── casos/            # Un archivo por caso blue team (fácil de ampliar)
     ├── rt-casos.js       # Catálogo de la campaña red team
     └── rt-casos/         # Un archivo por pentest red team (fácil de ampliar)
@@ -222,7 +239,7 @@ cybergrad/
 
 Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
 
-- **`checks`** — la cadena completa de **9 tests** (`npm test`):
+- **`checks`** — la cadena completa de **15 tests** (`npm test`):
   1. **Sintaxis** (`check`) — `node --check` sobre todos los `.js` del repo.
   2. **Lint** (`lint`) — ESLint básico sobre `js/`, `serve.js` y `ci/`.
   3. **Unit · `esc()`** (`test:unit`) — el helper de escape HTML contra XSS funciona.
@@ -232,6 +249,12 @@ Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
   7. **Whoami E2E** (`test:whoami`) — el comando `whoami` distingue "del SOC de ACME Corp" (blue team) de "de la Unidad Red Team de ACME Corp" (pentests).
   8. **Banner** (`test:banner`) — las 9 letras del banner ASCII (**CYBERGRAD**) están completas y ninguna es el glifo de otra letra (regresión golden contra figlet Standard: cazó la G que era una O y la C sin su interior).
   9. **Artefactos visuales** (`test:visual`) — regresión golden del **subtítulo del banner**, el **pie de arranque** (`© CYBERGRAD · Uso educativo …`), el **separador ASCII de la terminal** (52 guiones `─` con formato línea/título/línea) y las **escalas de rango del tutorial** (emojis y orden exactos de SOC y Red Team), con prueba de mutación: las regresiones se cazan y se restauran.
+  10. **Reto diario** (`test:reto`) — la variación por semilla es **determinista** (misma fecha → mismo caso; fecha distinta → indicadores distintos), el **invariante de longitud** se cumple en todas las cadenas y claves (no rompe base64), y E2E: el reto muestra su cabecera y **bloquea `pista`**.
+  11. **Modo examen** (`test:examen`) — E2E del examen (cabecera, `pista` bloqueado) y del **certificado**: el generador de canvas produce un **PNG real** (>10 KB) y el nombre de archivo se **sanea** (slug).
+  12. **Jimmy-IA** (`test:jimmy-ia`) — respuestas deterministas en Node («qué hago» lista pendientes con su comando, «qué es T1566» describe la técnica, búsqueda en evidencias cita la línea) + E2E del comando `preguntar` en la terminal.
+  13. **Modo presentador** (`test:presentador`) — el demo carga rangos máximos y casos completados, y **no se guarda**: el localStorage conserva la partida real del jugador.
+  14. **Sonido** (`test:sonido`) — el toggle del botón y el comando `sonido on|off|estado` **persisten** el estado, y activar Web Audio en headless **no produce errores de consola**.
+  15. **Árbol de habilidades** (`test:habilidades`) — **integridad de datos**: toda técnica citada en las lecciones de los casos existe en la KB de `mitre.js`; el estado del árbol (0 dominadas → todas dominadas) y el panel E2E.
 - **`integracion`** — check de integración real: `test:prod` carga la **versión desplegada en GitHub Pages** con Playwright y verifica los **cuatro artefactos visuales** que sirve producción contra los mismos canónicos de los tests locales: el **banner** (golden + glifos, vía `banner-core.mjs`), el **subtítulo**, el **pie de arranque** y el **separador ASCII** (vía `visual-core.mjs`, completando el onboarding y ejecutando `ayuda` para generar un separador real). Solo corre en push a `main` (y manual vía `workflow_dispatch`), reintentando hasta 5 min por si el deploy de Pages está en curso.
 - **`gitleaks`** — escaneo de secretos sobre el **historial completo** (más detalle en `SECURITY.md`).
 

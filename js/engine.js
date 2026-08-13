@@ -25,6 +25,7 @@ import { temaParaCaso } from "./fx.js";
 import { JIMMY_PISTA } from "./jimmy.js";
 import { guardar } from "./save.js";
 import { evaluarLogros } from "./logros.js";
+import { sonido } from "./sonido.js";
 
 const PUNTOS = {
   accionCorrecta: 30,
@@ -52,6 +53,10 @@ export class Engine {
     this.lab = false;             // modo laboratorio (práctica libre)
     this.tutorial = false;        // micro-tutorial guiado
     this.becario = false;         // modo becario (práctica guiada paso a paso)
+    this.reto = false;            // reto diario (indicadores distintos por semilla)
+    this.examen = false;          // modo examen (certificación, sin pistas)
+    this._modoPrevio = null;      // campaña del jugador antes de reto/examen (se restaura)
+    this._opciones = {};          // opciones del caso en curso (para reintentar)
     this.tutorialIdx = 0;
     this.tutorialFin = false;
   }
@@ -59,10 +64,16 @@ export class Engine {
   _gratis() { return this.lab || this.tutorial || this.becario; }
   _gratisLabel() { return this.lab ? "laboratorio" : this.becario ? "becario" : "tutorial"; }
   _guiado() { return this.tutorial || this.becario; }
+  // Modos especiales (reto diario / examen): SLA real pero sin tocar la carrera
+  _especial() { return this.reto || this.examen; }
+  _especialLabel() { return this.reto ? "reto diario" : "examen"; }
+  // Sin puntos en práctica libre Y en modos especiales (la carrera no se ensucia)
+  _sinPuntos() { return this._gratis() || this._especial(); }
   // Sufijo de mensaje: sin penalización en modos de práctica
   _sinPenalizacion() {
     if (this.lab) return " (sin penalización: laboratorio)";
     if (this._guiado()) return " (sin penalización: " + this._gratisLabel() + ")";
+    if (this._especial()) return " (sin penalización: " + this._especialLabel() + ")";
     return "";
   }
   // Nombre del paso guiado según el modo
@@ -75,10 +86,18 @@ export class Engine {
   iniciarCaso(caso, opciones = {}) {
     this.caso = caso;
     this.modoRT = caso.modo === "rt";
+    // Reto/examen pueden usar casos de la otra campaña: se recuerda la
+    // campaña real del jugador para restaurarla al terminar.
+    if (opciones.reto || opciones.examen) {
+      if (!this._especial()) this._modoPrevio = GAME.modo;
+    }
     GAME.modo = this.modoRT ? "rt" : "soc";
     this.lab = !!opciones.lab;
     this.tutorial = !!opciones.tutorial;
     this.becario = !!opciones.becario;
+    this.reto = !!opciones.reto;
+    this.examen = !!opciones.examen;
+    this._opciones = { ...opciones };
     this.tutorialIdx = 0;
     this.tutorialFin = false;
     GAME.casoActual = caso.id;
@@ -104,20 +123,34 @@ export class Engine {
     const caso = this.caso;
     this.term.clear();
     const num = this.modoRT ? numCasoRT(caso.id) : numCaso(caso.id);
-    this.term.separator(`${this.modoRT ? "P E N T E S T" : "C A S O"}  ${num} / 6`);
-    this.term.printHi(`📨 Nuevo caso asignado: ${caso.titulo}`);
+    const cabecera = this.examen ? "E X A M E N"
+      : this.reto ? "R E T O  D I A R I O"
+      : this.modoRT ? "P E N T E S T" : "C A S O";
+    const sufijo = this._especial() ? `  ·  ${caso.titulo}` : `  ${num} / 6`;
+    this.term.separator(cabecera + sufijo);
+    this.term.printHi(`📨 ${this.examen ? "🎓 EXAMEN: " : this.reto ? "🔥 RETO DIARIO: " : "Nuevo caso asignado: "}${caso.titulo}`);
     this.term.printInfo(`Severidad: ${caso.severidad}  |  SLA: ${caso.sla}s  |  XP posible: ${caso.xp}`);
     this.term.print("");
-    this.term.print(this.modoRT
-      ? "Usa `ver_caso` para el briefing y `nmap` / `gobuster` para empezar."
-      : "Usa `ver_caso` para leer el briefing y `mail` / `alertas` para empezar.", "t-out-dim");
+    if (this.reto) {
+      this.term.print("🔥 Mismo incidente, indicadores distintos cada día. Sin pistas: aquí se prueba tu criterio.", "t-out-warn");
+    } else if (this.examen) {
+      this.term.print("🎓 Examen de certificación: sin pistas, sin ayuda. Aprobar (A o mejor) desbloquea tu certificado.", "t-out-warn");
+    } else {
+      this.term.print(this.modoRT
+        ? "Usa `ver_caso` para el briefing y `nmap` / `gobuster` para empezar."
+        : "Usa `ver_caso` para leer el briefing y `mail` / `alertas` para empezar.", "t-out-dim");
+    }
     this.term.print("`ayuda` muestra todos los comandos. ¡A por ello, " + (this.modoRT ? "pentester" : "analista") + "!", "t-out-dim");
     this.term.print("");
 
     this.ui.mostrarCaso(caso, this.hecho);
     this.ui.actualizarPerfil();
-    this.ui.feed(`Caso #${caso.id} asignado (${caso.severidad})${this.lab ? " · LAB" : this.tutorial ? " · TUTORIAL" : this.becario ? " · BECARIO" : this.modoRT ? " · PENTEST" : ""}`, "new-msg");
-    if (this.lab) {
+    this.ui.feed(`Caso #${caso.id} asignado (${caso.severidad})${this.lab ? " · LAB" : this.tutorial ? " · TUTORIAL" : this.becario ? " · BECARIO" : this.reto ? " · RETO DIARIO" : this.examen ? " · EXAMEN" : this.modoRT ? " · PENTEST" : ""}`, "new-msg");
+    if (this.reto) {
+      this.ui.jimmyDice("Reto diario: los indicadores cambian cada día. Demuestra que entiendes el patrón, no que memorizas.");
+    } else if (this.examen) {
+      this.ui.jimmyDice("Examen: sin pistas y con el reloj en contra. Si apruebas con A o mejor, te ganas el certificado.");
+    } else if (this.lab) {
       this.ui.jimmyDice("Modo Laboratorio activo: sin SLA, sin penalizaciones, pistas gratis. Practica con fluidez.");
     } else if (this.becario) {
       this.ui.jimmyDice("Modo Becario: te explico cada paso y el porqué. Sin prisa, sin penalizaciones. Sigue la guía.");
@@ -172,6 +205,7 @@ export class Engine {
       this.ui.feed(`ALERTA: ${ev.titulo}`, "new-alert");
       this.ui.notificar(ev.titulo, ev.detalle, "crit");
       this.term.printWarn(`🔴 ALERTA EN VIVO: ${ev.titulo}`);
+      sonido.alerta();
       this.term.print(ev.detalle, "t-out-dim");
       this.ui.pulsoTema(ev.sev === "CRITICAL" || ev.sev === "HIGH" ? 1.5 : 1);
     } else if (ev.tipo === "msg") {
@@ -288,20 +322,22 @@ export class Engine {
       addPuntos(PUNTOS.accionCorrecta);
       registrarAccion("bloquear", `${obj.tipo}:${obj.valor}`, true, PUNTOS.accionCorrecta);
       this.term.printOk(`Bloqueado en firewall/pasarela: ${obj.tipo} ${obj.valor}. Indicador neutralizado.`);
+      sonido.ok();
       this.ui.mostrarCaso(this.caso, this.hecho);
       this._sugerirInforme();
       return;
     }
     if (incorrecta) {
       this.errores++;
-      const pts = this._gratis() ? 0 : PUNTOS.accionIncorrecta;
+      const pts = this._sinPuntos() ? 0 : PUNTOS.accionIncorrecta;
       addPuntos(pts);
       registrarAccion("bloquear", `${obj.tipo}:${obj.valor}`, false, pts);
       this.term.printErr(`⚠ ¡Cuidado! ${obj.valor} es un indicador LEGÍTIMO o no relacionado. Bloquearlo dañaría la operación${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionIncorrecta)} pts)`}.`);
+      sonido.err();
       this.ui.mostrarCaso(this.caso, this.hecho);
       return;
     }
-    const pts = this._gratis() ? 0 : PUNTOS.accionNoProcede;
+    const pts = this._sinPuntos() ? 0 : PUNTOS.accionNoProcede;
     addPuntos(pts);
     registrarAccion("bloquear", `${obj.tipo}:${obj.valor}`, false, pts);
     this.term.printWarn(`No se identifica ${obj.valor} como indicador de este incidente. Revisa las evidencias antes de bloquear${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionNoProcede)} pts)`}.`);
@@ -318,19 +354,21 @@ export class Engine {
       addPuntos(PUNTOS.accionCorrecta);
       registrarAccion("aislar", `host:${obj.valor}`, true, PUNTOS.accionCorrecta);
       this.term.printOk(`Host ${obj.valor.toUpperCase()} aislado de la red (segmento de cuarentena). Evidencias preservadas.`);
+      sonido.ok();
       this.ui.mostrarCaso(this.caso, this.hecho);
       this._sugerirInforme();
       return;
     }
     if (incorrecta) {
       this.errores++;
-      const pts = this._gratis() ? 0 : PUNTOS.accionIncorrecta;
+      const pts = this._sinPuntos() ? 0 : PUNTOS.accionIncorrecta;
       addPuntos(pts);
       registrarAccion("aislar", `host:${obj.valor}`, false, pts);
       this.term.printErr(`⚠ Aislar ${obj.valor} no está justificado por las evidencias y cortaría servicios legítimos${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionIncorrecta)} pts)`}.`);
+      sonido.err();
       return;
     }
-    const pts = this._gratis() ? 0 : PUNTOS.accionNoProcede;
+    const pts = this._sinPuntos() ? 0 : PUNTOS.accionNoProcede;
     addPuntos(pts);
     registrarAccion("aislar", `host:${obj.valor}`, false, pts);
     this.term.printWarn(`No hay evidencias de que ${obj.valor} esté implicado. No aísles sin justificación${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionNoProcede)} pts)`}.`);
@@ -347,19 +385,21 @@ export class Engine {
       addPuntos(PUNTOS.accionCorrecta);
       registrarAccion("deshabilitar", `usuario:${obj.valor}`, true, PUNTOS.accionCorrecta);
       this.term.printOk(`Cuenta ${obj.valor} deshabilitada y sesiones revocadas. Credenciales marcadas para rotación.`);
+      sonido.ok();
       this.ui.mostrarCaso(this.caso, this.hecho);
       this._sugerirInforme();
       return;
     }
     if (incorrecta) {
       this.errores++;
-      const pts = this._gratis() ? 0 : PUNTOS.accionIncorrecta;
+      const pts = this._sinPuntos() ? 0 : PUNTOS.accionIncorrecta;
       addPuntos(pts);
       registrarAccion("deshabilitar", `usuario:${obj.valor}`, false, pts);
       this.term.printErr(`⚠ ${obj.valor} no es la cuenta comprometida. Deshabilitarla interrumpiría la operación${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionIncorrecta)} pts)`}.`);
+      sonido.err();
       return;
     }
-    const pts = this._gratis() ? 0 : PUNTOS.accionNoProcede;
+    const pts = this._sinPuntos() ? 0 : PUNTOS.accionNoProcede;
     addPuntos(pts);
     registrarAccion("deshabilitar", `usuario:${obj.valor}`, false, pts);
     this.term.printWarn(`No hay indicios de que la cuenta ${obj.valor} esté comprometida${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionNoProcede)} pts)`}.`);
@@ -372,15 +412,17 @@ export class Engine {
       addPuntos(PUNTOS.escalar);
       registrarAccion("escalar", "a CSIRT / Nivel 2", true, PUNTOS.escalar);
       this.term.printOk("Incidente escalado a CSIRT con toda la información recopilada. Bien coordinado.");
+      sonido.ok();
       this.ui.mostrarCaso(this.caso, this.hecho);
       this._sugerirInforme();
       return;
     }
     this.errores++;
-    const pts = this._gratis() ? 0 : -20;
+    const pts = this._sinPuntos() ? 0 : -20;
     addPuntos(pts);
     registrarAccion("escalar", "a CSIRT / Nivel 2", false, pts);
     this.term.printErr(`⚠ Escalar sin necesidad satura al CSIRT y cuesta confianza. Revisa el contexto: ¿hay indicadores reales?${this._sinPenalizacion() || " (-20 pts)"}.`);
+    sonido.err();
   }
 
   cerrarCaso(razon) {
@@ -390,6 +432,7 @@ export class Engine {
       addPuntos(PUNTOS.cerrarCorrecto);
       registrarAccion("cerrar_caso", razon || "falso positivo justificado", true, PUNTOS.cerrarCorrecto);
       this.term.printOk(`Caso cerrado como FALSO POSITIVO${razon ? `: ${razon}` : ""}. Excelente triaje: has evitado interrumpir una operación legítima.`);
+      sonido.ok();
       this.term.printInfo("Completa la documentación con `informe`.");
       this.ui.mostrarCaso(this.caso, this.hecho);
       return;
@@ -397,16 +440,19 @@ export class Engine {
     this.errores++;
     const pts = this._gratis() ? 0 : PUNTOS.accionIncorrecta;
     addPuntos(pts);
-    registrarAccion("cerrar_caso", razon || "sin justificación", false, pts);
-    this.term.printErr(`⚠ NO se puede cerrar este caso: hay indicadores claros de compromiso (${this.caso.id}). Un incidente real quedaría sin respuesta${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionIncorrecta)} pts)`}.`);
+    registrarAccion("cerrar_caso", razon || "sin justificación", false, pts);      this.term.printErr(`⚠ NO se puede cerrar este caso: hay indicadores claros de compromiso (${this.caso.id}). Un incidente real quedaría sin respuesta${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionIncorrecta)} pts)`}.`);
+      sonido.err();
   }
 
   pista() {
+    if (this._especial()) {
+      return this.term.printErr("No hay pistas en el " + this._especialLabel() + ". Este modo pone a prueba tu criterio, no tu memoria.");
+    }
     if (!this.caso.pistas || this.caso.pistas.length === 0) return this.term.printWarn("Este caso no tiene pistas.");
     if (this.pistasUsadas >= this.caso.pistas.length) return this.term.printInfo("Ya has usado todas las pistas.");
     const p = this.caso.pistas[this.pistasUsadas];
     this.pistasUsadas++;
-    const pts = this._gratis() ? 0 : PUNTOS.pista;
+    const pts = this._sinPuntos() ? 0 : PUNTOS.pista;
     addPuntos(pts);
     registrarAccion("pista", `pista ${this.pistasUsadas}`, false, pts);
     this.ui.jimmyDice(JIMMY_PISTA[Math.min(this.pistasUsadas - 1, JIMMY_PISTA.length - 1)]);
@@ -490,10 +536,11 @@ export class Engine {
     const clave = this._claveObjetivo(tipo, canon);
     if (this.hecho.has(clave)) return true;
     this.hecho.add(clave);
-    const pts = this._gratis() ? 0 : 25;
+    const pts = this._sinPuntos() ? 0 : 25;
     addPuntos(pts);
     registrarAccion(tipo, canon, true, pts);
     this.term.printOk(this._etiquetaObjetivo(tipo, canon));
+    sonido.ok();
     this.ui.mostrarCaso(this.caso, this.hecho);
     this._sugerirInforme();
     return true;
@@ -606,12 +653,16 @@ export class Engine {
       mult = 0.6;
     }
 
-    // Registro de hitos para logros (mejor calificación y caso sin pistas)
+    // Registro de hitos para logros (mejor calificación y caso sin pistas).
+    // En reto/examen NO se tocan los hitos de la carrera: son certificaciones aparte.
+    const esEspecial = this._especial();
     const ORDEN_RATING = ["C", "B", "A", "S", "S+"];
-    if (ORDEN_RATING.indexOf(rating) > ORDEN_RATING.indexOf(GAME.mejorRating || "C")) {
-      GAME.mejorRating = rating;
+    if (!esEspecial) {
+      if (ORDEN_RATING.indexOf(rating) > ORDEN_RATING.indexOf(GAME.mejorRating || "C")) {
+        GAME.mejorRating = rating;
+      }
+      GAME.casoSinPistas = this.pistasUsadas === 0;
     }
-    GAME.casoSinPistas = this.pistasUsadas === 0;
 
     const xp = Math.round(caso.xp * mult);
     const resultado = {
@@ -625,10 +676,38 @@ export class Engine {
       errores: this.errores,
       pistas: this.pistasUsadas,
       caso,
+      reto: this.reto,
+      examen: this.examen,
     };
 
     // Acumular estadísticas globales
     this._acumularStats(rating);
+
+    // ---- Modos especiales (reto diario / examen): no tocan la carrera ----
+    if (esEspecial) {
+      const fecha = this.reto ? (caso.retoSemilla || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10);
+      if (!GAME.estadisticas) GAME.estadisticas = {};
+      if (this.reto) {
+        GAME.estadisticas.reto = { fecha, casoId: caso.retoBaseId || caso.id, rating, segundos: GAME.reloj };
+      } else {
+        if (!Array.isArray(GAME.estadisticas.examenes)) GAME.estadisticas.examenes = [];
+        GAME.estadisticas.examenes.push({ fecha, casoId: caso.id, rating, segundos: GAME.reloj });
+        const mejor = Math.max(
+          ORDEN_RATING.indexOf(GAME.mejorExamen || "C"),
+          ORDEN_RATING.indexOf(rating)
+        );
+        GAME.mejorExamen = ORDEN_RATING[mejor];
+      }
+      const modoEspecial = this.reto ? "reto" : "examen";
+      this._restaurarModo();
+      this._limpiarTimers();
+      guardar();
+      sonido.exito();
+      this.ui.mostrarResultado(resultado, () =>
+        this.ui.mostrarLeccion(caso, () => this.ui.mostrarFinModoEspecial(modoEspecial))
+      );
+      return;
+    }
 
     // Aplicar (en laboratorio no se suma XP: práctica libre sin impacto en la carrera)
     if (!this.lab) {
@@ -638,6 +717,7 @@ export class Engine {
       GAME.lecciones.push(caso.id);
       this._limpiarTimers();
       guardar();
+      sonido.exito();
       this.ui.mostrarResultado(resultado, () =>
         this.ui.mostrarLeccion(caso, () => this.ui.mostrarLaboratorio())
       );
@@ -655,9 +735,21 @@ export class Engine {
     this._limpiarTimers();
     this._notificarLogros();
     guardar();
+    sonido.exito();
     this.ui.mostrarResultado(resultado, () =>
       this.ui.mostrarLeccion(caso, () => this._siguienteCaso())
     );
+  }
+
+  // Restaura la campaña real del jugador tras un reto/examen (que pueden
+  // usar casos de la otra campaña) y limpia los flags de modo especial.
+  _restaurarModo() {
+    if (this._modoPrevio) {
+      GAME.modo = this._modoPrevio;
+      this._modoPrevio = null;
+    }
+    this.reto = false;
+    this.examen = false;
   }
 
   _pctAcciones() {
@@ -706,14 +798,23 @@ export class Engine {
   fracasarCaso(motivo) {
     this._acumularStats(null);
     this._limpiarTimers();
-    addPuntos(PUNTOS.slaSuperado);
-    guardar();
+    sonido.err();
+    // En modos especiales el fallo no penaliza la carrera
+    if (!this._sinPuntos()) addPuntos(PUNTOS.slaSuperado);
     this.term.printErr("🔴 " + motivo);
+    if (this._especial()) {
+      const modo = this.reto ? "reto" : "examen";
+      this._restaurarModo();
+      guardar();
+      this.ui.mostrarFinModoEspecial(modo, true);
+      return;
+    }
+    guardar();
     this.ui.fracasarCaso(motivo, () => this._reintentar(), () => this._saltarCaso());
   }
 
   _reintentar() {
-    if (this.caso) this.iniciarCaso(this.caso);
+    if (this.caso) this.iniciarCaso(this.caso, this._opciones);
   }
 
   _saltarCaso() {

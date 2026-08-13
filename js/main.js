@@ -11,6 +11,7 @@ import { GAME } from "./state.js";
 import { CASOS, siguienteCaso } from "./casos.js";
 import { siguienteCasoRT } from "./rt-casos.js";
 import { listarGuardados, cargar, nuevaPartida } from "./save.js";
+import { sonido } from "./sonido.js";
 
 const BANNER = [
   "  ██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ",
@@ -33,6 +34,11 @@ fx.start();
 
 const ui = new UI(term, fx);
 const engine = new Engine({ term, ui });
+
+// El AudioContext se crea en el primer gesto del usuario (requisito de
+// los navegadores para reproducir audio sin interacción previa).
+document.addEventListener("pointerdown", () => sonido.iniciar(), { once: true });
+document.addEventListener("keydown", () => sonido.iniciar(), { once: true });
 
 const { cmds, lista } = crearComandos({ engine, term, ui });
 term.setSugerencias(lista);

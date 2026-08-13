@@ -122,8 +122,10 @@ export const GAME = {
   // ---- Logros e insignias ----
   logros: [],                 // ids de logros desbloqueados
   mejorRating: null,          // mejor calificación conseguida ("C" → "S+")
+  mejorExamen: null,          // mejor calificación en el modo examen ("C" → "S+")
   casoSinPistas: false,       // último caso completado sin usar pistas
   secretos: [],               // secretos/huevos de pascua encontrados (ids)
+  demo: false,                // modo presentador: estado demo en memoria (nunca se guarda)
   // ---- Estadísticas globales (acumuladas de todos los casos) ----
   estadisticas: {
     tiempoJugado: 0,          // segundos de reloj acumulados

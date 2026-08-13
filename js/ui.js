@@ -10,6 +10,12 @@ import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
 import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
+import { retoDelDia } from "./reto.js";
+import { elegirCasoExamen, apruebaExamen, textoVeredicto } from "./examen.js";
+import { descargarCertificado } from "./certificado.js";
+import { estadoHabilidades } from "./habilidades.js";
+import { aplicarModoPresentador } from "./presentador.js";
+import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
   JIMMY_LECCION, JIMMY_LAB, JIMMY_FINAL,
@@ -91,6 +97,30 @@ export class UI {
     $("btn-rt").addEventListener("click", () => this.mostrarRedTeam());
     $("btn-becario").addEventListener("click", () => this.mostrarBecario());
     $("btn-compartir").addEventListener("click", () => this.mostrarCompartir());
+    $("btn-reto").addEventListener("click", () => this.mostrarRetoDiario());
+    $("btn-examen").addEventListener("click", () => this.mostrarExamen());
+    $("btn-habilidades").addEventListener("click", () => this.mostrarHabilidades());
+    $("btn-demo").addEventListener("click", () => this.mostrarPresentador());
+    $("btn-sonido").addEventListener("click", () => this.toggleSonido());
+    this.actualizarBotonSonido();
+  }
+
+  // ---------- Sonido ----------
+  toggleSonido() {
+    const on = !sonidoActivado();
+    fijarSonido(on);
+    sonido.setActivado(on);
+    this.actualizarBotonSonido();
+    if (on) sonido.ok();
+  }
+
+  actualizarBotonSonido() {
+    const btn = $("btn-sonido");
+    if (!btn) return;
+    const on = sonidoActivado();
+    btn.textContent = on ? "🔊" : "🔇";
+    btn.title = on ? "Sonido: activado (clic para silenciar)" : "Sonido: silenciado (clic para activar)";
+    btn.classList.toggle("off", !on);
   }
 
   // ---------- Motor gráfico ----------
@@ -653,29 +683,55 @@ ${acciones}
   // ---------- Resultado ----------
   mostrarResultado(r, onSiguiente) {
     const caso = r.caso;
+    const esReto = !!r.reto;
+    const esExamen = !!r.examen;
+    const aprobado = esExamen && apruebaExamen(r.rating);
     const icono = { "S+": "🏆", S: "⭐", A: "💪", B: "👍", C: "📖" }[r.rating] || "📖";
     const lista = r.menciones.map((m) => `<li style="color:${m.ok ? "#33ff66" : "#ffb000"}">${m.ok ? "✔" : "✘"} ${m.texto}</li>`).join("");
     const jimmy = alea(JIMMY_RESULTADO[r.rating] || JIMMY_RESULTADO.C);
+    const titulo = esReto ? "🔥 RETO DIARIO COMPLETADO" : esExamen ? "🎓 EXAMEN — CALIFICACIÓN " + r.rating : `${icono} CASO RESUELTO — CALIFICACIÓN ${r.rating}`;
+    const recompensa = esReto || esExamen
+      ? `<div style="font-size:15px;color:#35e0ff">${esReto ? "🔥 Reto diario" : "🎓 Examen"}: no suma XP a tu carrera (certificación independiente)</div>`
+      : this._modoLab
+        ? `+${r.xp} XP de práctica (no suma a tu carrera en laboratorio)`
+        : `+${r.xp} XP (base ${caso.xp} × ${r.mult.toFixed(2)})`;
+    const veredicto = esExamen
+      ? `<div class="modal-section"><h3>VEREDICTO</h3><div style="font-size:13.5px;color:${aprobado ? "#33ff66" : "#ffb000"}">${textoVeredicto(r.rating)}</div></div>`
+      : "";
+    const botonCert = esExamen && aprobado
+      ? `<button class="btn-secondary" data-action="descargar-certificado">📜 DESCARGAR CERTIFICADO</button>`
+      : "";
 
     const html = `
-      <div class="modal-title">${icono} CASO RESUELTO — CALIFICACIÓN ${r.rating}</div>
+      <div class="modal-title">${titulo}</div>
       <div class="modal-text" style="margin-bottom:6px">
         Has completado <b>${caso.titulo}</b> en ${Math.floor(r.tUsado * caso.sla / 60)} min
         (${Math.round(r.tUsado * 100)}% del SLA) con ${r.errores} error(es) y ${r.pistas} pista(s).
       </div>
       <div class="modal-section">
         <h3>RECOMPENSA</h3>
-        <div style="font-size:15px;color:#33ff66">${this._modoLab ? `+${r.xp} XP de práctica (no suma a tu carrera en laboratorio)` : `+${r.xp} XP (base ${caso.xp} × ${r.mult.toFixed(2)})`}</div>
+        ${recompensa}
       </div>
+      ${veredicto}
       <div class="modal-section">
         <h3>COBERTURA DEL INFORME</h3>
         <ul style="font-size:12.5px;line-height:1.8;padding-left:18px">${lista}</ul>
       </div>
       <div class="jimmy-habla">${jimmy}</div>
       <div class="btn-row">
+        ${botonCert}
         <button class="btn-primary" data-action="siguiente">SIGUIENTE →</button>
       </div>`;
     this.setAcciones({
+      "descargar-certificado": () => {
+        descargarCertificado({
+          nombre: GAME.nombre,
+          rating: r.rating,
+          caso: caso.titulo,
+          fecha: new Date().toISOString().slice(0, 10),
+          modo: caso.modo === "rt" ? "rt" : "soc",
+        });
+      },
       "siguiente": () => { this.cerrarModal(); onSiguiente(); },
     });
     this.abrirModal(html);
@@ -1276,6 +1332,160 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
         borrarGuardado();
         location.reload();
       }),
+    });
+    this.abrirModal(html);
+  }
+
+  // ---------- Reto diario ----------
+  mostrarRetoDiario() {
+    const reto = retoDelDia();
+    const yaHoy = GAME.estadisticas?.reto?.fecha === reto.fecha;
+    const html = `
+      <div class="modal-title">🔥 RETO DIARIO</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px">
+        El mismo incidente con <b>indicadores distintos cada día</b>: las IPs y los hosts cambian
+        según la semilla de la fecha. Sin pistas y con el SLA real — aquí se nota el criterio, no la memoria.
+      </div>
+      <div class="modal-section">
+        <h3>RETO DE HOY · ${reto.fecha}</h3>
+        <div class="modal-text" style="font-size:13px">
+          <b>${reto.titulo}</b><br/>
+          <span style="color:#8fd39e">${reto.esRT ? "Campaña Red Team" : "Campaña SOC"} · Severidad ${reto.caso.severidad} · SLA ${Math.floor(reto.caso.sla / 60)} min</span>
+        </div>
+        ${yaHoy ? `<div class="modal-text" style="font-size:12px;color:#33ff66">✔ Ya superaste el reto de hoy con ${GAME.estadisticas.reto.rating}. Puedes repetirlo para mejorar tu marca.</div>` : ""}
+      </div>
+      <div class="jimmy-habla">Repetir el mismo caso con indicadores nuevos: así se aprende el patrón, no las respuestas. — Jimmy</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cerrar-reto">CERRAR</button>
+        <button class="btn-primary" data-action="jugar-reto">🔥 JUGAR RETO DE HOY</button>
+      </div>`;
+    this.setAcciones({
+      "cerrar-reto": () => this.cerrarModal(),
+      "jugar-reto": () => {
+        this.cerrarModal();
+        this._onNuevoCaso(reto.caso, { reto: true });
+      },
+    });
+    this.abrirModal(html);
+  }
+
+  // ---------- Modo examen ----------
+  mostrarExamen() {
+    const mejor = GAME.mejorExamen;
+    const nExamenes = (GAME.estadisticas?.examenes || []).length;
+    const html = `
+      <div class="modal-title">🎓 MODO EXAMEN</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px">
+        Un caso al azar (SOC o Red Team), <b>sin pistas</b>, con el SLA real y el reloj en contra.
+        Tu informe se califica como siempre (S+/S/A/B/C) y, si apruebas con <b>A o mejor</b>,
+        obtienes un <b>certificado descargable</b> con tu nombre y tu calificación.
+        El examen <b>no toca tu carrera</b>: ni XP, ni casos completados.
+      </div>
+      ${mejor ? `<div class="modal-text" style="font-size:12.5px;color:#33ff66;margin-top:6px">Mejor nota: ${mejor} · ${nExamenes} ${nExamenes === 1 ? "examen hecho" : "exámenes hechos"}.</div>` : ""}
+      <div class="jimmy-habla">Un certificado no demuestra que sepas: demuestra que lo hiciste bajo presión. — Jimmy</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cerrar-examen">CERRAR</button>
+        <button class="btn-primary" data-action="empezar-examen">🎓 EMPEZAR EXAMEN</button>
+      </div>`;
+    this.setAcciones({
+      "cerrar-examen": () => this.cerrarModal(),
+      "empezar-examen": () => {
+        this.cerrarModal();
+        this._onNuevoCaso(elegirCasoExamen(), { examen: true });
+      },
+    });
+    this.abrirModal(html);
+  }
+
+  // ---------- Modo presentador (demo) ----------
+  mostrarPresentador() {
+    const html = `
+      <div class="modal-title">🎬 MODO PRESENTADOR</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px">
+        Carga un <b>estado demo avanzado</b> (rangos máximos, casos completados, logros) para
+        enseñar CYBERGRAD en entrevistas o demos sin tener que grindear.
+        <br/><br/>
+        <b>No se guarda nada:</b> tu progreso real queda intacto. Para volver a tu carrera, recarga la página.
+      </div>
+      <div class="jimmy-habla">El presentador enseña el potencial del juego, no tu partida. — Jimmy</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="cerrar-demo">CERRAR</button>
+        <button class="btn-primary" data-action="entrar-demo">🎬 ENTRAR EN MODO DEMO</button>
+      </div>`;
+    this.setAcciones({
+      "cerrar-demo": () => this.cerrarModal(),
+      "entrar-demo": () => {
+        aplicarModoPresentador();
+        this.cerrarModal();
+        this.actualizarPerfil();
+        this.mostrarCarrera();
+      },
+    });
+    this.abrirModal(html);
+  }
+
+  // ---------- Árbol de habilidades MITRE ----------
+  mostrarHabilidades() {
+    const est = estadoHabilidades();
+    const secciones = est.tacticas
+      .filter((t) => t.tecnicas.length)
+      .map((t) => `
+        <div class="hab-tactica">
+          <div class="hab-titulo">${t.icono} ${t.nombre} <span class="hab-prog">${t.nHechas}/${t.tecnicas.length}</span></div>
+          <div class="hab-desc">${t.desc}</div>
+          <div class="hab-tecnicas">
+            ${t.tecnicas.map((te) => `
+              <div class="hab-chip ${te.hecha ? "hab-hecha" : "hab-locked"}">
+                <span class="hab-code">${te.code}</span>
+                <span class="hab-nombre">${te.nombre}</span>
+                <span class="hab-estado">${te.hecha ? "✔ dominada" : `— ${te.casos.map((c) => c.titulo).join(", ").slice(0, 70)}`}</span>
+              </div>`).join("")}
+          </div>
+        </div>`).join("");
+    const html = `
+      <div class="modal-title">🧭 ÁRBOL DE HABILIDADES MITRE</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text" style="font-size:12.5px;margin-bottom:6px">
+        <b>${est.dominadas} de ${est.total} técnicas</b> dominadas. Cada técnica se desbloquea al
+        completar el caso que la enseña (SOC o Red Team). El mapa muestra qué dominas y qué te falta.
+      </div>
+      <div id="habilidades-lista">${secciones}</div>
+      <div class="btn-row"><button class="btn-primary" data-action="cerrar-habilidades">CERRAR</button></div>`;
+    this.setAcciones({ "cerrar-habilidades": () => this.cerrarModal() });
+    this.abrirModal(html);
+  }
+
+  // ---------- Fin de modo especial (reto / examen) ----------
+  mostrarFinModoEspecial(modo, perdido = false) {
+    const esReto = modo === "reto";
+    const titulo = perdido
+      ? esReto ? "⏱ RETO DIARIO PERDIDO" : "🎓 EXAMEN NO SUPERADO"
+      : esReto ? "🔥 RETO DIARIO COMPLETADO" : "🎓 EXAMEN COMPLETADO";
+    const texto = esReto
+      ? perdido
+        ? "El SLA se agotó en el reto de hoy. Mañana habrá un reto nuevo con indicadores distintos."
+        : "Reto de hoy completado. Mañana, indicadores nuevos: vuelve a demostrar que entiendes el patrón."
+      : perdido
+        ? "No superaste el examen esta vez. Repasa con el tutor (`explicar` / `preguntar`) y reinténtalo cuando estés listo."
+        : "Examen entregado. Puedes repetirlo cuando quieras para mejorar tu nota.";
+    const html = `
+      <div class="modal-title">${titulo}</div>
+      ${this.holoHTML("holo-md")}
+      <div class="modal-text">${texto}</div>
+      <div class="btn-row">
+        <button class="btn-secondary" data-action="volver-juego">VOLVER AL JUEGO</button>
+        <button class="btn-primary" data-action="repetir-especial">${perdido ? "REINTENTAR" : "REPETIR"}</button>
+      </div>`;
+    this.setAcciones({
+      "volver-juego": () => { this.cerrarModal(); location.reload(); },
+      "repetir-especial": () => {
+        this.cerrarModal();
+        if (esReto) this.mostrarRetoDiario();
+        else this.mostrarExamen();
+      },
     });
     this.abrirModal(html);
   }

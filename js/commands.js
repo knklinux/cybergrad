@@ -8,6 +8,8 @@ import { GAME, estadoRango, estadoRangoRT } from "./state.js";
 import { numCaso } from "./casos.js";
 import { numCasoRT } from "./rt-casos.js";
 import { explicarTutor, EXPLICAR_AYUDA } from "./tutor.js";
+import { preguntarJimmy, PREGUNTAR_AYUDA } from "./jimmy-ia.js";
+import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
 
 const AYUDA = {
   "ayuda": "ayuda [comando] — lista los comandos disponibles o explica uno",
@@ -37,6 +39,13 @@ const AYUDA = {
   "vt": "vt <hash> — consulta VirusTotal por hash",
   "pista": "pista — pide una pista al supervisor (cuesta puntos)",
   "explicar": EXPLICAR_AYUDA,
+  "preguntar": PREGUNTAR_AYUDA,
+  "jimmy": "jimmy <texto> — alias de preguntar: Jimmy responde sobre el caso actual",
+  "reto": "reto — abre el reto diario (mismo incidente, indicadores distintos cada día)",
+  "examen": "examen — modo examen: caso sin pistas a contrarreloj; al aprobar (A o mejor) obtienes certificado",
+  "sonido": "sonido [on|off|estado] — activa, silencia o muestra el estado del sonido",
+  "habilidades": "habilidades — abre el árbol de habilidades MITRE ATT&CK",
+  "demo": "demo — modo presentador: estado avanzado en memoria (nunca se guarda)",
   "nmap": "nmap <ip|rango> — escanea puertos y servicios (red team)",
   "gobuster": "gobuster <url> — descubre directorios en un servidor web",
   "nikto": "nikto <url> — analiza vulnerabilidades del servidor web",
@@ -720,6 +729,34 @@ export function crearComandos(ctx) {
     },
 
     pista() { engine.pista(); },
+
+    preguntar(a) {
+      const texto = preguntarJimmy(a, { caso: engine.caso, hecho: engine.hecho, modoRT: engine.modoRT, game: GAME });
+      term.separator("🧠 JIMMY — PREGUNTA LIBRE");
+      out(texto, "t-out");
+    },
+    jimmy: (a) => cmds.preguntar(a),
+
+    reto() { ui.mostrarRetoDiario(); },
+    examen() { ui.mostrarExamen(); },
+    habilidades() { ui.mostrarHabilidades(); },
+    demo() { ui.mostrarPresentador(); },
+
+    sonido(a) {
+      const arg = String(a || "").trim().toLowerCase();
+      if (arg === "on") {
+        fijarSonido(true);
+        sonido.setActivado(true);
+        out("🔊 Sonido activado.", "t-out-info");
+      } else if (arg === "off") {
+        fijarSonido(false);
+        sonido.setActivado(false);
+        out("🔇 Sonido silenciado.", "t-out-info");
+      } else {
+        out(`🔊 Sonido: ${sonidoActivado() ? "activado" : "silenciado"}. Usa 'sonido on' o 'sonido off'.`, "t-out-info");
+      }
+      ui.actualizarBotonSonido();
+    },
 
     explicar(a) {
       const texto = explicarTutor(engine.caso, a);

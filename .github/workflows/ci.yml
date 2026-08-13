@@ -49,6 +49,24 @@ jobs:
       - name: Test artefactos visuales (subtítulo, pie, separador ASCII y rangos del tutorial)
         run: npm run test:visual
 
+      - name: Test reto diario (variación por semilla + modo sin pistas)
+        run: npm run test:reto
+
+      - name: Test modo examen + certificado PNG
+        run: npm run test:examen
+
+      - name: Test Jimmy-IA (preguntas libres sobre el caso)
+        run: npm run test:jimmy-ia
+
+      - name: Test modo presentador (demo sin persistir)
+        run: npm run test:presentador
+
+      - name: Test sonido (toggle persistido, sin errores de consola)
+        run: npm run test:sonido
+
+      - name: Test árbol de habilidades MITRE (integridad de datos + panel)
+        run: npm run test:habilidades
+
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
   # sirve los artefactos visuales correctos (banner, subtítulo y separador;
   # mismos canónicos que los tests locales). Solo corre en push a main y
