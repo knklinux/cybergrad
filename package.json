@@ -2,6 +2,7 @@
   "name": "cybergrad",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "description": "Simulador de carrera SOC + Red Team: aprende ciberseguridad resolviendo incidentes realistas y ejecutando pentests desde una terminal.",
   "type": "module",
   "scripts": {

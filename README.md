@@ -4,7 +4,7 @@
 
 **Sin dependencias. Sin backend.** Juega online en **[knklinux.github.io/cybergrad](https://knklinux.github.io/cybergrad/)** o en local con un pequeño servidor (ver *Arranque rápido*). Dentro del juego, el botón **🔗 Compartir** copia el enlace del juego, el del repo o un mensaje listo para redes.
 
-[![CI](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml/badge.svg)](https://github.com/knklinux/cybergrad/actions) [![GitHub Pages](https://img.shields.io/github/deployments/knklinux/cybergrad/github-pages?label=GitHub%20Pages&logo=github)](https://github.com/knklinux/cybergrad/deployments) [![Verificación de producción · 69 checks](https://img.shields.io/github/actions/workflow/status/knklinux/cybergrad/ci.yml?label=Verificaci%C3%B3n%20de%20producci%C3%B3n%20%C2%B7%2069%20checks&logo=github)](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml) — [último run del job `integracion`](https://github.com/knklinux/cybergrad/actions/runs/31725910397/job/94534110207)
+[![CI](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml/badge.svg)](https://github.com/knklinux/cybergrad/actions) [![GitHub Pages](https://img.shields.io/github/deployments/knklinux/cybergrad/github-pages?label=GitHub%20Pages&logo=github)](https://github.com/knklinux/cybergrad/deployments) [![Licencia MIT](https://img.shields.io/github/license/knklinux/cybergrad?label=Licencia&color=green)](LICENSE) [![Verificación de producción · 69 checks](https://img.shields.io/github/actions/workflow/status/knklinux/cybergrad/ci.yml?label=Verificaci%C3%B3n%20de%20producci%C3%B3n%20%C2%B7%2069%20checks&logo=github)](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml) — [último run del job `integracion`](https://github.com/knklinux/cybergrad/actions/runs/31725910397/job/94534110207)
 
 ## 🤖 Tu director: Jimmy
 
@@ -290,3 +290,9 @@ Ejecuta todo en local con `npm test` (necesita Chromium: `npx playwright install
 
 Uso **exclusivamente educativo**. Empresas, personas, redes e indicadores son ficticios (ACME Corp y su infraestructura no existen).
 Las técnicas descritas en los casos se explican para aprender a **defender** contra ellas y a **probar** únicamente sistemas propios o con autorización explícita.
+
+## 📜 Licencia
+
+**MIT** — el código de CYBERGRAD es libre: úsalo, estúdialo, modifícalo y compártelo, incluso en proyectos propios, con tal de mantener el aviso de copyright (ver [`LICENSE`](LICENSE)).
+
+Los **personajes y textos** (Jimmy, Ark, las empresas y redes ficticias, las historias de los casos) son **© knklinux** y no quedan cedidos por la licencia MIT: la licencia cubre el código, no la narrativa. *CYBERGRAD · Personajes y empresas ficticios · Uso educativo.*
