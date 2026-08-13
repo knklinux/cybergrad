@@ -84,29 +84,38 @@ checks = muta(src.replace(
   '<meta name="description" content="Aprende ciberseguridad jugando:',
   '<meta name="description" content="'
 ));
-caza("description mutada", checks, 2);
+caza("description mutada", checks, 3);
 
 // Mutación 3: og:image apuntando a un archivo inexistente
 checks = muta(src.replace(
   "assets/cover.jpg",
   "assets/cover-rotto.jpg"
 ));
-caza("og:image rota (cover-rotto.jpg)", checks, 8);
+caza("og:image rota (cover-rotto.jpg)", checks, 9);
 
 // Mutación 4: twitter:card degradada a summary (sin imagen grande)
 checks = muta(src.replace(
   '<meta name="twitter:card" content="summary_large_image" />',
   '<meta name="twitter:card" content="summary" />'
 ));
-caza("twitter:card degradada", checks, 7);
+caza("twitter:card degradada", checks, 8);
 
 // Mutación 5: lang cambiado a en
 checks = muta(src.replace('<html lang="es">', '<html lang="en">'));
-caza("lang cambiado a en", checks, 6);
+caza("lang cambiado a en", checks, 7);
 
 // Mutación 6: se quita el meta CSP
 checks = muta(src.replace(/<meta http-equiv="Content-Security-Policy" content="[^"]*" \/>/, ""));
-caza("meta CSP eliminado", checks, 10);
+caza("meta CSP eliminado", checks, 11);
+
+// Mutación 7: og:title roto SOLO (el <title> queda intacto) — el check
+// relacional (og:title === título de pestaña) debe cazar el descuadre
+// aunque ambos checks contra el canónico también lo harían.
+checks = muta(src.replace(
+  '<meta property="og:title" content="CYBERGRAD \u2014 Simulador de Carrera SOC + Red Team" />',
+  '<meta property="og:title" content="GYBERGRAD \u2014 Simulador de Carrera SOC" />'
+));
+caza("og:title roto (GYBERGRAD)", checks, 2);
 
 // Restaurar el archivo real NO es necesario: las mutaciones se aplicaron
 // solo a copias en memoria de index.html.

@@ -80,6 +80,13 @@ export function verificarMetadatos(m) {
   };
   eq("título de pestaña: coincide con el canónico", m.titulo, META_CANON.titulo);
   eq("og:title: coincide con el título", m.ogTitle, META_CANON.titulo);
+  // Cierra el ciclo de metadatos: el og:title del DOM debe ser EXACTAMENTE
+  // el título de pestaña servido (no solo ambos iguales al canónico). Si
+  // producción sirviera un título y un og:title coherentes entre sí pero
+  // distintos del canónico, los dos checks anteriores fallarían; este
+  // invariante relacional garantiza además que nunca se descuadren entre
+  // ellos en la versión desplegada.
+  eq("og:title y título de pestaña: coherentes entre sí", m.ogTitle, m.titulo);
   eq("description: coincide con el canónico", m.desc, META_CANON.desc);
   eq("og:description: coincide con description", m.ogDesc, META_CANON.desc);
   eq("og:url: coincide con la URL del juego", m.ogUrl, META_CANON.ogUrl);
