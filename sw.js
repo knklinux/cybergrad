@@ -6,7 +6,7 @@
 // Estrategia: network-first con fallback a caché → online siempre
 // fresco, offline con todo el juego precacheado.
 // ============================================================
-const VERSION = "cybergrad-08152eb473fd";
+const VERSION = "cybergrad-766631f50da3";
 const PRECACHE = [
   "assets/apple-touch-icon.png",
   "assets/cover-square.jpg",
@@ -70,8 +70,13 @@ const PRECACHE = [
 const CACHE = VERSION;
 
 self.addEventListener("install", (e) => {
+  // allSettled en vez de addAll: un único recurso que falle (p. ej. un 404
+  // transitorio durante un deploy) NO debe bloquear la activación ni dejar
+  // el SW en estado "installing" para siempre. Lo que sí cachea, cachea.
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((c) => Promise.allSettled(PRECACHE.map((u) => c.add(u).catch(() => {}))))
+      .then(() => self.skipWaiting())
   );
 });
 

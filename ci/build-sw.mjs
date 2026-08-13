@@ -4,9 +4,10 @@
 //
 // El precache se construye escaneando index.html (css, iconos,
 // scripts) y los directorios js/, css/ y assets/. La versión es
-// un hash de todo el contenido, así que cualquier cambio de
-// archivo produce un sw.js distinto → los navegadores detectan
-// la actualización y vuelven a precachear.
+// un hash del contenido de los archivos + la plantilla del SW,
+// así que cualquier cambio (contenido o lógica) produce un sw.js
+// distinto → los navegadores detectan la actualización, renuevan
+// la caché y vuelven a precachear.
 //
 // Determinista: mismo contenido → mismo sw.js byte a byte
 // (se puede comprobar con `git diff --exit-code` en el CI).
@@ -51,20 +52,10 @@ const dirs = ["js", "css", "assets"].map((d) => walk(path.join(ROOT, d)).map(rel
 // ---------- Lista de precache final (sin duplicados, ordenada) ----------
 const precache = [...new Set([...refs, ...dirs])].sort();
 
-// ---------- Versión: hash del contenido de todos los archivos ----------
-const h = createHash("sha256");
-for (const f of precache) {
-  h.update(f);
-  try {
-    h.update(readFileSync(path.join(ROOT, f)));
-  } catch {
-    // el archivo no existe (p. ej. un favicon opcional): se ignora
-  }
-}
-const VERSION = "cybergrad-" + h.digest("hex").slice(0, 12);
-
-// ---------- sw.js ----------
-const sw = `// ============================================================
+// ---------- Plantilla del service worker ----------
+// __VERSION__ y __PRECACHE__ se sustituyen al final. La plantilla forma
+// parte del hash: cambiar la lógica del SW renueva la caché también.
+const PLANTILLA = `// ============================================================
 // sw.js — Service worker de CYBERGRAD (generado)
 // No editar a mano: lo genera \`npm run build:sw\` (ci/build-sw.mjs)
 // escaneando los archivos reales del juego. Si cambias contenido,
@@ -72,13 +63,18 @@ const sw = `// ============================================================
 // Estrategia: network-first con fallback a caché → online siempre
 // fresco, offline con todo el juego precacheado.
 // ============================================================
-const VERSION = "${VERSION}";
-const PRECACHE = ${JSON.stringify(precache, null, 2)};
+const VERSION = "__VERSION__";
+const PRECACHE = __PRECACHE__;
 const CACHE = VERSION;
 
 self.addEventListener("install", (e) => {
+  // allSettled en vez de addAll: un único recurso que falle (p. ej. un 404
+  // transitorio durante un deploy) NO debe bloquear la activación ni dejar
+  // el SW en estado "installing" para siempre. Lo que sí cachea, cachea.
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((c) => Promise.allSettled(PRECACHE.map((u) => c.add(u).catch(() => {}))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -147,6 +143,24 @@ self.addEventListener("fetch", (e) => {
   }
 });
 `;
+
+// ---------- Versión: hash de la plantilla + contenido de los archivos ----------
+const h = createHash("sha256");
+h.update(PLANTILLA);
+for (const f of precache) {
+  h.update(f);
+  try {
+    h.update(readFileSync(path.join(ROOT, f)));
+  } catch {
+    // el archivo no existe (p. ej. un favicon opcional): se ignora
+  }
+}
+const VERSION = "cybergrad-" + h.digest("hex").slice(0, 12);
+
+// ---------- sw.js final ----------
+const sw = PLANTILLA
+  .replace("__VERSION__", VERSION)
+  .replace("__PRECACHE__", JSON.stringify(precache, null, 2));
 
 writeFileSync(path.join(ROOT, "sw.js"), sw);
 console.log(`✔ sw.js generado (${VERSION}, ${precache.length} recursos en precache)`);

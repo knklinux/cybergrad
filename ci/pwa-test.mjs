@@ -113,18 +113,58 @@ page.on("requestfailed", (r) => {
   const f = r.failure();
   errs.push(`[request] ${r.url()} → ${f ? f.errorText : "fallo"}`);
 });
-const salir = (codigo) => browser.close().finally(() => { if (proc) proc.kill(); process.exit(codigo); });
+const salir = (codigo) => {
+  // Exit forzado aunque browser.close() cuelgue (los service workers pueden
+  // mantener vivo el proceso de Chromium y dejar el job de CI en un limbo).
+  if (proc) proc.kill();
+  setTimeout(() => process.exit(codigo), 500).unref();
+  browser.close().finally(() => process.exit(codigo));
+};
+
+// ---------- Robustez: el test NUNCA debe colgar ----------
+// En CI (headless) un promise del navegador (navigator.serviceWorker.ready,
+// document.fonts.ready) puede no resolver si algo falla en el install del
+// SW; sin timeout, el job colgaría hasta el límite de 6h de GitHub.
+let fase = "arranque";
+const conTimeout = (prom, ms, nombre) => Promise.race([
+  prom,
+  new Promise((_, rej) => setTimeout(() => rej(new Error(`timeout ${ms}ms en ${nombre}`)), ms)),
+]);
+const WATCHDOG_MS = 120000;
+const watchdog = setTimeout(() => {
+  console.error(`⏱ pwa-test agotó el watchdog (${WATCHDOG_MS / 1000}s) en la fase: ${fase}`);
+  console.error("   Diagnóstico (antes de salir):");
+  console.error("     errores capturados:", errs.length ? errs.slice(0, 6) : "ninguno");
+  process.exit(1);
+}, WATCHDOG_MS);
+watchdog.unref();
 
 // 1) El manifest y el sw se sirven con su Content-Type
+fase = "HTTP manifest/sw";
 const resMan = await fetch(BASE + "manifest.webmanifest");
 check("HTTP: manifest.webmanifest → 200 con manifest+json", resMan.status === 200 && (resMan.headers.get("content-type") || "").includes("manifest+json"));
 const resSw = await fetch(BASE + "sw.js");
 check("HTTP: sw.js → 200 como javascript", resSw.status === 200 && (resSw.headers.get("content-type") || "").includes("javascript"));
 
 // 2) Cargar el juego → el HTML enlaza el manifest y registra el SW
+fase = "carga del juego";
 await page.goto(BASE + "?pwa=" + Date.now(), { waitUntil: "domcontentloaded", timeout: 20000 });
 const hrefManifest = await page.evaluate(() => document.querySelector('link[rel="manifest"]')?.getAttribute("href"));
 check("HTML: <link rel=manifest> apunta al manifest", hrefManifest === "manifest.webmanifest");
+// Captura el estado del SW en window.__swDiag para diagnosticar si el
+// install falla (el error real de caches.addAll quedaría registrado aquí)
+fase = "registro del SW";
+await page.evaluate(() => {
+  window.__swDiag = { errores: [], estados: [] };
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    window.__swDiag.estados.push("controllerchange");
+  });
+  navigator.serviceWorker.ready.then(() => {
+    window.__swDiag.estados.push("ready");
+  }).catch((e) => {
+    window.__swDiag.errores.push("ready: " + e.message);
+  });
+}).catch(() => {});
 const regOK = await page.waitForFunction(
   () => navigator.serviceWorker.getRegistration().then((r) => !!r),
   null,
@@ -137,13 +177,36 @@ check("HTML: el service worker se registra", regOK);
 // (incluidas las fuentes de Google, vía stale-while-revalidate). Es el
 // mismo flujo de la segunda visita de un usuario real: sin esta carga,
 // el CSS y los .woff2 de las fuentes no estarían en caché al cortar la red.
-await page.evaluate(() => navigator.serviceWorker.ready).catch(() => {});
+fase = "ready del SW";
+const readyOK = await conTimeout(
+  page.evaluate(() => navigator.serviceWorker.ready),
+  25000,
+  "navigator.serviceWorker.ready"
+).then(() => true).catch(() => false);
+if (!readyOK) {
+  // Diagnóstico: estado real del registro cuando `ready` no resolvió
+  const diag = await page.evaluate(() => ({
+    registro: (async () => {
+      const r = await navigator.serviceWorker.getRegistration();
+      return r ? {
+        installing: r.installing?.scriptURL || null,
+        waiting: r.waiting?.scriptURL || null,
+        active: r.active?.scriptURL || null,
+      } : null;
+    })(),
+    swDiag: window.__swDiag || null,
+  })).catch(() => null);
+  console.error("   ⚠ navigator.serviceWorker.ready no resolvió. Diagnóstico:", JSON.stringify(diag));
+}
+check("SW: ready resuelve (instalación completada)", readyOK);
 await page.waitForTimeout(1200); // deja que install (precache) + activate terminen
-await page.reload({ waitUntil: "domcontentloaded" });
+fase = "recarga controlada por el SW";
+await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
 await page.waitForFunction(() => navigator.serviceWorker.controller?.scriptURL.includes("sw.js"), null, { timeout: 15000 }).catch(() => {});
 check("SW: activo y controlando la página", await page.evaluate(() => !!navigator.serviceWorker.controller));
 // Deja que las fuentes terminen de cachearse en segundo plano
-await page.evaluate(() => document.fonts?.ready).catch(() => {});
+fase = "caché de fuentes";
+await conTimeout(page.evaluate(() => document.fonts?.ready), 15000, "document.fonts.ready").catch(() => {});
 await page.waitForTimeout(1500);
 
 // 4) La caché del SW tiene el shell completo
@@ -161,6 +224,7 @@ check("SW: shell completo en caché (index + main.js + manifest)", cacheInfo.tie
 check("SW: caché poblada (>= 50 recursos)", cacheInfo.n >= 50, `(${cacheInfo.n})`);
 
 // 5) MODO OFFLINE REAL: cortar la red y recargar → el juego carga entero
+fase = "offline";
 await context.setOffline(true);
 await page.reload({ waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
 await page.waitForSelector("#terminal", { timeout: 20000 }).catch(() => falla("Offline: no apareció la terminal"));
@@ -174,12 +238,15 @@ check("offline: sin pageerrors (JS sano)", !errs.some((e) => e.startsWith("[page
 await context.setOffline(false);
 
 // 6) Sin errores de consola en todo el flujo (online + offline)
+fase = "comprobación final";
 if (errs.length) {
   console.error("✖ Errores de consola:");
   for (const e of errs.slice(0, 8)) console.error("   " + e);
+  clearTimeout(watchdog);
   salir(1);
 }
 check("sin errores de consola en online y offline", true);
+clearTimeout(watchdog);
 
 console.log(fail === 0 ? `✔ pwa-test OK: ${pass} checks, 0 fallos.` : `✖ ${fail} checks fallidos.`);
 salir(fail === 0 ? 0 : 1);
