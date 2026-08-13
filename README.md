@@ -38,7 +38,7 @@ Está pensado como **guía de aprendizaje** para ti y para cualquiera que quiera
 
 > **Importante:** el juego necesita un pequeño servidor local — los navegadores bloquean los módulos ES al abrir `index.html` directamente desde el explorador (`file://`).
 
-**En Windows — acceso directo:** doble clic en `CYBERGRAD.bat` . Arranca el servidor, espera 2 segundos y abre el juego en `http://127.0.0.1:8000`. Cierra la ventana negra para salir.
+**En Windows — acceso directo:** doble clic en `CYBERGRAD.bat`. Arranca el servidor, espera 2 segundos y abre el juego en `http://127.0.0.1:8000`. Cierra la ventana negra para salir.
 
 **O manualmente:**
 
