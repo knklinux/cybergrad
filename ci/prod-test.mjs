@@ -27,7 +27,7 @@
 import { chromium } from "playwright";
 import { diagnosticar, imprimirDiff } from "./banner-core.mjs";
 import { verificarSubtitulo, verificarFooter, verificarSeparador } from "./visual-core.mjs";
-import { verificarMetadatos, verificarImagen, verificarCabecerasHTTP, META_CANON } from "./meta-core.mjs";
+import { verificarMetadatos, verificarImagen, verificarCabecerasHTTP, verificarJsonLd, META_CANON } from "./meta-core.mjs";
 
 const PROD = process.env.CYBERGRAD_PROD_URL || "https://knklinux.github.io/cybergrad/";
 const TIMEOUT_MS = parseInt(process.env.CYBERGRAD_PROD_TIMEOUT || "300000", 10);
@@ -147,6 +147,17 @@ try {
     cspContent: document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content || "",
   }));
   correr(verificarMetadatos(meta));
+  // Datos estructurados (JSON-LD SoftwareApplication) leídos del DOM
+  // desplegado: Google los usa para el snippet rico en búsquedas. Se
+  // verifica con el MISMO canónico que el test local.
+  const ld = await page.evaluate(() => {
+    const s = document.querySelector('script[type="application/ld+json"]');
+    if (!s) return { json: null, raw: "" };
+    const raw = s.textContent;
+    try { return { json: JSON.parse(raw), raw }; }
+    catch { return { json: null, raw }; }
+  });
+  correr(verificarJsonLd(ld));
   // Las imágenes de la tarjeta deben existir en el sitio desplegado
   for (const url of META_CANON.ogImagenes) {
     try {

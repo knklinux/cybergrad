@@ -1,17 +1,18 @@
 // meta-core.mjs — Núcleo compartido del check de METADATOS de CYBERGRAD.
-// Define los canónicos del TÍTULO de pestaña, Open Graph y Twitter Card,
-// junto con la extracción local (desde index.html) y la verificación
-// runtime (desde el DOM renderizado). Lo usan:
+// Define los canónicos del TÍTULO de pestaña, Open Graph, Twitter Card y
+// JSON-LD (datos estructurados), junto con la extracción local (desde
+// index.html) y la verificación runtime (desde el DOM renderizado). Lo usan:
 //   - meta-test.mjs   → contra index.html (local, Node puro, con mutaciones)
 //   - prod-test.mjs   → contra la versión desplegada en GitHub Pages
 //                        (check de integración, E2E con Playwright)
 //
 // Igual que banner-core.mjs y visual-core.mjs: un único canónico para las
 // dos capas, para que local y producción verifiquen exactamente lo mismo.
-// La tarjeta de LinkedIn se rompe si cualquiera de estos valores cambia
-// (o si una og:image deja de existir), así que se trata como un artefacto
-// de arranque más: título de pestaña, descripción, og:title, og:description,
-// og:url, canonical, idioma, twitter:card, og:image (ambas) y twitter:image.
+// La tarjeta de LinkedIn y el snippet de Google se rompen si cualquiera de
+// estos valores cambia (o si una og:image deja de existir), así que se
+// trata como un artefacto de arranque más: título de pestaña, descripción,
+// og:title, og:description, og:url, canonical, idioma, twitter:card,
+// og:image (ambas), twitter:image y el JSON-LD SoftwareApplication.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,6 +33,19 @@ export const META_CANON = {
   twitterImagen: "https://knklinux.github.io/cybergrad/assets/cover.jpg",
   canonical: "https://knklinux.github.io/cybergrad/",
   lang: "es",
+  // Datos estructurados (JSON-LD SoftwareApplication): el snippet rico que
+  // Google puede mostrar en resultados de búsqueda. Debe ser JSON válido y
+  // coherente con el resto de metadatos (mismo nombre, descripción y URL).
+  jsonLd: {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "CYBERGRAD",
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Any",
+    url: "https://knklinux.github.io/cybergrad/",
+    author: { "@type": "Person", name: "knklinux" },
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+  },
 };
 
 // Extrae los metadatos de un HTML dado (index.html o una copia mutada en
@@ -63,6 +77,60 @@ export function extraerMetadatosDe(html) {
 // Extrae los metadatos del código fuente (index.html), la fuente local.
 export function extraerMetadatosLocal() {
   return extraerMetadatosDe(fs.readFileSync(path.join(root, "index.html"), "utf8"));
+}
+
+// Extrae el JSON-LD del HTML (index.html o una copia mutada). Devuelve
+// { json: el objeto parseado, raw: el contenido crudo } o { json: null }
+// si no hay script application/ld+json o el JSON no parsea. El parses se
+// hace sobre el contenido real (no regex de substring): un JSON roto o un
+// script vacío se detectan.
+export function extraerJsonLdDe(html) {
+  const m = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  if (!m) return { json: null, raw: "" };
+  const raw = m[1];
+  try {
+    return { json: JSON.parse(raw), raw };
+  } catch {
+    return { json: null, raw };
+  }
+}
+
+export function extraerJsonLdLocal() {
+  return extraerJsonLdDe(fs.readFileSync(path.join(root, "index.html"), "utf8"));
+}
+
+// Verifica los datos estructurados (JSON-LD SoftwareApplication).
+// Devuelve [{ nombre, ok, extra }]. Recibe { json, raw } (de local o DOM).
+export function verificarJsonLd(ld) {
+  const checks = [];
+  const c = META_CANON.jsonLd;
+  const j = ld?.json;
+  if (!j) {
+    checks.push({
+      nombre: "JSON-LD: script application/ld+json presente y JSON válido",
+      ok: false,
+      extra: `(sin script ld+json o JSON roto: ${String(ld?.raw || "").slice(0, 40)}…)`,
+    });
+    return checks;
+  }
+  const eq = (nombre, real, esperado) => {
+    checks.push({
+      nombre,
+      ok: real === esperado,
+      extra: `(esperado |${esperado}| real |${String(real)}|)`,
+    });
+  };
+  eq("JSON-LD: script application/ld+json presente y JSON válido", true, true);
+  eq("JSON-LD: @type SoftwareApplication", j["@type"], c["@type"]);
+  eq("JSON-LD: name coincide con el nombre del juego", j.name, c.name);
+  eq("JSON-LD: applicationCategory EducationalApplication", j.applicationCategory, c.applicationCategory);
+  eq("JSON-LD: operatingSystem Any", j.operatingSystem, c.operatingSystem);
+  eq("JSON-LD: url coincide con la URL del juego", j.url, c.url);
+  eq("JSON-LD: author.name knklinux", j.author?.name, c.author.name);
+  eq("JSON-LD: offers.price 0 (gratis)", j.offers?.price, c.offers.price);
+  eq("JSON-LD: offers.priceCurrency EUR", j.offers?.priceCurrency, c.offers.priceCurrency);
+  eq("JSON-LD: @context https://schema.org", j["@context"], c["@context"]);
+  return checks;
 }
 
 const base = (url) => (url || "").split("/").pop() || "?";

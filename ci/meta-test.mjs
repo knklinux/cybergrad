@@ -18,7 +18,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { extraerMetadatosLocal, extraerMetadatosDe, verificarMetadatos, META_CANON } from "./meta-core.mjs";
+import { extraerMetadatosLocal, extraerMetadatosDe, verificarMetadatos, extraerJsonLdDe, extraerJsonLdLocal, verificarJsonLd, META_CANON } from "./meta-core.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const leer = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
@@ -101,11 +101,36 @@ if (headersTxt) {
 }
 
 // ============================================================
+// 2c. JSON-LD — datos estructurados (SoftwareApplication) en index.html.
+// El snippet rico de Google: debe ser JSON válido y coherente con el
+// resto de metadatos (mismo nombre, descripción y URL). Verificamos el
+// contenido contra el canónico y dejamos las mutaciones para la sección 3.
+// ============================================================
+correr(verificarJsonLd(extraerJsonLdLocal()));
+// Coherencia entre capas: el JSON-LD y el resto de metadatos cuentan lo
+// mismo (nombre del juego y URL).
+{
+  const ld = extraerJsonLdLocal().json;
+  const meta = extraerMetadatosLocal();
+  check(
+    "JSON-LD: name coherente con el título de la pestaña",
+    !!ld && meta.titulo.startsWith(ld.name),
+    `(ld.name |${ld?.name}| vs título |${meta.titulo}|)`
+  );
+  check(
+    "JSON-LD: url coherente con canonical",
+    !!ld && ld.url === META_CANON.canonical && meta.canonical === META_CANON.canonical,
+    `(ld.url |${ld?.url}| vs canonical |${meta.canonical}|)`
+  );
+}
+
+// ============================================================
 // 3. PRUEBA DE MUTACIÓN (en memoria: se muta una copia del HTML)
 //    El golden debe cazar cada cambio no deseado. Se usa la MISMA
 //    extracción del core (extraerMetadatosDe) sobre el HTML mutado.
 // ============================================================
 const muta = (nuevo) => verificarMetadatos(extraerMetadatosDe(nuevo));
+const mutaLd = (nuevo) => verificarJsonLd(extraerJsonLdDe(nuevo));
 
 const caza = (nombre, checks, indice, mutacion) => {
   const c = checks[indice];
@@ -170,6 +195,43 @@ checks = muta(src.replace(
   "object-src 'none'; frame-ancestors 'none'"
 ));
 caza("CSP con frame-ancestors en la meta (ignorada por <meta>)", checks, 13);
+
+// Mutación 9: JSON-LD con JSON roto (falta una llave) — debe detectarse
+// como "JSON inválido" sin parses parciales.
+let ldChecks = mutaLd(src.replace(
+  '"applicationCategory": "EducationalApplication"',
+  '"applicationCategory": "EducationalApplication"'
+  // se rompe el JSON cerrando la llave del objeto antes de tiempo
+).replace(
+  '  }\n  </script>',
+  '  }\n  }\n  </script>'
+));
+check(
+  "mutación: JSON-LD con JSON roto se caza",
+  ldChecks.length > 0 && ldChecks[0].ok === false && /JSON roto|JSON válido/.test(ldChecks[0].nombre),
+  `(primer check: ${ldChecks[0]?.nombre} ok=${ldChecks[0]?.ok})`
+);
+
+// Mutación 10: JSON-LD con nombre roto (GYBERGRAD) — el golden debe cazarlo.
+ldChecks = mutaLd(src.replace(
+  '"name": "CYBERGRAD",',
+  '"name": "GYBERGRAD",'
+));
+{
+  const c = ldChecks.find((x) => x.nombre.includes("JSON-LD: name"));
+  check("mutación: JSON-LD name roto (GYBERGRAD) se caza", !!c && c.ok === false, c ? `(no falló: ${c.nombre})` : "(falta el check de name)");
+}
+
+// Mutación 11: JSON-LD que deja de ser SoftwareApplication (p. ej. se
+// convierte en WebSite) — el snippet rico de Google se perdería.
+ldChecks = mutaLd(src.replace(
+  '"@type": "SoftwareApplication"',
+  '"@type": "WebSite"'
+));
+{
+  const c = ldChecks.find((x) => x.nombre.includes("@type SoftwareApplication"));
+  check("mutación: JSON-LD deja de ser SoftwareApplication se caza", !!c && c.ok === false, c ? `(no falló: ${c.nombre})` : "(falta el check de @type)");
+}
 
 // Restaurar el archivo real NO es necesario: las mutaciones se aplicaron
 // solo a copias en memoria de index.html.
