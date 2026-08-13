@@ -52,6 +52,12 @@ let filas = null;
 let sub = null;
 const inicio = Date.now();
 while (Date.now() - inicio < TIMEOUT_MS) {
+  // Cada intento arranca con el log limpio: GitHub Pages va sustituyendo
+  // archivos durante el deploy, así que un intento previo a mitad del
+  // swap puede capturar un 404 transitorio de un módulo (p. ej. js/voz.js)
+  // que NO existe en el estado final. Solo cuentan los errores del intento
+  // que realmente sirve la página.
+  errores.length = 0;
   try {
     await page.goto(PROD, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForSelector("#terminal .t-banner", { timeout: 15000 });
