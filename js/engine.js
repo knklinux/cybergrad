@@ -755,7 +755,7 @@ export class Engine {
       guardar();
       sonido.exito();
       this.ui.mostrarResultado(resultado, () =>
-        this.ui.mostrarLeccion(caso, () => this.ui.mostrarFinModoEspecial(modoEspecial))
+        this._mostrarQuizYLeccion(caso, () => this.ui.mostrarFinModoEspecial(modoEspecial))
       );
       return;
     }
@@ -770,7 +770,7 @@ export class Engine {
       guardar();
       sonido.exito();
       this.ui.mostrarResultado(resultado, () =>
-        this.ui.mostrarLeccion(caso, () => this.ui.mostrarLaboratorio())
+        this._mostrarQuizYLeccion(caso, () => this.ui.mostrarLaboratorio())
       );
       return;
     }
@@ -788,8 +788,22 @@ export class Engine {
     guardar();
     sonido.exito();
     this.ui.mostrarResultado(resultado, () =>
-      this.ui.mostrarLeccion(caso, () => this._siguienteCaso())
+      this._mostrarQuizYLeccion(caso, () => this._siguienteCaso())
     );
+  }
+
+  // Repaso MITRE entre el resultado y la lección: muestra el quiz de 3
+  // preguntas del caso y acumula los aciertos en las estadísticas globales.
+  _mostrarQuizYLeccion(caso, onDone) {
+    this.ui.mostrarQuiz(caso, (aciertos, total) => {
+      if (!GAME.estadisticas.quiz || typeof GAME.estadisticas.quiz !== "object") {
+        GAME.estadisticas.quiz = { aciertos: 0, total: 0 };
+      }
+      GAME.estadisticas.quiz.aciertos += aciertos;
+      GAME.estadisticas.quiz.total += total;
+      guardar();
+      this.ui.mostrarLeccion(caso, onDone);
+    });
   }
 
   // Restaura la campaña real del jugador tras un reto/examen (que pueden

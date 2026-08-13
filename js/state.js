@@ -135,6 +135,7 @@ export const GAME = {
     ratings: [],              // [{casoId, rating, modo}] por cada caso completado
     reto: null,               // última marca del reto diario {fecha, casoId, rating, segundos}
     retoHistorial: [],        // ranking local: últimas 30 marcas (una por día, la mejor)
+    quiz: { aciertos: 0, total: 0 }, // aciertos de los repasos MITRE (acumulado)
   },
 };
 

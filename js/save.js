@@ -107,6 +107,11 @@ export function cargar(slot = 1) {
     if (GAME.estadisticas.reto === undefined) GAME.estadisticas.reto = null;
     if (!Array.isArray(GAME.estadisticas.retoHistorial)) GAME.estadisticas.retoHistorial = [];
     if (!Array.isArray(GAME.estadisticas.examenes)) GAME.estadisticas.examenes = [];
+    if (!GAME.estadisticas.quiz || typeof GAME.estadisticas.quiz !== "object") {
+      GAME.estadisticas.quiz = { aciertos: 0, total: 0 };
+    }
+    if (!Number.isFinite(GAME.estadisticas.quiz.aciertos)) GAME.estadisticas.quiz.aciertos = 0;
+    if (!Number.isFinite(GAME.estadisticas.quiz.total)) GAME.estadisticas.quiz.total = 0;
     GAME.demo = false;
     GAME.casoActual = null;
     GAME.casoIniciadoEn = 0;
@@ -159,6 +164,7 @@ export function nuevaPartida() {
   GAME.estadisticas = {
     tiempoJugado: 0, accionesOk: 0, accionesErr: 0, pistasUsadas: 0, ratings: [],
     reto: null, retoHistorial: [], examenes: [],
+    quiz: { aciertos: 0, total: 0 },
   };
   GAME.casoActual = null;
   GAME.casoIniciadoEn = 0;

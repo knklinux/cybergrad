@@ -12,6 +12,7 @@ import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
 import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
 import { retoDelDia, filasRankingReto } from "./reto.js";
 import { elegirCasoExamen, apruebaExamen, textoVeredicto } from "./examen.js";
+import { generarQuiz } from "./quiz.js";
 import { descargarCertificado, imprimirCertificado } from "./certificado.js";
 import { estadoHabilidades } from "./habilidades.js";
 import { aplicarModoPresentador } from "./presentador.js";
@@ -836,6 +837,97 @@ ${acciones}
     this.actualizarPerfil();
   }
 
+  // ---------- Repaso MITRE (quiz post-caso) ----------
+  // 3 preguntas por caso entre el resultado y la lección. `onDone` recibe
+  // (aciertos, total) para que el motor acumule las estadísticas.
+  mostrarQuiz(caso, onDone) {
+    const quiz = generarQuiz(caso);
+    if (!quiz.length) {
+      onDone(0, 0);
+      return;
+    }
+    const esRT = caso.modo === "rt";
+    const mitreTags = (caso.leccion?.mitre || []).map((m) => `<span class="mitre-tag">${m}</span>`).join("");
+    let idx = 0;
+    let aciertos = 0;
+
+    const renderPregunta = () => {
+      const q = quiz[idx];
+      const esUltima = idx === quiz.length - 1;
+      const html = `
+        <div class="modal-title">🧠 REPASO MITRE — PREGUNTA ${idx + 1}/${quiz.length}${esRT ? " · RED TEAM" : " · SOC"}</div>
+        <div style="margin-bottom:8px">${mitreTags}</div>
+        <div class="quiz-question">${q.p}</div>
+        <div class="quiz-opciones">
+          ${q.o.map((op, i) => `<button class="quiz-op" data-i="${i}"><span class="quiz-letra">${String.fromCharCode(65 + i)}</span> ${op}</button>`).join("")}
+        </div>
+        <div class="quiz-explicacion hidden" id="quiz-explicacion"></div>
+        <div class="btn-row">
+          <button class="btn-primary hidden" data-action="quiz-siguiente">${esUltima ? "VER RESULTADO →" : "SIGUIENTE →"}</button>
+        </div>`;
+      this.setAcciones({
+        "quiz-siguiente": () => {
+          if (idx < quiz.length - 1) {
+            idx++;
+            renderPregunta();
+          } else {
+            renderResultado();
+          }
+        },
+      });
+      this.abrirModal(html);
+      document.querySelectorAll(".quiz-op").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = parseInt(btn.dataset.i, 10);
+          const ok = i === q.c;
+          if (ok) aciertos++;
+          document.querySelectorAll(".quiz-op").forEach((b) => {
+            b.disabled = true;
+            const bi = parseInt(b.dataset.i, 10);
+            b.classList.toggle("quiz-ok", bi === q.c);
+            b.classList.toggle("quiz-ko", bi === i && !ok);
+          });
+          const expl = $("quiz-explicacion");
+          if (expl) {
+            expl.classList.remove("hidden");
+            expl.innerHTML = (ok ? "✅ ¡Correcto! " : "❌ No exactamente. ") + q.x;
+          }
+          const sig = document.querySelector('[data-action="quiz-siguiente"]');
+          if (sig) sig.classList.remove("hidden");
+          if (ok) sonido.ok(); else sonido.err();
+        });
+      });
+    };
+
+    const renderResultado = () => {
+      const total = quiz.length;
+      const pct = Math.round((aciertos / total) * 100);
+      const msg = pct === 100
+        ? "Dominas la lección: el MITRE ya es parte de tu vocabulario."
+        : pct >= 67
+          ? "Buen repaso. Lo que has fallado lo asientas ahora en la lección."
+          : "La lección te espera: repasa los conceptos antes de seguir.";
+      const html = `
+        <div class="modal-title">${pct === 100 ? "🏅" : pct >= 67 ? "💪" : "📖"} REPASO: ${aciertos}/${total} ACIERTOS</div>
+        <div class="quiz-score-bar"><div class="quiz-score-fill" style="width:${pct}%"></div></div>
+        <div class="modal-text" style="font-size:13px">${msg}</div>
+        <div class="jimmy-habla">El MITRE no es memorizar códigos: es saber en qué punto de la cadena del ataque estás. — Jimmy</div>
+        <div class="btn-row">
+          <button class="btn-primary" data-action="quiz-fin">CONTINUAR A LA LECCIÓN →</button>
+        </div>`;
+      this.setAcciones({
+        "quiz-fin": () => {
+          this.cerrarModal();
+          onDone(aciertos, total);
+        },
+      });
+      this.abrirModal(html);
+      this.actualizarPerfil();
+    };
+
+    renderPregunta();
+  }
+
   // ---------- Lección post-caso ----------
   mostrarLeccion(caso, onDone) {
     const le = caso.leccion;
@@ -1162,6 +1254,8 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
         accionesCorrectas: GAME.estadisticas?.accionesOk || 0,
         errores: GAME.estadisticas?.accionesErr || 0,
         pistasUsadas: GAME.estadisticas?.pistasUsadas || 0,
+        quizAciertos: GAME.estadisticas?.quiz?.aciertos || 0,
+        quizTotal: GAME.estadisticas?.quiz?.total || 0,
         ratings: GAME.estadisticas?.ratings || [],
       },
       url: "https://knklinux.github.io/cybergrad/",
@@ -1273,6 +1367,7 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
           <div class="stats-item"><span class="stats-label">&#9989; Acciones correctas</span><span class="stats-val">${GAME.estadisticas?.accionesOk || 0}</span></div>
           <div class="stats-item"><span class="stats-label">&#10060; Errores</span><span class="stats-val">${GAME.estadisticas?.accionesErr || 0}</span></div>
           <div class="stats-item"><span class="stats-label">&#128161; Pistas usadas</span><span class="stats-val">${GAME.estadisticas?.pistasUsadas || 0}</span></div>
+          <div class="stats-item"><span class="stats-label">&#129504; Repasos MITRE</span><span class="stats-val">${GAME.estadisticas?.quiz?.aciertos || 0}/${GAME.estadisticas?.quiz?.total || 0}</span></div>
         </div>
         <div style="margin-top:8px">
           <div class="xp-mini-row">

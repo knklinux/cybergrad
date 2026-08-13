@@ -76,6 +76,9 @@ jobs:
       - name: Test ataque adaptativo (pivote: si no contienes a tiempo, el caso se complica)
         run: npm run test:pivot
 
+      - name: Test quiz de repaso MITRE (estructura de los 15 casos + E2E completando el caso-01)
+        run: npm run test:quiz
+
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
   # sirve los artefactos visuales correctos (banner, subtítulo y separador;
   # mismos canónicos que los tests locales). Solo corre en push a main y
