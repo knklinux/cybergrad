@@ -219,6 +219,23 @@ export function crearComandos(ctx) {
 
     tutorial() { ui.mostrarTutorial(false); },
 
+    // Easter egg: el origen del nombre. NO está en AYUDA a propósito — se
+    // descubre por casualidad, por el README o preguntándole a Jimmy.
+    porque_cybergrad() {
+      term.separator("🏙️ CYBERGRAD — LA CIUDAD DEL CIBER");
+      out("«grad» (град) significa «ciudad» en las lenguas eslavas:", "t-out");
+      out("Leningrado, Stalingrado, Volgogrado… todas son «la ciudad de X».", "t-out-dim");
+      term.print("");
+      out("CYBERGRAD = «la ciudad del ciber».", "t-out-hi");
+      term.print("");
+      out("Aquí no juegas partidas: construyes tu carrera dentro de un mundo.", "t-out");
+      out("Entras como analista junior en el turno de mañana y esta ciudad te", "t-out");
+      out("ve crecer hasta Jefe de CSIRT… o CISO, en la Unidad Red Team.", "t-out");
+      term.print("");
+      out("Y de paso, es por eso que el banner de la terminal pinta tu ciudad", "t-out-dim");
+      out("con bloques. Bienvenido a casa. 🏙️", "t-out-dim");
+    },
+
     clear() { term.clear(); },
     cls() { term.clear(); },
 

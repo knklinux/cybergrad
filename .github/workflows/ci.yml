@@ -64,6 +64,9 @@ jobs:
       - name: Test Jimmy-IA (preguntas libres sobre el caso)
         run: npm run test:jimmy-ia
 
+      - name: Test easter egg del nombre (porque_cybergrad oculto + Jimmy)
+        run: npm run test:easteregg
+
       - name: Test voz (reconocimiento del navegador con mock, degradación sin API)
         run: npm run test:voz
 

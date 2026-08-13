@@ -26,6 +26,7 @@
     "test:reto": "node ci/reto-test.mjs",
     "test:examen": "node ci/examen-test.mjs",
     "test:jimmy-ia": "node ci/jimmy-ia-test.mjs",
+    "test:easteregg": "node ci/easteregg-test.mjs",
     "test:voz": "node ci/voz-test.mjs",
     "test:presentador": "node ci/presentador-test.mjs",
     "test:sonido": "node ci/sonido-test.mjs",
@@ -34,7 +35,7 @@
     "test:quiz": "node ci/quiz-test.mjs",
     "test:duelo": "node ci/duelo-test.mjs",
     "test:pwa": "node ci/pwa-test.mjs",
-    "test": "npm run check && npm run lint && npm run test:unit && npm run test:serve && npm run test:smoke && npm run test:xss && npm run test:whoami && npm run test:banner && npm run test:visual && npm run test:meta && npm run test:headers && npm run test:reto && npm run test:examen && npm run test:jimmy-ia && npm run test:voz && npm run test:presentador && npm run test:sonido && npm run test:habilidades && npm run test:pivot && npm run test:quiz && npm run test:duelo && npm run test:pwa"
+    "test": "npm run check && npm run lint && npm run test:unit && npm run test:serve && npm run test:smoke && npm run test:xss && npm run test:whoami && npm run test:banner && npm run test:visual && npm run test:meta && npm run test:headers && npm run test:reto && npm run test:examen && npm run test:jimmy-ia && npm run test:easteregg && npm run test:voz && npm run test:presentador && npm run test:sonido && npm run test:habilidades && npm run test:pivot && npm run test:quiz && npm run test:duelo && npm run test:pwa"
   },
   "devDependencies": {
     "eslint": "^9.17.0",

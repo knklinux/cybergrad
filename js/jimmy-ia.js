@@ -121,6 +121,21 @@ export function preguntarJimmy(pregunta, ctx) {
   const lineas = [];
   lineas.push("🧠 Jimmy — " + (caso ? `sobre tu caso: «${caso.titulo}»` : "aún no tienes caso activo."));
 
+  // 0) Easter egg: el origen del nombre de CYBERGRAD
+  // (grad = «ciudad» en eslavo). Se responde aunque no haya caso activo.
+  if (/(cybergrad|\bgrad\b|origen del nombre|por qu[eé] se llama|qu[eé] significa el nombre)/i.test(texto)) {
+    lineas.push("");
+    lineas.push("¡Buena pregunta! «grad» (град) significa «ciudad» en las lenguas eslavas:");
+    lineas.push("Leningrado, Stalingrado, Volgogrado… todas son «la ciudad de X».");
+    lineas.push("");
+    lineas.push("CYBERGRAD es «la ciudad del ciber»: no un juego de partidas sueltas,");
+    lineas.push("sino un mundo donde construyes tu carrera de seguridad, de analista");
+    lineas.push("junior a CISO. Por eso el banner de la terminal pinta tu ciudad con bloques.");
+    lineas.push("");
+    lineas.push("Bienvenido a casa. 🏙️");
+    return lineas.join("\n");
+  }
+
   if (!caso) {
     lineas.push("");
     lineas.push(modoRT

@@ -35,7 +35,7 @@ export const INFO_CMDS = [
   "grep", "wc", "less", "find", "strings", "file", "md5sum", "sha256sum",
   "decode", "base64", "whois", "dig", "host", "nslookup", "curl", "explicar",
   "preguntar", "jimmy", "voz", "estado", "glosario", "whoami", "date", "echo",
-  "sonido", "salir_duelo",
+  "sonido", "salir_duelo", "porque_cybergrad",
 ];
 
 // Comandos de la interfaz NO disponibles durante un duelo (cambiarían de
