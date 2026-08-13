@@ -297,6 +297,27 @@ export function filasRankingReto(historial = []) {
     .map((m) => ({ ...m, tiempo: seg(m.segundos) }));
 }
 
+// Resumen legible de los indicadores variados de un reto: lista de
+// { tipo: "IP"|"Host"|"Dominio"|"Correo", original, variante } con los
+// tokens que DE VERDAD cambiaron (original !== variante), ordenada por
+// tipo y por original. Es la ficha «indicadores de hoy» del panel: el
+// jugador ve ANTES de jugar qué variantes ha generado la semilla del día.
+// Función pura (los Mapas se leen sin mutarlos) y testeable en Node.
+export function resumenIndicadores(mapas) {
+  const m0 = mapas || {}; // tolera null/undefined (sin mapas → sin indicadores)
+  const TIPOS = [["ip", "IP"], ["host", "Host"], ["dominio", "Dominio"], ["correo", "Correo"]];
+  const filas = [];
+  for (const [clave, etiqueta] of TIPOS) {
+    const m = m0[clave];
+    if (!(m instanceof Map)) continue;
+    const pares = [...m.entries()]
+      .filter(([orig, variante]) => orig !== variante)
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+    for (const [orig, variante] of pares) filas.push({ tipo: etiqueta, original: orig, variante });
+  }
+  return filas;
+}
+
 // Estructura completa del reto de hoy (para el panel y la terminal)
 export function retoDelDia(fecha = new Date()) {
   const fechaStr = fechaReto(fecha);

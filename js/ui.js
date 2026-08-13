@@ -10,7 +10,7 @@ import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
 import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
-import { retoDelDia, filasRankingReto } from "./reto.js";
+import { retoDelDia, filasRankingReto, resumenIndicadores } from "./reto.js";
 import { elegirCasoExamen, apruebaExamen, textoVeredicto } from "./examen.js";
 import { generarQuiz } from "./quiz.js";
 import { DUELO_ESCENARIOS } from "./duelo.js";
@@ -1567,6 +1567,16 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
           <span class="rk-tiempo">${m.tiempo}</span>
         </div>`).join("")
       : `<div class="rk-vacia">Aún no hay marcas. Completa el reto de hoy para estrenar el ranking.</div>`;
+    const indicadores = resumenIndicadores(reto.mapas);
+    const fichaI = indicadores.length
+      ? `<div class="reto-inds">${indicadores.map((i) => `
+        <div class="reto-ind">
+          <span class="reto-ind-tipo">${i.tipo}</span>
+          <span class="reto-ind-orig">${esc(i.original)}</span>
+          <span class="reto-ind-flecha">→</span>
+          <span class="reto-ind-var">${esc(i.variante)}</span>
+        </div>`).join("")}</div>`
+      : `<div class="modal-text" style="font-size:12px;color:#5f8a6a">Este caso no tiene indicadores variables: hoy nada cambia.</div>`;
     const html = `
       <div class="modal-title">🔥 RETO DIARIO</div>
       ${this.holoHTML("holo-md")}
@@ -1582,6 +1592,14 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
           <span style="color:#8fd39e">${reto.esRT ? "Campaña Red Team" : "Campaña SOC"} · Severidad ${reto.caso.severidad} · SLA ${Math.floor(reto.caso.sla / 60)} min</span>
         </div>
         ${yaHoy ? `<div class="modal-text" style="font-size:12px;color:#33ff66">✔ Ya superaste el reto de hoy con ${GAME.estadisticas.reto.rating}. Puedes repetirlo para mejorar tu marca.</div>` : ""}
+      </div>
+      <div class="modal-section">
+        <h3>🔎 INDICADORES DE HOY</h3>
+        <div class="modal-text" style="font-size:11.5px;color:#5f8a6a;margin-bottom:6px">
+          Las variantes que ha generado la semilla de hoy, <b>antes de jugar</b>: busca estos valores en
+          las evidencias y responde con ellos.
+        </div>
+        ${fichaI}
       </div>
       <div class="modal-section">
         <h3>🏆 RANKING LOCAL · ÚLTIMAS 30 MARCAS</h3>

@@ -930,3 +930,17 @@ body::after {
 .duelo-marcador-lado { font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 6px; }
 .duelo-marcador-lado.rojo { color: #ff8a8a; border: 1px solid var(--red); }
 .duelo-marcador-lado.azul { color: #8ad7ff; border: 1px solid var(--cyan); }
+
+/* ---------- Ficha «indicadores de hoy» del reto diario ---------- */
+.reto-inds { display: flex; flex-direction: column; gap: 3px; max-height: 150px; overflow-y: auto; }
+.reto-ind {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  padding: 3px 8px; border-radius: 5px; background: rgba(10, 30, 20, 0.55);
+}
+.reto-ind-tipo {
+  flex: 0 0 58px; font-size: 10px; font-weight: 800; letter-spacing: 1px;
+  color: var(--amber); text-transform: uppercase;
+}
+.reto-ind-orig { color: #7fae8e; text-decoration: line-through; opacity: 0.75; }
+.reto-ind-flecha { color: var(--cyan); }
+.reto-ind-var { color: var(--green); font-weight: 700; word-break: break-all; }

@@ -12,7 +12,7 @@ import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { CASOS } from "../js/casos.js";
 import { RT_CASOS } from "../js/rt-casos.js";
-import { variarCaso, variarCasoVerificado, retoDelDia, desvariarCaso, invertirMapas, registrarMarcaReto, esMejorMarca, filasRankingReto } from "../js/reto.js";
+import { variarCaso, variarCasoVerificado, retoDelDia, desvariarCaso, invertirMapas, registrarMarcaReto, esMejorMarca, filasRankingReto, resumenIndicadores } from "../js/reto.js";
 
 let pass = 0;
 let fail = 0;
@@ -99,6 +99,18 @@ check("el reto es estable durante todo el día", r1.fecha === r2.fecha && r1.bas
 check("retoDelDia devuelve caso variado", !!r1.caso && !!r1.caso.retoSemilla);
 check("retoDelDia expone los mapas de variación", !!r1.mapas && r1.mapas.dominio instanceof Map);
 
+// Ficha «indicadores de hoy» (resumenIndicadores)
+const inds = resumenIndicadores(r1.mapas);
+check("resumenIndicadores devuelve filas solo para tokens cambiados", inds.length > 0 && inds.every((f) => f.original !== f.variante));
+check("cada fila lleva tipo, original y variante", inds.every((f) => f.tipo && f.original && f.variante));
+check("los tipos son IP/Host/Dominio/Correo", inds.every((f) => ["IP", "Host", "Dominio", "Correo"].includes(f.tipo)));
+const corr = inds.find((f) => f.tipo === "Correo");
+if (corr) check("el usuario del correo se conserva en la ficha", corr.original.split("@")[0] === corr.variante.split("@")[0]);
+const totalCambiados = [...r1.mapas.ip.entries(), ...r1.mapas.host.entries(), ...r1.mapas.dominio.entries(), ...r1.mapas.correo.entries()].filter(([o, v]) => o !== v).length;
+check("la ficha cubre TODOS los tokens cambiados", inds.length === totalCambiados);
+check("resumenIndicadores con mapas vacíos → []", resumenIndicadores({}).length === 0 && resumenIndicadores(null).length === 0);
+check("la ficha es determinista (misma semilla → misma lista)", JSON.stringify(inds) === JSON.stringify(resumenIndicadores(retoDelDia(new Date("2026-08-13T12:00:00Z")).mapas)));
+
 // ---------- Ranking local ----------
 let hist = [];
 hist = registrarMarcaReto({ fecha: "2026-08-13", casoId: "rt-05-mimikatz", titulo: "Mimikatz", rating: "A", segundos: 400 }, hist);
@@ -183,6 +195,16 @@ await page.locator("#modal-content .modal-title", { hasText: "RETO DIARIO" }).wa
 const panelReto = await page.locator("#modal-content").innerText();
 check("el panel del reto muestra el ranking local", panelReto.includes("RANKING LOCAL") && panelReto.includes("30 MARCAS"));
 check("sin marcas el ranking muestra el estado vacío", panelReto.includes("Aún no hay marcas"));
+
+// Ficha «indicadores de hoy» en el panel
+const indsHoy = resumenIndicadores(retoDelDia().mapas);
+check("el panel muestra la ficha INDICADORES DE HOY", panelReto.includes("INDICADORES DE HOY"));
+if (indsHoy.length > 0) {
+  check("la ficha pinta variantes con flecha original → variante", panelReto.includes("→"));
+  check("la ficha pinta el primer original y su variante", panelReto.includes(indsHoy[0].original) && panelReto.includes(indsHoy[0].variante));
+} else {
+  check("sin indicadores variables el panel lo dice", panelReto.includes("nada cambia"));
+}
 await page.locator('[data-action="jugar-reto"]').first().click();
 
 // Splash → briefing → terminal con la cabecera del reto
