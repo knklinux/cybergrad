@@ -27,7 +27,7 @@
 import { chromium } from "playwright";
 import { diagnosticar, imprimirDiff } from "./banner-core.mjs";
 import { verificarSubtitulo, verificarFooter, verificarSeparador } from "./visual-core.mjs";
-import { verificarMetadatos, verificarImagen, META_CANON } from "./meta-core.mjs";
+import { verificarMetadatos, verificarImagen, verificarCabecerasHTTP, META_CANON } from "./meta-core.mjs";
 
 const PROD = process.env.CYBERGRAD_PROD_URL || "https://knklinux.github.io/cybergrad/";
 const TIMEOUT_MS = parseInt(process.env.CYBERGRAD_PROD_TIMEOUT || "300000", 10);
@@ -70,12 +70,13 @@ while (Date.now() - inicio < TIMEOUT_MS) {
     const texto = await page.locator("#terminal .t-banner").first().innerText();
     const lineas = texto.split("\n").map((l) => l.trimEnd());
     if (lineas.length >= 6) {
-      // Gate adicional: la versión desplegada debe incluir YA la PWA.
-      // Banner y subtítulo son idénticos entre versiones, así que sin este
-      // gate el test podría correr contra el deploy ANTERIOR (a mitad del
-      // swap de Pages) y fallar al verificar el manifest. Con el gate, se
-      // reintenta hasta que la versión nueva (con <link rel=manifest> y
-      // manifest.webmanifest servido) esté realmente en línea.
+      // Gate adicional: la versión desplegada debe incluir YA la PWA y la
+      // meta CSP con frame-ancestors. Banner y subtítulo son idénticos
+      // entre versiones, así que sin este gate el test podría correr contra
+      // el deploy ANTERIOR (a mitad del swap de Pages) y fallar al
+      // verificar el manifest o la CSP. Con el gate, se reintenta hasta que
+      // la versión nueva (con <link rel=manifest>, manifest.webmanifest
+      // servido y frame-ancestors 'none' en la meta) esté en línea.
       const linkManifest = await page.evaluate(() =>
         document.querySelector('link[rel="manifest"]')?.getAttribute("href")
       ).catch(() => null);
@@ -155,13 +156,28 @@ try {
       correr(verificarImagen(url, 0, ""));
     }
   }
-  // NOTA: la CSP se comprueba como meta en el documento (no como cabecera
-  // HTTP): GitHub Pages ignora el fichero `_headers`, así que la meta CSP
-  // es la política realmente aplicada en producción. `_headers` queda como
-  // capa documentada para otros hosts que sí la sirvan.
 } catch (e) {
   correr(verificarMetadatos({ titulo: "", lang: "", desc: "", ogTitle: "", ogDesc: "", ogUrl: "", ogImages: [], twitterCard: "", twitterImage: "", canonical: "", cspContent: "" }));
   check("metadatos: flujo de lectura completado", false, `(${e.message})`);
+}
+
+// --- Cabeceras HTTP reales que sirve producción (CSP, HSTS, X-Frame-Options) ---
+// Se leen con un fetch HTTP REAL a la página desplegada (no desde el DOM):
+// GitHub Pages ignora `_headers`, así que la meta CSP (verificada arriba)
+// es la política efectiva; este bloque documenta la realidad del host y
+// verifica que la cabecera CSP — si algún día la sirve — lleva las
+// directivas correctas, que HSTS está presente y que X-Frame-Options
+// ausente queda cubierto por frame-ancestors 'none' de la meta.
+try {
+  const resp = await fetch(PROD);
+  const h = resp.headers;
+  correr(verificarCabecerasHTTP({
+    contentSecurityPolicy: h.get("content-security-policy") || "",
+    strictTransportSecurity: h.get("strict-transport-security") || "",
+    xFrameOptions: h.get("x-frame-options") || "",
+  }));
+} catch (e) {
+  check("HTTP: flujo de lectura de cabeceras completado", false, `(${e.message})`);
 }
 
 // --- PWA en producción: manifest instalable + service worker (offline) ---

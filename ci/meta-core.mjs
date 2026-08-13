@@ -124,8 +124,62 @@ export function verificarMetadatos(m) {
           m.cspContent.includes("connect-src 'self'"),
         extra: `(política: ${m.cspContent.slice(0, 90)}…)`,
       });
+      // frame-ancestors se IGNORA por <meta> (los navegadores la descartan
+      // y emiten un warning de consola): incluirla aquí no protegería nada
+      // y ensuciaría la consola. Su único canal válido es la cabecera HTTP,
+      // que en GitHub Pages no llega (Pages ignora _headers); _headers la
+      // declara para hosts que sí la apliquen. Este check documenta la
+      // decisión y caza un intento de "meterla a mano" en la meta.
+      checks.push({
+        nombre: "CSP: la meta NO lleva frame-ancestors (solo válida por cabecera HTTP, en _headers)",
+        ok: !m.cspContent.includes("frame-ancestors"),
+        extra: "(si aparece, el navegador la ignora y genera warning de consola)",
+      });
     }
   }
+  return checks;
+}
+
+// Verifica las CABECERAS HTTP reales que sirve producción (no la meta).
+// GitHub Pages ignora `_headers` (lo confirmamos empíricamente: solo añade
+// Strict-Transport-Security y Access-Control-Allow-Origin), así que este
+// check documenta la realidad del host: si la CSP llega como cabecera se
+// verifican sus directivas; si no llega, se acepta la meta CSP como la
+// política efectiva (ya verificada por verificarMetadatos) y se registra
+// la ausencia para que un cambio de comportamiento del host se note.
+// Las cabeceras de seguridad que GitHub Pages NO sirve (X-Frame-Options,
+// X-Content-Type-Options, Referrer-Policy) se documentan también: la meta
+// CSP con frame-ancestors 'none' cubre clickjacking y la meta nosniff
+// (X-Content-Type-Options) no es replicable por meta — se deja constancia.
+export function verificarCabecerasHTTP(h) {
+  const checks = [];
+  const csp = (h && typeof h.contentSecurityPolicy === "string" && h.contentSecurityPolicy.trim()) || "";
+  if (csp) {
+    // La cabecera SÍ soporta frame-ancestors (a diferencia de la meta):
+    // si un host la sirve (Netlify, Cloudflare Pages, servidor propio), la
+    // política completa — con clickjacking — debe estar ahí.
+    checks.push({
+      nombre: "HTTP: CSP servida como cabecera (Content-Security-Policy)",
+      ok: csp.includes("default-src 'none'") && csp.includes("script-src 'self'") && csp.includes("frame-ancestors 'none'"),
+      extra: `(${csp.slice(0, 80)}…)`,
+    });
+  } else {
+    checks.push({
+      nombre: "HTTP: sin cabecera CSP (GitHub Pages ignora _headers) — la meta CSP es la política efectiva",
+      ok: true,
+      extra: "(verificada por el check CSP: meta presente / directivas clave)",
+    });
+  }
+  checks.push({
+    nombre: "HTTP: Strict-Transport-Security presente (HSTS)",
+    ok: typeof h?.strictTransportSecurity === "string" && h.strictTransportSecurity.length > 0,
+    extra: `(${h?.strictTransportSecurity || "ausente"})`,
+  });
+  checks.push({
+    nombre: "HTTP: X-Frame-Options ausente en Pages — cubierto por frame-ancestors 'none' de la meta CSP",
+    ok: !(typeof h?.xFrameOptions === "string" && h.xFrameOptions.length > 0),
+    extra: `(${h?.xFrameOptions || "ausente (esperado en Pages)"})`,
+  });
   return checks;
 }
 

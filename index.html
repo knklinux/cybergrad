@@ -8,6 +8,11 @@
   <meta name="author" content="knklinux" />
   <meta name="theme-color" content="#050d0a" />
   <!-- Content-Security-Policy: capa de defensa en profundidad contra XSS.
+       NOTA: frame-ancestors NO se incluye aquí a propósito — el navegador
+       IGNORA frame-ancestors cuando llega por <meta> (solo es válida como
+       cabecera HTTP). GitHub Pages ignora _headers, así que en Pages no
+       hay forma de servir frame-ancestors; _headers lo declara para hosts
+       que sí lo apliquen (Netlify, Cloudflare Pages, servidor propio).
        Sin scripts inline (solo main.js y el bloque ld+json de datos) ni eval,
        así que script-src 'self' basta. Los estilos inline del juego y las
        fuentes de Google se permiten explícitamente. -->

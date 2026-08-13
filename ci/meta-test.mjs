@@ -57,6 +57,50 @@ for (const nombre of ["favicon.png", "apple-touch-icon.png", "jimmy-avatar.jpg"]
 }
 
 // ============================================================
+// 2b. _headers — la cabecera CSP declarada para hosts que SÍ la sirven.
+// GitHub Pages ignora `_headers` (lo confirma prod-test con HTTP real),
+// pero Netlify, Cloudflare Pages o un servidor propio SÍ lo aplican, y
+// allí la política llega como cabecera. Verificamos que el fichero existe,
+// que su CSP es la MISMA que la meta del documento (una sola política, no
+// dos que divergen) y que incluye las directivas clave (frame-ancestors
+// incluido). Con su mutación al final de la sección 3.
+// ============================================================
+const headersTxt = fs.existsSync(path.join(root, "_headers")) ? leer("_headers") : "";
+check("_headers: el fichero existe", headersTxt.length > 0, "(falta _headers en la raíz)");
+
+if (headersTxt) {
+  const metaLocal = extraerMetadatosLocal();
+  const cspHeaders = (headersTxt.match(/Content-Security-Policy:\s*([^\n]+)/) || [])[1] || "";
+  check(
+    "_headers: declara Content-Security-Policy",
+    cspHeaders.length > 0,
+    "(no hay directiva Content-Security-Policy en _headers)"
+  );
+  // frame-ancestors solo es válida por cabecera HTTP (por <meta> el
+  // navegador la ignora), así que vive ÚNICAMENTE en _headers: la política
+  // base (todo lo demás) debe coincidir con la meta, y frame-ancestors se
+  // exige en la cabecera como capa para hosts que sí la sirvan.
+  const baseHeaders = cspHeaders.replace(/;?\s*frame-ancestors 'none'\s*/g, "").trim();
+  const baseMeta = (metaLocal.cspContent || "").trim();
+  check(
+    "_headers: la CSP base coincide con la meta del documento (una sola política)",
+    !!metaLocal.cspContent && baseHeaders === baseMeta,
+    `(headers base |${baseHeaders}| vs meta |${baseMeta}|)`
+  );
+  check(
+    "_headers: la CSP incluye frame-ancestors 'none' (clickjacking, solo válida por cabecera)",
+    cspHeaders.includes("frame-ancestors 'none'"),
+    "(sin frame-ancestors en la cabecera)"
+  );
+  check(
+    "_headers: incluye X-Frame-Options DENY y X-Content-Type-Options nosniff",
+    headersTxt.includes("X-Frame-Options: DENY") &&
+      headersTxt.includes("X-Content-Type-Options: nosniff"),
+    "(faltan cabeceras de seguridad secundarias)"
+  );
+}
+
+// ============================================================
 // 3. PRUEBA DE MUTACIÓN (en memoria: se muta una copia del HTML)
 //    El golden debe cazar cada cambio no deseado. Se usa la MISMA
 //    extracción del core (extraerMetadatosDe) sobre el HTML mutado.
@@ -116,6 +160,16 @@ checks = muta(src.replace(
   '<meta property="og:title" content="GYBERGRAD \u2014 Simulador de Carrera SOC" />'
 ));
 caza("og:title roto (GYBERGRAD)", checks, 2);
+
+// Mutación 8: la meta CSP gana frame-ancestors "a mano" — el navegador la
+// IGNORA por <meta> (solo es válida por cabecera HTTP) y además emite un
+// warning de consola que rompe la regla de "sin errores de consola". El
+// check que documenta la decisión debe cazarla.
+checks = muta(src.replace(
+  "object-src 'none'",
+  "object-src 'none'; frame-ancestors 'none'"
+));
+caza("CSP con frame-ancestors en la meta (ignorada por <meta>)", checks, 13);
 
 // Restaurar el archivo real NO es necesario: las mutaciones se aplicaron
 // solo a copias en memoria de index.html.
