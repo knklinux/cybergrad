@@ -127,6 +127,13 @@ jobs:
       - name: Test E2E en la version desplegada (banner, subtitulo, pie y separador)
         run: npm run test:prod
 
+      - name: "Check README desplegado en GitHub (banner intacto vía API application/vnd.github.html)"
+        run: npm run test:readme-prod
+        env:
+          # Evita el rate limit anónimo de api.github.com (el token de Actions
+          # tiene 1000 req/h; sin él, 60/h por IP compartida y el check sería flaky).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:
