@@ -69,7 +69,25 @@ while (Date.now() - inicio < TIMEOUT_MS) {
     await page.waitForSelector("#terminal .t-banner", { timeout: 15000 });
     const texto = await page.locator("#terminal .t-banner").first().innerText();
     const lineas = texto.split("\n").map((l) => l.trimEnd());
-    if (lineas.length >= 6) { filas = lineas.slice(0, 6); break; }
+    if (lineas.length >= 6) {
+      // Gate adicional: la versión desplegada debe incluir YA la PWA.
+      // Banner y subtítulo son idénticos entre versiones, así que sin este
+      // gate el test podría correr contra el deploy ANTERIOR (a mitad del
+      // swap de Pages) y fallar al verificar el manifest. Con el gate, se
+      // reintenta hasta que la versión nueva (con <link rel=manifest> y
+      // manifest.webmanifest servido) esté realmente en línea.
+      const linkManifest = await page.evaluate(() =>
+        document.querySelector('link[rel="manifest"]')?.getAttribute("href")
+      ).catch(() => null);
+      let manifestOK = false;
+      if (linkManifest === "manifest.webmanifest") {
+        try {
+          const resp = await fetch(PROD + "manifest.webmanifest");
+          manifestOK = resp.status === 200 && (resp.headers.get("content-type") || "").includes("manifest+json");
+        } catch { /* deploy en curso */ }
+      }
+      if (manifestOK) { filas = lineas.slice(0, 6); break; }
+    }
   } catch {
     // Deploy en curso o página aún no lista: se reintenta.
   }
