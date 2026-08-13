@@ -12,7 +12,7 @@ import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
 import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
 import { retoDelDia } from "./reto.js";
 import { elegirCasoExamen, apruebaExamen, textoVeredicto } from "./examen.js";
-import { descargarCertificado } from "./certificado.js";
+import { descargarCertificado, imprimirCertificado } from "./certificado.js";
 import { estadoHabilidades } from "./habilidades.js";
 import { aplicarModoPresentador } from "./presentador.js";
 import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
@@ -699,7 +699,8 @@ ${acciones}
       ? `<div class="modal-section"><h3>VEREDICTO</h3><div style="font-size:13.5px;color:${aprobado ? "#33ff66" : "#ffb000"}">${textoVeredicto(r.rating)}</div></div>`
       : "";
     const botonCert = esExamen && aprobado
-      ? `<button class="btn-secondary" data-action="descargar-certificado">📜 DESCARGAR CERTIFICADO</button>`
+      ? `<button class="btn-secondary" data-action="descargar-certificado">📜 PNG</button>
+         <button class="btn-secondary" data-action="imprimir-certificado">🖨️ PDF (imprimir)</button>`
       : "";
 
     const html = `
@@ -725,6 +726,15 @@ ${acciones}
     this.setAcciones({
       "descargar-certificado": () => {
         descargarCertificado({
+          nombre: GAME.nombre,
+          rating: r.rating,
+          caso: caso.titulo,
+          fecha: new Date().toISOString().slice(0, 10),
+          modo: caso.modo === "rt" ? "rt" : "soc",
+        });
+      },
+      "imprimir-certificado": () => {
+        imprimirCertificado({
           nombre: GAME.nombre,
           rating: r.rating,
           caso: caso.titulo,

@@ -90,6 +90,59 @@ check("el certificado genera un dataURL PNG", typeof cert.dataUrl === "string" &
 check("el PNG no está vacío (>10 KB en base64)", cert.dataUrl.length > 10000);
 check("el nombre de archivo se sanea (slug sin espacios ni HTML)", cert.slug === "Ana-García-script" || /^[A-Za-z0-9_-]+$/.test(cert.slug));
 
+// Certificado PDF: imprimirCertificado rellena la zona de impresión con HTML
+// real (texto seleccionable) y llama a window.print. La zona NO se vacía al
+// imprimir (en headless window.print() dispara afterprint síncronamente y
+// vaciar ahí dejaría el PDF en blanco): se sustituye en la siguiente llamada.
+const pdf = await page.evaluate(async () => {
+  const m = await import("./js/certificado.js");
+  const llamadas = { n: 0 };
+  const original = window.print;
+  window.print = () => { llamadas.n++; };
+  m.imprimirCertificado({
+    nombre: "Ana García <script>alert(1)</script>",
+    rating: "S+",
+    caso: "Phishing con macro",
+    fecha: "2026-08-13",
+    modo: "soc",
+  });
+  const zonas = document.querySelectorAll("#cert-print-zone");
+  const zona = zonas[0];
+  const html = zona ? zona.innerHTML : "";
+  const txt = zona ? zona.textContent : "";
+  // Segunda llamada: sustituye el contenido, no duplica la zona.
+  m.imprimirCertificado({ nombre: "Otro", rating: "A", caso: "y", fecha: "2026", modo: "rt" });
+  const zonas2 = document.querySelectorAll("#cert-print-zone");
+  const txt2 = zonas2[0] ? zonas2[0].textContent : "";
+  window.print = original;
+  return { llamadas: llamadas.n, html, txt, zonas: zonas.length, zonas2: zonas2.length, txt2 };
+});
+check("imprimirCertificado llama a window.print", pdf.llamadas === 2);
+check("el certificado PDF es HTML con texto real (seleccionable)", pdf.html.includes("<div class=\"cert-nombre\">") && pdf.txt.includes("Ana García"));
+check("el certificado PDF escapa HTML del nombre (XSS)", !pdf.html.includes("<script>") && pdf.html.includes("&lt;script&gt;"));
+check("el certificado PDF incluye campaña y calificación", pdf.txt.includes("BLUE TEAM (SOC)") && pdf.txt.includes("S+"));
+check("una segunda llamada sustituye el contenido sin duplicar la zona", pdf.zonas === 1 && pdf.zonas2 === 1 && pdf.txt2.includes("RED TEAM"));
+
+// Verificación real de impresión: page.pdf() (Chromium headless) renderiza
+// la zona de impresión (el CSS @media print oculta el resto del juego) y
+// produce un PDF válido con contenido. Se puebla la zona directamente con
+// htmlCertificado para no depender de la semántica de window.print() (que en
+// headless es un no-op): el diálogo real lo abre el navegador del usuario.
+await page.evaluate(async () => {
+  const m = await import("./js/certificado.js");
+  document.getElementById("cert-print-zone").innerHTML = m.htmlCertificado({
+    nombre: "Ana García",
+    rating: "S+",
+    caso: "Phishing con macro",
+    fecha: "2026-08-13",
+    modo: "soc",
+  });
+});
+const pdfBuf = await page.pdf({ format: "A4", landscape: true, printBackground: true });
+const cabecera = pdfBuf.subarray(0, 8).toString();
+check("page.pdf() genera un PDF válido (%PDF-1.4)", cabecera.startsWith("%PDF-"));
+check("el PDF del certificado tiene contenido real (>8 KB)", pdfBuf.length > 8000);
+
 // Sin errores de consola
 if (errs.length) {
   console.error("✖ Errores de consola:");

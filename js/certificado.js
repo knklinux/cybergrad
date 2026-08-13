@@ -1,10 +1,22 @@
 // ============================================================
 // certificado.js — Certificado de examen de CYBERGRAD
-// Dibuja un certificado en un <canvas> (1400×900) y lo descarga
-// como PNG. Se genera al aprobar el modo examen (rating A o
-// mejor). Módulo sin dependencias: funciona en el navegador y
-// es testeable con Playwright (page.evaluate).
+// Dos formatos, mismo diseño y mismos datos:
+//   1. PNG  — se dibuja en un <canvas> (1400×900) y se descarga
+//             como imagen raster (para compartir / pegar).
+//   2. PDF  — se renderiza como HTML real (texto seleccionable y
+//             editable, apto para carreras oficiales) y se abre
+//             el diálogo de impresión del navegador (window.print).
+// Se genera al aprobar el modo examen (rating A o mejor). Módulo
+// sin dependencias: funciona en el navegador y es testeable con
+// Playwright (page.evaluate).
 // ============================================================
+
+// Escapa texto de usuario antes de interpolar en el HTML del
+// certificado (mismo criterio que esc() en ui.js: sin XSS en el
+// nombre del analista). Función pura, testeable en Node.
+const escHTML = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => (
+  { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+));
 
 // Convierte un nombre en un slug seguro para nombre de archivo
 // (sin espacios, sin caracteres raros, sin rutas, sin extensión).
@@ -111,4 +123,53 @@ export function descargarCertificado(datos) {
   document.body.appendChild(a);
   a.click();
   a.remove();
+}
+
+// HTML del certificado como documento real (texto seleccionable).
+// El CSS de impresión (@media print en style.css) oculta el resto
+// del juego y deja solo esta zona: el resultado es un PDF con texto
+// editable, no una imagen, apto para carreras oficiales.
+export function htmlCertificado(datos) {
+  const d = datos || {};
+  const nombre = String(d.nombre || "Analista");
+  const rating = String(d.rating || "A");
+  const caso = String(d.caso || "");
+  const fecha = String(d.fecha || "—");
+  const modo = String(d.modo || "soc");
+  const campana = modo === "rt" ? "RED TEAM (PENTEST OFENSIVO)" : "BLUE TEAM (SOC)";
+  return `
+  <div class="cert-print">
+    <div class="cert-marco">
+      <div class="cert-header">CYBERGRAD</div>
+      <div class="cert-sub">SIMULADOR DE CARRERA SOC + RED TEAM</div>
+      <div class="cert-titulo">CERTIFICADO DE EXAMEN</div>
+      <div class="cert-line">se certifica que</div>
+      <div class="cert-nombre">${escHTML(nombre)}</div>
+      <div class="cert-line">ha superado el examen de la campaña</div>
+      <div class="cert-campana">${campana}</div>
+      <div class="cert-line">resolviendo el caso: ${escHTML(caso)}</div>
+      <div class="cert-rating">CALIFICACIÓN ${escHTML(rating)}</div>
+      <div class="cert-fecha">fecha: ${escHTML(fecha)}</div>
+      <div class="cert-firma">Jimmy — Director del SOC de ACME Corp (sintético)</div>
+      <div class="cert-guion">─────────────</div>
+    </div>
+  </div>`;
+}
+
+// Abre el diálogo de impresión del navegador con el certificado en
+// HTML (PDF editable). El contenedor se crea una vez y se rellena con
+// los datos; la siguiente llamada lo sustituye. No se vacía al imprimir
+// a propósito: en algunos motores (p. ej. Chromium headless) window.print()
+// dispara afterprint de forma SÍNCRONA, y vaciar ahí dejaría el PDF en
+// blanco. La zona queda oculta en pantalla (display:none) y solo pesa
+// unos cientos de bytes, así que es inofensiva.
+export function imprimirCertificado(datos) {
+  let zona = document.getElementById("cert-print-zone");
+  if (!zona) {
+    zona = document.createElement("div");
+    zona.id = "cert-print-zone";
+    document.body.appendChild(zona);
+  }
+  zona.innerHTML = htmlCertificado(datos);
+  window.print();
 }

@@ -783,6 +783,54 @@ body::after {
 .lab-card .lc-titulo { font-weight: 700; color: #fff; font-size: 13px; }
 .lab-card .lc-meta { font-size: 11px; color: #5f8a6a; margin-top: 2px; }
 
+/* ============ CERTIFICADO PDF (IMPRESIÓN) ============ */
+/* El contenedor del certificado imprimible existe solo en memoria:
+   oculto en pantalla y único elemento visible al imprimir. El resto
+   del juego se descarta en @media print, dejando el certificado como
+   texto real (seleccionable/editable) en orientación apaisada. */
+#cert-print-zone { display: none; }
+@media print {
+  @page { size: A4 landscape; margin: 0; }
+  body > *:not(#cert-print-zone) { display: none !important; }
+  #cert-print-zone { display: block !important; }
+  .cert-print {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #050d0a;
+    color: #eafff0;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .cert-marco {
+    width: 92%;
+    height: 90%;
+    box-sizing: border-box;
+    border: 6px solid #1f5c33;
+    outline: 2px solid #123a21;
+    outline-offset: -14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .cert-header { font-family: 'Orbitron', 'Segoe UI', sans-serif; font-size: 56px; font-weight: 900; color: #33ff66; letter-spacing: 2px; }
+  .cert-sub { font-size: 17px; color: #8fd39e; letter-spacing: 3px; }
+  .cert-titulo { font-size: 34px; font-weight: 800; color: #eafff0; margin-top: 8px; letter-spacing: 2px; }
+  .cert-line { font-size: 20px; color: #8fd39e; }
+  .cert-nombre { font-size: 46px; font-weight: 900; color: #ffffff; font-family: 'Orbitron', 'Segoe UI', sans-serif; }
+  .cert-campana { font-size: 26px; font-weight: 800; color: #35e0ff; }
+  .cert-rating { font-size: 60px; font-weight: 900; color: #33ff66; font-family: 'Orbitron', 'Segoe UI', sans-serif; margin-top: 4px; }
+  .cert-fecha { font-size: 16px; color: #5f8a6a; }
+  .cert-firma { font-size: 18px; color: #8fd39e; margin-top: 8px; }
+  .cert-guion { font-size: 18px; color: #123a21; }
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: #060a07; }

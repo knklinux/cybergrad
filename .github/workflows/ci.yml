@@ -52,7 +52,7 @@ jobs:
       - name: Test reto diario (variación por semilla + modo sin pistas)
         run: npm run test:reto
 
-      - name: Test modo examen + certificado PNG
+      - name: Test modo examen + certificado PNG y PDF
         run: npm run test:examen
 
       - name: Test Jimmy-IA (preguntas libres sobre el caso)
