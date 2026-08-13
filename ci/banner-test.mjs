@@ -9,7 +9,7 @@
 // canónico (glifos figlet Standard, sin espacios finales) y, si algo
 // difiere, diagnostica qué letra está rota. Corre en Node puro.
 // El canónico y el diagnóstico viven en banner-core.mjs, compartido con
-// banner-prod-test.mjs (check de integración contra GitHub Pages).
+// prod-test.mjs (check de integración contra GitHub Pages).
 import { extraerBannerLocal, diagnosticar, imprimirDiff } from "./banner-core.mjs";
 
 let pass = 0;

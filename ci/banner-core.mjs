@@ -2,7 +2,7 @@
 // Define el banner canónico (glifos figlet Standard) y la verificación
 // golden + diagnóstico letra a letra. Lo usan:
 //   - banner-test.mjs      → contra js/main.js (local, Node puro, cada push/PR)
-//   - banner-prod-test.mjs → contra la versión desplegada en GitHub Pages
+//   - prod-test.mjs        → contra la versión desplegada en GitHub Pages
 //                             (check de integración, E2E con Playwright)
 import fs from "node:fs";
 import path from "node:path";

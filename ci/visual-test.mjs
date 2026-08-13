@@ -10,10 +10,18 @@
 //
 // Estrategia (igual que el banner): canónico fijo + comparación golden +
 // diagnóstico por pieza para localizar qué artefacto y qué parte está rota.
-// Corre en Node puro.
+// El subtítulo y el separador comparten canónico con el test de producción
+// (visual-core.mjs); las escalas del tutorial son solo locales porque no se
+// renderizan al arrancar. Corre en Node puro.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  extraerSubtituloLocal,
+  verificarSubtitulo,
+  extraerSeparadorLocal,
+  verificarSeparador,
+} from "./visual-core.mjs";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const leer = (rel) => fs.readFileSync(path.join(root, rel), "utf8");
@@ -24,40 +32,35 @@ const check = (nombre, cond, extra = "") => {
   if (cond) { pass++; console.log(`  \u2714 ${nombre}`); }
   else { fail++; console.log(`  \u2718 ${nombre}  ${extra}`); }
 };
+const correr = (checks) => { for (const c of checks) check(c.nombre, c.ok, c.extra); };
 
 const ARROW = "\u2192"; // →
-const GUION = "\u2500"; // ─
-const EM = "\u2014"; // —
 
 // ============================================================
 // 1. SUBTÍTULO DEL BANNER (js/main.js)
 // ============================================================
-const SUBTITULO_CANON =
-  "Simulador de carrera SOC + Red Team " + EM + " defiende como analista y ataca como pentester.";
-const mainSrc = leer("js/main.js");
-const mSub = mainSrc.match(/term\.print\("([^"]*Simulador de carrera[^"]*)"\s*,\s*"t-out-info"\)/);
-const sub = mSub ? mSub[1] : null;
-check("subtítulo: presente en main.js", !!sub, mSub ? "" : "(no se encontró term.print con 'Simulador de carrera')");
-if (sub) {
-  check("subtítulo: coincide con el canónico", sub === SUBTITULO_CANON, `(esperado |${SUBTITULO_CANON}| real |${sub}|)`);
-  check(
-    "subtítulo: menciona las dos campañas y el enfoque",
-    sub.includes("SOC + Red Team") && sub.includes("pentester"),
-    "(debe incluir 'SOC + Red Team' y 'pentester')"
-  );
+try {
+  correr(verificarSubtitulo(extraerSubtituloLocal()));
+} catch (e) {
+  check("subtítulo: presente en main.js", false, `(${e.message})`);
 }
 
 // ============================================================
 // 2. SEPARADOR ASCII DE LA TERMINAL (js/terminal.js)
 // ============================================================
-const termSrc = leer("js/terminal.js");
-const mSep = termSrc.match(/const linea = "([^"]*)"\.repeat\((\d+)\);/);
-const sepChar = mSep ? mSep[1] : null;
-const sepN = mSep ? parseInt(mSep[2], 10) : NaN;
-check("separador: carácter de línea es ─ (U+2500)", sepChar === GUION, `(real: ${JSON.stringify(sepChar)})`);
-check("separador: 52 guiones exactos", sepN === 52, `(real: ${sepN})`);
-const formatoOK = /this\.print\(titulo \? `\$\{linea\}\\n\$\{titulo\}\\n\$\{linea\}` : linea, "t-out-dim"\)/.test(termSrc);
-check("separador: formato línea/título/línea", formatoOK, "(debe ser `linea\\ntitulo\\nlinea`)");
+try {
+  const sep = extraerSeparadorLocal();
+  // Verifica el separador renderizado reconstruyendo su salida exacta:
+  // "─".repeat(52) (sin título) y con el formato línea/título/línea.
+  correr(verificarSeparador(sep.char.repeat(sep.n)));
+  check(
+    "separador: formato línea/título/línea",
+    sep.formatoOK,
+    "(debe ser `linea\\ntitulo\\nlinea`)"
+  );
+} catch (e) {
+  check("separador: presente en terminal.js", false, `(${e.message})`);
+}
 
 // ============================================================
 // 3. ESCALAS DE RANGO DEL TUTORIAL (js/tutorial.js)

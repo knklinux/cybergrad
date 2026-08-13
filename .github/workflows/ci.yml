@@ -50,11 +50,12 @@ jobs:
         run: npm run test:visual
 
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
-  # sirve el banner correcto (mismo canónico que el test local). Solo corre
-  # en push a main y manualmente (workflow_dispatch): en un PR la URL de
-  # producción no refleja el código del PR, así que no tendría sentido.
-  # El propio test reintenta hasta 5 min por si el deploy de Pages aún está
-  # en curso cuando arranca el job.
+  # sirve los artefactos visuales correctos (banner, subtítulo y separador;
+  # mismos canónicos que los tests locales). Solo corre en push a main y
+  # manualmente (workflow_dispatch): en un PR la URL de producción no
+  # refleja el código del PR, así que no tendría sentido. El propio test
+  # reintenta hasta 5 min por si el deploy de Pages aún está en curso
+  # cuando arranca el job.
   integracion:
     runs-on: ubuntu-latest
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
@@ -73,8 +74,8 @@ jobs:
       - name: Instalar navegador Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
-      - name: Test banner E2E en la version desplegada (GitHub Pages)
-        run: npm run test:banner-prod
+      - name: Test E2E en la version desplegada (banner, subtitulo y separador)
+        run: npm run test:prod
 
   gitleaks:
     runs-on: ubuntu-latest
