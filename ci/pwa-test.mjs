@@ -8,7 +8,7 @@
 //   (registro + activación + controller), verifica que la caché tiene el
 //   shell completo, pone la red OFFLINE de verdad y comprueba que el
 //   juego sigue cargando entero sin un solo error de consola.
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { chromium } from "playwright";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -75,8 +75,13 @@ const walk = (dir) => {
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join("/");
 const jsFiles = walk(path.join(ROOT, "js")).map(rel);
 const assetFiles = walk(path.join(ROOT, "assets")).map(rel);
+// Los archivos gitignored (p. ej. jimmy.jpg, la foto original local) no existen
+// en un checkout limpio ni en CI: el precache debe excluirlos igual que build-sw.mjs.
+const gitignored = (f) => { try { execFileSync("git", ["-C", ROOT, "check-ignore", "--quiet", f], { stdio: "ignore" }); return true; } catch { return false; } };
+const assetRastreables = assetFiles.filter((f) => !gitignored(f));
 check("sw.js: precache TODOS los .js de js/ (incluido pwa.js)", jsFiles.every((f) => precache.includes(f)), jsFiles.filter((f) => !precache.includes(f)).join(", "));
-check("sw.js: precache TODOS los assets (iconos incluidos)", assetFiles.every((f) => precache.includes(f)), assetFiles.filter((f) => !precache.includes(f)).join(", "));
+check("sw.js: precache TODOS los assets rastreables (iconos incluidos, sin gitignored)", assetRastreables.every((f) => precache.includes(f)), assetRastreables.filter((f) => !precache.includes(f)).join(", "));
+check("sw.js: la foto original gitignored (jimmy.jpg) NO está en el precache", !precache.includes("assets/jimmy.jpg"));
 check("sw.js: precache el css del juego", precache.includes("css/style.css"));
 check("sw.js: precache main.js con su query string del HTML", precache.includes("js/main.js?v=27"));
 

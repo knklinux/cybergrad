@@ -6,7 +6,7 @@
 // Estrategia: network-first con fallback a caché → online siempre
 // fresco, offline con todo el juego precacheado.
 // ============================================================
-const VERSION = "cybergrad-766631f50da3";
+const VERSION = "cybergrad-4213a729dc7a";
 const PRECACHE = [
   "assets/apple-touch-icon.png",
   "assets/cover-square.jpg",
@@ -15,7 +15,6 @@ const PRECACHE = [
   "assets/icon-192.png",
   "assets/icon-512.png",
   "assets/jimmy-avatar.jpg",
-  "assets/jimmy.jpg",
   "css/style.css",
   "index.html",
   "js/becario.js",

@@ -15,6 +15,7 @@
 // Uso: node ci/build-sw.mjs   (escribe sw.js en la raíz)
 // ============================================================
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,12 +35,28 @@ function walk(dir) {
 
 const rel = (p) => path.relative(ROOT, p).split(path.sep).join("/");
 
+// ¿Está el archivo en .gitignore? Fuente de verdad de lo que existirá en
+// un checkout limpio (CI). Un archivo local gitignored (p. ej. la foto
+// original assets/jimmy.jpg) NO debe precachearse: en CI no existe y un
+// caches.addAll con un 404 bloquearía la activación del service worker.
+// Fuera de un repo git (error 128) se conserva el archivo (optimista).
+function gitIgnorado(f) {
+  try {
+    execFileSync("git", ["-C", ROOT, "check-ignore", "--quiet", f], { stdio: "ignore" });
+    return true; // exit 0 → ignorado
+  } catch {
+    return false; // exit 1 (no ignorado) o 128 (sin git)
+  }
+}
+
 // ---------- Recursos referenciados desde index.html ----------
 const html = readFileSync(path.join(ROOT, "index.html"), "utf8");
 const refs = [];
 for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
   const url = m[1];
   if (/^(https?:|data:|#|\/\/)/.test(url) || url.startsWith("assets/cover")) continue;
+  const sinQuery = url.replace(/^\.\//, "").split("?")[0];
+  if (gitIgnorado(sinQuery)) continue;
   refs.push(url.replace(/^\.\//, ""));
 }
 // El manifest y el propio HTML van en el precache aunque no se
@@ -47,7 +64,10 @@ for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
 for (const f of ["index.html", "manifest.webmanifest"]) if (!refs.includes(f)) refs.push(f);
 
 // ---------- Todos los archivos de los directorios del juego ----------
-const dirs = ["js", "css", "assets"].map((d) => walk(path.join(ROOT, d)).map(rel)).flat();
+const dirs = ["js", "css", "assets"]
+  .map((d) => walk(path.join(ROOT, d)).map(rel))
+  .flat()
+  .filter((f) => !gitIgnorado(f));
 
 // ---------- Lista de precache final (sin duplicados, ordenada) ----------
 const precache = [...new Set([...refs, ...dirs])].sort();
