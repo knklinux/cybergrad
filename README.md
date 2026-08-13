@@ -85,7 +85,7 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 - **🔥 Reto diario** (botón 🔥 o comando `reto`): cada día el juego elige un caso (SOC o Red Team) y le cambia los **indicadores con una semilla basada en la fecha** — las IPs, los **hosts**, los **dominios** y los **correos** son distintos cada día. La sustitución es **reversible y conserva la longitud exacta** de cada cadena (incluidas claves de objetos): un whitelist de TLDs evita tocar falsos positivos (`payment.exe`, `alerts.json`, usuarios con punto…), el usuario de cada correo se conserva, las variantes nunca vuelven a casar (idempotencia) y los mapas de variación permiten reconstruir el caso original (`desvariarCaso`). Nada se rompe: base64 de PowerShell, hashes y consultas `whois`/`dig` siguen funcionando con los indicadores variados. Sin pistas y con el SLA real. El resultado de cada día se registra en tus estadísticas. Aprender el patrón, no memorizar respuestas.
 - **🎓 Modo examen** (botón 🎓 o comando `examen`): un caso al azar, sin pistas y a contrarreloj. Tu informe se califica igual (S+ a C) y, si apruebas con **A o mejor**, se desbloquea tu **certificado en dos formatos**: **PNG** (imagen para compartir) y **PDF por impresión del navegador** (texto real seleccionable/editable, apto para carreras oficiales), con tu nombre, tu calificación y la firma de Jimmy. El examen **no toca tu carrera** (ni XP ni casos completados): es una certificación independiente que sí guarda tu mejor nota.
 - **🎬 Modo presentador** (botón 🎬 o comando `demo`): carga en **memoria** un estado avanzado (rangos máximos, casos completados, logros) para enseñar CYBERGRAD en entrevistas o demos sin grindear. **Nunca se guarda**: en modo demo `guardar()` es un no-op, tu progreso real queda intacto.
-- **🧠 Jimmy responde preguntas libres** (comando `preguntar` o `jimmy`): pregúntale en lenguaje natural sobre el caso actual — «¿qué hago?» (objetivos pendientes con el comando exacto), «¿qué es T1566?» (técnica MITRE con su táctica), un término del glosario o un archivo del caso (busca y te cita las líneas de evidencia). 100 % local y determinista, sin backend.
+- **🧠 Jimmy responde preguntas libres** (comando `preguntar` o `jimmy`): pregúntale en lenguaje natural sobre el caso actual — «¿qué hago?» (objetivos pendientes con el comando exacto), «¿qué es T1566?» (técnica MITRE con su táctica), un término del glosario o un archivo del caso (busca y te cita las líneas de evidencia). **🎙 También por voz**: escribe `preguntar` (o `voz`) sin texto y el navegador escucha tu pregunta con `webkitSpeechRecognition` (idioma español, resultado final limpio); `preguntar off` cancela, y si el navegador no lo soporta avisa sin romper. 100 % local y determinista, sin backend.
 - **🧭 Árbol de habilidades MITRE** (botón 🧭 o comando `habilidades`): el mapa de tácticas y técnicas del juego. Cada técnica se desbloquea al completar el caso que la enseña; el árbol muestra cuántas dominas por táctica y qué caso te falta para desbloquear cada una.
 - **🔊 Sonido y vibración** (botón 🔊 o comando `sonido on|off|estado`): efectos sintetizados con Web Audio (correcto, error, alerta, caso resuelto) y vibración en móvil. El estado se persiste en el navegador.
 
@@ -204,6 +204,7 @@ cybergrad/
     ├── examen.js         # Modo examen: caso aleatorio sin pistas y certificación
     ├── certificado.js    # Certificado del examen: PNG (canvas) + PDF (HTML imprimible con window.print)
     ├── jimmy-ia.js       # Jimmy-IA: respuestas en lenguaje natural sobre el caso actual
+    ├── voz.js            # Reconocimiento de voz del navegador (webkitSpeechRecognition) para preguntar
     ├── presentador.js    # Modo presentador: estado demo en memoria (nunca se guarda)
     ├── sonido.js         # Sonido sintetizado (Web Audio) y vibración, con toggle persistido
     ├── habilidades.js    # Árbol de habilidades MITRE (técnicas desbloqueadas por caso)
@@ -239,7 +240,7 @@ cybergrad/
 
 Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
 
-- **`checks`** — la cadena completa de **15 tests** (`npm test`):
+- **`checks`** — la cadena completa de **16 tests** (`npm test`):
   1. **Sintaxis** (`check`) — `node --check` sobre todos los `.js` del repo.
   2. **Lint** (`lint`) — ESLint básico sobre `js/`, `serve.js` y `ci/`.
   3. **Unit · `esc()`** (`test:unit`) — el helper de escape HTML contra XSS funciona.
@@ -252,9 +253,10 @@ Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
   10. **Reto diario** (`test:reto`) — la variación por semilla es **determinista** (misma fecha → mismo caso y mismos mapas; fecha distinta → indicadores distintos), varía **IPs, hosts, dominios y correos** (el usuario del correo se conserva, el whitelist de TLDs protege `payment.exe`/`alerts.json`/usuarios con punto), el **invariante de longitud** se cumple en todas las cadenas y claves de TODOS los casos (SOC + RT), y la variación es **reversible**: `desvariarCaso` reconstruye el original byte a byte. E2E: el reto muestra su cabecera y **bloquea `pista`**.
   11. **Modo examen** (`test:examen`) — E2E del examen (cabecera, `pista` bloqueado) y del **certificado**: el generador de canvas produce un **PNG real** (>10 KB) con nombre de archivo **saneado** (slug); el **PDF imprimible** se renderiza como HTML real con texto seleccionable, **escapa el nombre** (XSS), sustituye la zona sin duplicarla, y `page.pdf()` (Chromium headless) produce un **PDF válido con contenido** (>8 KB).
   12. **Jimmy-IA** (`test:jimmy-ia`) — respuestas deterministas en Node («qué hago» lista pendientes con su comando, «qué es T1566» describe la técnica, búsqueda en evidencias cita la línea) + E2E del comando `preguntar` en la terminal.
-  13. **Modo presentador** (`test:presentador`) — el demo carga rangos máximos y casos completados, y **no se guarda**: el localStorage conserva la partida real del jugador.
-  14. **Sonido** (`test:sonido`) — el toggle del botón y el comando `sonido on|off|estado` **persisten** el estado, y activar Web Audio en headless **no produce errores de consola**.
-  15. **Árbol de habilidades** (`test:habilidades`) — **integridad de datos**: toda técnica citada en las lecciones de los casos existe en la KB de `mitre.js`; el estado del árbol (0 dominadas → todas dominadas) y el panel E2E.
+  13. **Voz** (`test:voz`) — `preguntar` sin texto arranca el reconocimiento del navegador con un **mock** (configura es-ES, resultado final y 1 alternativa), un resultado reconocido se encadena a la respuesta de Jimmy, `preguntar off` cancela la sesión, y **sin API de voz el juego avisa y no rompe**.
+  14. **Modo presentador** (`test:presentador`) — el demo carga rangos máximos y casos completados, y **no se guarda**: el localStorage conserva la partida real del jugador.
+  15. **Sonido** (`test:sonido`) — el toggle del botón y el comando `sonido on|off|estado` **persisten** el estado, y activar Web Audio en headless **no produce errores de consola**.
+  16. **Árbol de habilidades** (`test:habilidades`) — **integridad de datos**: toda técnica citada en las lecciones de los casos existe en la KB de `mitre.js`; el estado del árbol (0 dominadas → todas dominadas) y el panel E2E.
 - **`integracion`** — check de integración real: `test:prod` carga la **versión desplegada en GitHub Pages** con Playwright y verifica los **cuatro artefactos visuales** que sirve producción contra los mismos canónicos de los tests locales: el **banner** (golden + glifos, vía `banner-core.mjs`), el **subtítulo**, el **pie de arranque** y el **separador ASCII** (vía `visual-core.mjs`, completando el onboarding y ejecutando `ayuda` para generar un separador real). Solo corre en push a `main` (y manual vía `workflow_dispatch`), reintentando hasta 5 min por si el deploy de Pages está en curso.
 - **`gitleaks`** — escaneo de secretos sobre el **historial completo** (más detalle en `SECURITY.md`).
 

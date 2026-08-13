@@ -58,6 +58,9 @@ jobs:
       - name: Test Jimmy-IA (preguntas libres sobre el caso)
         run: npm run test:jimmy-ia
 
+      - name: Test voz (reconocimiento del navegador con mock, degradación sin API)
+        run: npm run test:voz
+
       - name: Test modo presentador (demo sin persistir)
         run: npm run test:presentador
 

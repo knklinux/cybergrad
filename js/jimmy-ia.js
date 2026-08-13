@@ -17,7 +17,7 @@ import { GLOSARIO } from "./glosario.js";
 import { TECNICAS, describirTecnica } from "./mitre.js";
 
 export const PREGUNTAR_AYUDA =
-  "preguntar <texto> — Jimmy responde preguntas libres sobre el caso actual (qué hacer, técnicas MITRE, glosario, evidencias)";
+  "preguntar [texto] — Jimmy responde preguntas libres sobre el caso actual (qué hacer, técnicas MITRE, glosario, evidencias). Sin texto: escucha tu voz con el reconocimiento del navegador (🎙; `preguntar off` cancela)";
 
 const RE_TECNICA = /\bT\d{4}(?:\.\d{3})?\b/g;
 

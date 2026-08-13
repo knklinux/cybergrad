@@ -10,6 +10,7 @@ import { numCasoRT } from "./rt-casos.js";
 import { explicarTutor, EXPLICAR_AYUDA } from "./tutor.js";
 import { preguntarJimmy, PREGUNTAR_AYUDA } from "./jimmy-ia.js";
 import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
+import { soportaVoz, escucharVoz } from "./voz.js";
 
 const AYUDA = {
   "ayuda": "ayuda [comando] — lista los comandos disponibles o explica uno",
@@ -40,7 +41,8 @@ const AYUDA = {
   "pista": "pista — pide una pista al supervisor (cuesta puntos)",
   "explicar": EXPLICAR_AYUDA,
   "preguntar": PREGUNTAR_AYUDA,
-  "jimmy": "jimmy <texto> — alias de preguntar: Jimmy responde sobre el caso actual",
+  "jimmy": "jimmy [texto] — alias de preguntar: Jimmy responde sobre el caso actual (sin texto, escucha tu voz)",
+  "voz": "voz [off] — pregunta a Jimmy por voz (igual que `preguntar` sin texto); voz off cancela la escucha",
   "reto": "reto — abre el reto diario (mismo incidente, indicadores distintos cada día)",
   "examen": "examen — modo examen: caso sin pistas a contrarreloj; al aprobar (A o mejor) obtienes certificado",
   "sonido": "sonido [on|off|estado] — activa, silencia o muestra el estado del sonido",
@@ -84,6 +86,67 @@ export function crearComandos(ctx) {
   const { engine, term, ui } = ctx;
 
   const out = (texto, cls = "t-out") => term.print(texto, cls);
+
+  // ---------- Voz (Jimmy-IA) ----------
+  // Sesión activa de reconocimiento de voz: { ctrl, estado }
+  let vozSesion = null;
+
+  // Arranca la escucha por voz y encadena la pregunta reconocida a Jimmy.
+  function preguntarPorVoz() {
+    if (vozSesion) {
+      term.printInfo("Ya estoy escuchando… escribe `preguntar off` para cancelar.");
+      return;
+    }
+    if (!soportaVoz()) {
+      term.printWarn("Este navegador no soporta reconocimiento de voz (webkitSpeechRecognition). Escribe la pregunta: `preguntar <texto>`.");
+      return;
+    }
+    const estado = { cancelada: false };
+    let recibida = false;
+    const ctrl = escucharVoz({
+      onResult: (texto) => {
+        recibida = true;
+        term.separator("🗣 TU PREGUNTA");
+        term.print(texto, "t-out-hi");
+        term.separator("🧠 JIMMY — RESPUESTA");
+        term.print(preguntarJimmy(texto, { caso: engine.caso, hecho: engine.hecho, modoRT: engine.modoRT, game: GAME }), "t-out");
+      },
+      onError: (cod) => {
+        const msgs = {
+          "no-soporte": "Este navegador no soporta reconocimiento de voz. Usa `preguntar <texto>`.",
+          "no-iniciar": "No se pudo iniciar el micrófono. Comprueba los permisos y vuelve a intentarlo.",
+          "not-allowed": "Permiso de micrófono denegado. Actívalo en la configuración del navegador y vuelve a `preguntar`.",
+          "no-speech": "No he captado voz. Inténtalo de nuevo.",
+          "audio-capture": "Sin micrófono disponible en este dispositivo.",
+          "network": "Error de red del servicio de voz del navegador.",
+          "service-not-allowed": "El navegador no permite el servicio de voz en esta página.",
+        };
+        term.printWarn(msgs[cod] || `Error de reconocimiento de voz: ${cod}`);
+      },
+      onEnd: () => {
+        vozSesion = null;
+        if (!recibida && !estado.cancelada) {
+          term.printWarn("No he captado nada. Vuelve a `preguntar` o escribe la pregunta: `preguntar <texto>`.");
+        }
+      },
+    });
+    if (!ctrl) return; // escucharVoz ya avisó por onError
+    vozSesion = { ctrl, estado };
+    term.separator("🎙 JIMMY — PREGUNTA POR VOZ");
+    term.print("Habla ahora… (escribe `preguntar off` para cancelar)", "t-out-dim");
+  }
+
+  // Cancela la sesión de voz activa (sin avisar de «no he captado nada»).
+  function cancelarVoz() {
+    if (!vozSesion) {
+      term.printInfo("No hay sesión de voz activa.");
+      return;
+    }
+    vozSesion.estado.cancelada = true;
+    vozSesion.ctrl.cancelar();
+    vozSesion = null;
+    term.print("🛑 Reconocimiento de voz cancelado.", "t-out-info");
+  }
 
   // ---------- utilidades ----------
   function archivoOError(args) {
@@ -731,11 +794,16 @@ export function crearComandos(ctx) {
     pista() { engine.pista(); },
 
     preguntar(a) {
-      const texto = preguntarJimmy(a, { caso: engine.caso, hecho: engine.hecho, modoRT: engine.modoRT, game: GAME });
+      const arg = String(a || "").trim();
+      // Sin argumento → reconocimiento de voz del navegador
+      if (!arg) { preguntarPorVoz(); return; }
+      if (/^(off|cancelar|cancel|stop)$/i.test(arg)) { cancelarVoz(); return; }
+      const texto = preguntarJimmy(arg, { caso: engine.caso, hecho: engine.hecho, modoRT: engine.modoRT, game: GAME });
       term.separator("🧠 JIMMY — PREGUNTA LIBRE");
       out(texto, "t-out");
     },
     jimmy: (a) => cmds.preguntar(a),
+    voz: (a) => cmds.preguntar(a),
 
     reto() { ui.mostrarRetoDiario(); },
     examen() { ui.mostrarExamen(); },
