@@ -150,5 +150,104 @@ if (errs.length) {
   salir(1);
 }
 
+// ---------- Parte 3 (E2E): completar un examen REAL y verificar que el
+// botón de certificado PDF se renderiza en el modal de resultado ----------
+// `elegirCasoExamen()` usa Math.random(); lo forzamos a 0 para que elija
+// TODOS_LOS_CASOS[0] = phishing-01 (caso plano, sin variar), que se resuelve
+// con la secuencia conocida. Así se prueba la ruta completa: examen → caso →
+// informe → modal con los botones 📜 PNG / 🖨️ PDF → imprimirCertificado.
+const page2 = await browser.newPage();
+const errs2 = [];
+page2.on("pageerror", (e) => errs2.push(`[pageerror] ${e.message}`));
+page2.on("console", (m) => { if (m.type() === "error") errs2.push(`[console] ${m.text()}`); });
+await page2.addInitScript(() => {
+  // Fuerza el índice 0 del examen (phishing-01). El resto del juego tolera
+  // el 0 (p. ej. FX) sin romper el flujo.
+  Math.random = () => 0;
+});
+await page2.goto(BASE + "?examen-real=" + Date.now(), { waitUntil: "domcontentloaded", timeout: 20000 });
+await page2.waitForSelector("#input-nombre", { timeout: 15000 }).catch(() => falla("Parte 3: no apareció el onboarding"));
+await page2.fill("#input-nombre", "CI-ExamenReal");
+await page2.click("#btn-empezar");
+const aceptar2 = page2.locator('[data-action="aceptar-briefing"]');
+await aceptar2.first().waitFor({ state: "attached", timeout: 15000 }).catch(() => {});
+if (await aceptar2.count()) await aceptar2.first().click();
+await page2.waitForSelector("#terminal input", { timeout: 15000 }).catch(() => falla("Parte 3: la terminal no arrancó"));
+
+await page2.fill("#terminal input", "examen");
+await page2.press("#terminal input", "Enter");
+await page2.locator("#modal-content .modal-title", { hasText: "MODO EXAMEN" }).waitFor({ timeout: 10000 }).catch(() => falla("Parte 3: no se abrió el panel del examen"));
+await page2.locator('[data-action="empezar-examen"]').first().click();
+await aceptar2.first().waitFor({ state: "attached", timeout: 15000 }).catch(() => {});
+if (await aceptar2.count()) await aceptar2.first().click();
+await page2.waitForSelector("#terminal input", { timeout: 15000 }).catch(() => falla("Parte 3: la terminal no arrancó (examen)"));
+
+// El caso forzado debe ser el phishing-01
+const tituloCaso = await page2.locator("#terminal").innerText();
+check("Parte 3: el examen elige el phishing-01 (stub Math.random)", tituloCaso.includes("Phishing"));
+
+// Resolver el phishing-01 (misma secuencia que quiz-test)
+const accionesExamen = [
+  "bloquear dominio:acme-facturas.info",
+  "bloquear ip:185.220.101.34",
+  "bloquear url:http://acme-facturas.info/payment.exe",
+  "bloquear dominio:paypal-verifica.top",
+  "aislar HOST-104",
+  "deshabilitar m.garcia",
+  "escalar",
+];
+for (const a of accionesExamen) {
+  await page2.fill("#terminal input", a);
+  await page2.press("#terminal input", "Enter");
+  await page2.waitForTimeout(300);
+}
+
+// Informe con cobertura completa → ENTREGAR
+await page2.fill("#terminal input", "informe");
+await page2.press("#terminal input", "Enter");
+const txtarea2 = page2.locator("#informe-texto");
+if (!(await txtarea2.count())) falla("Parte 3: el comando informe no abrió el textarea");
+await txtarea2.fill([
+  "Incidente de phishing confirmado con macro.",
+  "IOCs: acme-facturas.info, 185.220.101.34,",
+  "http://acme-facturas.info/payment.exe, paypal-verifica.top.",
+  "Host HOST-104 aislado, cuenta m.garcia deshabilitada.",
+  "Escalar a CSIRT.",
+].join("\n"));
+await page2.locator('[data-action="enviar-informe"]').click();
+await page2.locator("#modal-content .modal-title", { hasText: "EXAMEN" }).waitFor({ timeout: 15000 }).catch(() => falla("Parte 3: no apareció el resultado del examen"));
+
+const modal = await page2.locator("#modal-content").innerText();
+check("Parte 3: el examen se aprueba (A o mejor)", /CALIFICACIÓN (S\+|S|A)/.test(modal));
+const btnPng = page2.locator('[data-action="descargar-certificado"]');
+const btnPdf = page2.locator('[data-action="imprimir-certificado"]');
+check("Parte 3: el botón 📜 PNG se renderiza en el modal", (await btnPng.count()) === 1);
+check("Parte 3: el botón 🖨️ PDF se renderiza en el modal", (await btnPdf.count()) === 1);
+
+// Clic en el botón PDF: llama a imprimirCertificado → window.print + zona de impresión
+const pdfClick = await page2.evaluate(async () => {
+  const llamadas = { n: 0 };
+  const original = window.print;
+  window.print = () => { llamadas.n++; };
+  document.querySelector('[data-action="imprimir-certificado"]').click();
+  await new Promise((r) => setTimeout(r, 100));
+  const zona = document.getElementById("cert-print-zone");
+  const txt = zona ? zona.textContent : "";
+  window.print = original;
+  return { n: llamadas.n, txt };
+});
+check("Parte 3: el botón PDF llama a imprimirCertificado (window.print)", pdfClick.n >= 1);
+check("Parte 3: la zona de impresión se puebla con el certificado", pdfClick.txt.includes("CERTIFICADO DE EXAMEN") && pdfClick.txt.includes("CI-ExamenReal"));
+check("Parte 3: el certificado PDF escapa el HTML del nombre (XSS)", !pdfClick.txt.includes("<script>"));
+
+// Sin errores de consola en la parte 3
+if (errs2.length) {
+  console.error("✖ Errores de consola (Parte 3):");
+  for (const e of errs2.slice(0, 8)) console.error("   " + e);
+  salir(1);
+}
+check("Parte 3: sin errores de consola", true);
+await page2.close();
+
 console.log(fail === 0 ? `✔ examen-test OK: ${pass} checks, 0 fallos.` : `✖ ${fail} checks fallidos.`);
 salir(fail === 0 ? 0 : 1);
