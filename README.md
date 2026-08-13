@@ -88,6 +88,7 @@ El progreso red team es independiente del blue team: XP, rango y campaña propio
 - **🧠 Jimmy responde preguntas libres** (comando `preguntar` o `jimmy`): pregúntale en lenguaje natural sobre el caso actual — «¿qué hago?» (objetivos pendientes con el comando exacto), «¿qué es T1566?» (técnica MITRE con su táctica), un término del glosario o un archivo del caso (busca y te cita las líneas de evidencia). **🎙 También por voz**: escribe `preguntar` (o `voz`) sin texto y el navegador escucha tu pregunta con `webkitSpeechRecognition` (idioma español, resultado final limpio); `preguntar off` cancela, y si el navegador no lo soporta avisa sin romper. Requisitos: **Chrome/Edge con permiso de micrófono e internet** (el reconocimiento lo procesa el servicio de voz del navegador); en otros navegadores o sin servicio, el juego degrada con un mensaje claro y puedes seguir escribiendo. Los errores se traducen (permiso denegado, sin micrófono, red…), una sesión cancelada no imprime ruido posterior y los callbacks asíncronos están aislados para no romper el terminal. 100 % local y determinista, sin backend.
 - **🧭 Árbol de habilidades MITRE** (botón 🧭 o comando `habilidades`): el mapa de tácticas y técnicas del juego. Cada técnica se desbloquea al completar el caso que la enseña; el árbol muestra cuántas dominas por táctica y qué caso te falta para desbloquear cada una.
 - **🔊 Sonido y vibración** (botón 🔊 o comando `sonido on|off|estado`): efectos sintetizados con Web Audio (correcto, error, alerta, caso resuelto) y vibración en móvil. El estado se persiste en el navegador.
+- **🔄 Ataque adaptativo** (en 3 casos blue team: phishing, ransomware y fuerza bruta): si **no contienes a tiempo** el objetivo origen (no aíslas el host, no bloqueas la IP/C2), el atacante **pivota** — se mueve a otro host/cuenta, el checklist gana objetivos **nuevos que también exige el informe**, salta una alerta crítica, Jimmy te avisa y pierdes puntos. Contener a tiempo lo evita del todo: es la diferencia entre un incidente y una brecha. `pivot.js` decide de forma pura y determinista; los pivots sobreviven a la variación del reto diario.
 
 ## 🎓 Modo Becario
 
@@ -208,6 +209,7 @@ cybergrad/
     ├── presentador.js    # Modo presentador: estado demo en memoria (nunca se guarda)
     ├── sonido.js         # Sonido sintetizado (Web Audio) y vibración, con toggle persistido
     ├── habilidades.js    # Árbol de habilidades MITRE (técnicas desbloqueadas por caso)
+    ├── pivot.js          # Ataque adaptativo: decisión pura de si el atacante pivota (sin efectos)
     ├── casos/            # Un archivo por caso blue team (fácil de ampliar)
     ├── rt-casos.js       # Catálogo de la campaña red team
     └── rt-casos/         # Un archivo por pentest red team (fácil de ampliar)
@@ -240,7 +242,7 @@ cybergrad/
 
 Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
 
-- **`checks`** — la cadena completa de **17 tests** (`npm test`):
+- **`checks`** — la cadena completa de **18 tests** (`npm test`):
   1. **Sintaxis** (`check`) — `node --check` sobre todos los `.js` del repo.
   2. **Lint** (`lint`) — ESLint básico sobre `js/`, `serve.js` y `ci/`.
   3. **Unit · `esc()`** (`test:unit`) — el helper de escape HTML contra XSS funciona.
@@ -258,6 +260,7 @@ Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
   15. **Modo presentador** (`test:presentador`) — el demo carga rangos máximos y casos completados, y **no se guarda**: el localStorage conserva la partida real del jugador.
   16. **Sonido** (`test:sonido`) — el toggle del botón y el comando `sonido on|off|estado` **persisten** el estado, y activar Web Audio en headless **no produce errores de consola**.
   17. **Árbol de habilidades** (`test:habilidades`) — **integridad de datos**: toda técnica citada en las lecciones de los casos existe en la KB de `mitre.js`; el estado del árbol (0 dominadas → todas dominadas) y el panel E2E.
+  18. **Ataque adaptativo** (`test:pivot`) — los pivots declarados en los casos son estructuralmente válidos y la decisión pura de `prepararPivot` es correcta (contenido a tiempo → no pivota; sin contener → pivota con objetivos nuevos; ya pivotado → no repite). E2E con el hook `?pivotEn=N`: si NO contienes, el atacante pivota (terminal + checklist ganan el host nuevo, sin errores de consola); si contienes a tiempo, el pivote NO salta y el checklist no se complica.
 - **`integracion`** — check de integración real: `test:prod` carga la **versión desplegada en GitHub Pages** con Playwright y verifica los **cinco artefactos de arranque** que sirve producción contra los mismos canónicos de los tests locales: el **banner** (golden + glifos, vía `banner-core.mjs`), el **subtítulo**, el **pie de arranque** y el **separador ASCII** (vía `visual-core.mjs`, completando el onboarding y ejecutando `ayuda` para generar un separador real) y los **metadatos** (vía `meta-core.mjs`: título de pestaña, Open Graph y Twitter Card leídos del DOM, con las **og:image comprobadas con HTTP real** — un archivo roto o desaparecido rompería la tarjeta de LinkedIn — y la **meta CSP** con sus directivas clave; GitHub Pages ignora `_headers`, así que la meta es la política realmente aplicada). Solo corre en push a `main` (y manual vía `workflow_dispatch`), reintentando hasta 5 min por si el deploy de Pages está en curso.
 - **`gitleaks`** — escaneo de secretos sobre el **historial completo** (más detalle en `SECURITY.md`).
 

@@ -60,7 +60,16 @@ function procesar(linea) {
   }
 }
 
-ui.setNuevoCasoHandler((caso, opciones) => engine.iniciarCaso(caso, opciones));
+// Hook de test (`?pivotEn=N`): comprime el tiempo del ataque adaptativo para
+// que el E2E del CI pueda ver el pivote sin esperar minutos reales. Invisible
+// para el jugador normal (sin el parámetro, el pivot usa su `en` del caso).
+// Se aplica en TODAS las vías de entrada (partida nueva, continuar y paneles).
+const PIVOT_EN_TEST = parseInt(new URLSearchParams(location.search).get("pivotEn") || "", 10);
+const conHookPivot = (caso) => {
+  if (Number.isFinite(PIVOT_EN_TEST) && caso && caso.pivot) caso.pivot.en = Math.max(1, PIVOT_EN_TEST);
+  return caso;
+};
+ui.setNuevoCasoHandler((caso, opciones) => engine.iniciarCaso(conHookPivot(caso), opciones));
 
 // ---- Arranque ----
 ui.actualizarPerfil();
@@ -95,7 +104,7 @@ function continuarPartida() {
   term.print("");
   const pendiente = casoInicialCargado();
   if (pendiente) {
-    engine.iniciarCaso(pendiente);
+    engine.iniciarCaso(conHookPivot(pendiente));
   } else {
     term.print("Ambas campañas completadas. Abre Carrera para repasar tu trayectoria o reiniciar el progreso.", "t-out-dim");
     ui.mostrarCarrera();
@@ -110,7 +119,7 @@ function empezarNueva() {
     term.print("");
     // Asignar el primer caso no completado
     const siguiente = CASOS.find((c) => !GAME.casosCompletados.includes(c.id)) || CASOS[0];
-    engine.iniciarCaso(siguiente);
+    engine.iniciarCaso(conHookPivot(siguiente));
   });
 }
 

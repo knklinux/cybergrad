@@ -141,6 +141,22 @@ export default {
     },
   ],
 
+  // Ataque adaptativo: si no bloqueas la IP del atacante en ~3 minutos,
+  // reutiliza las credenciales robadas, compromete otra cuenta de servicio
+  // y otro servidor (objetivos nuevos exigidos).
+  pivot: {
+    en: 200,
+    siNo: "bloquear:ip:45.155.205.33",
+    correctas: { deshabilitar: ["usuario:svc_backup"], aislar: ["host:srv-rrhh-01"] },
+    alerta: {
+      sev: "HIGH",
+      titulo: "Pivote: svc_backup comprometida y srv-rrhh-01 accedido",
+      detalle: "Sin bloquear la IP, el atacante reutiliza las credenciales robadas: svc_backup inicia sesión desde 45.155.205.33 y srv-rrhh-01 muestra acceso administrativo anómalo.",
+    },
+    detalle: "No bloqueas la IP del atacante a tiempo: ha pivotado a otra cuenta de servicio y a otro servidor.",
+    penalizacion: 35,
+  },
+
   pistas: [
     "Mira el auth.log: cuenta el patrón (grep). ¿Quién entra y desde dónde?",
     "La alerta ALT-602 ya te dice que hubo un login con éxito. ¿Qué hizo después? Revisa audit.log.",

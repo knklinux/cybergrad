@@ -702,6 +702,10 @@ ${acciones}
       ? `<button class="btn-secondary" data-action="descargar-certificado">📜 PNG</button>
          <button class="btn-secondary" data-action="imprimir-certificado">🖨️ PDF (imprimir)</button>`
       : "";
+    // Si el atacante pivotó (no contuviste a tiempo), el informe lo señala
+    const avisoPivote = caso.pivoteado
+      ? `<div class="modal-text" style="font-size:12px;color:#ffb000;margin-top:4px">🔄 <b>Ataque adaptativo</b>: no contuviste a tiempo y el atacante pivotó a otro host/cuenta — el caso exigió más objetivos.</div>`
+      : "";
 
     const html = `
       <div class="modal-title">${titulo}</div>
@@ -709,6 +713,7 @@ ${acciones}
         Has completado <b>${caso.titulo}</b> en ${Math.floor(r.tUsado * caso.sla / 60)} min
         (${Math.round(r.tUsado * 100)}% del SLA) con ${r.errores} error(es) y ${r.pistas} pista(s).
       </div>
+      ${avisoPivote}
       <div class="modal-section">
         <h3>RECOMPENSA</h3>
         ${recompensa}

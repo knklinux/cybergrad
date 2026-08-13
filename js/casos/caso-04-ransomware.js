@@ -193,6 +193,22 @@ export default {
     },
   ],
 
+  // Ataque adaptativo: si no aíslas HOST-201 en 2,5 minutos, el ransomware
+  // termina de propagarse y HOST-203 (ya mencionado en la narrativa) se
+  // convierte en objetivo OBLIGATORIO de contención.
+  pivot: {
+    en: 150,
+    siNo: "aislar:host:HOST-201",
+    correctas: { aislar: ["host:HOST-203"] },
+    alerta: {
+      sev: "CRITICAL",
+      titulo: "Ransomware en propagación: HOST-203 cifrado",
+      detalle: "Sin contener HOST-201, el ransomware se ha movido por SMB y HOST-203 queda completamente cifrado. Contenerlo YA es obligatorio.",
+    },
+    detalle: "No aíslas HOST-201 a tiempo: el cifrado se ha extendido y HOST-203 ahora es un objetivo de contención exigido.",
+    penalizacion: 40,
+  },
+
   pistas: [
     "El EDR ya te da el árbol de procesos: ¿qué usuario y qué vector de entrada?",
     "Identifica C2: `dig kraken-update.top` y `whois`. Bloquea dominio e IP.",

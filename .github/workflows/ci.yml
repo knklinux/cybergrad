@@ -73,6 +73,9 @@ jobs:
       - name: Test árbol de habilidades MITRE (integridad de datos + panel)
         run: npm run test:habilidades
 
+      - name: Test ataque adaptativo (pivote: si no contienes a tiempo, el caso se complica)
+        run: npm run test:pivot
+
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
   # sirve los artefactos visuales correctos (banner, subtítulo y separador;
   # mismos canónicos que los tests locales). Solo corre en push a main y

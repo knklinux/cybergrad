@@ -8,6 +8,7 @@ import { GAME, addXP, addRTXP, addPuntos, registrarAccion, resetAccionesCaso } f
 import { numCaso } from "./casos.js";
 import { numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { registrarMarcaReto } from "./reto.js";
+import { prepararPivot } from "./pivot.js";
 
 // Cómo se construye la clave en `hecho` y la etiqueta de cada tipo de objetivo
 const TIPOS_OBJETIVO = {
@@ -177,6 +178,13 @@ export class Engine {
       const t = setTimeout(() => this._dispararEvento(ev), ev.en * 1000 * (this.lab ? 2 : 1));
       this._timers.push(t);
     }
+
+    // Ataque adaptativo: si no contienes a tiempo el objetivo origen, el
+    // atacante pivota a otro host/cuenta y el caso se complica.
+    if (caso.pivot) {
+      const t = setTimeout(() => this._dispararPivot(), caso.pivot.en * 1000 * (this.lab ? 2 : 1));
+      this._timers.push(t);
+    }
   }
 
   _tick() {
@@ -220,7 +228,47 @@ export class Engine {
       this.ui.notificar("Correo nuevo", ev.correo.asunto, "");
       this.term.printInfo(`📧 Correo nuevo de ${ev.correo.de}: ${ev.correo.asunto}`);
     }
-    this.ui.actualizarEventos(this.caso.alertas.length);
+    // El panel de eventos se actualiza en vivo con `feed` (no existe
+    // actualizarEventos: era un bug latente que lanzaba un pageerror
+    // silencioso al final de cada evento temporizado).
+  }
+
+  // ---------- Ataque adaptativo ----------
+  // Si el analista no contuvo el objetivo origen a tiempo (la clave
+  // caso.pivot.siNo no está en `hecho`), el atacante pivota: se añaden
+  // NUEVOS objetivos al caso (el checklist y el informe los exigen a partir
+  // de ahora), salta una alerta y se penaliza. Un pivote solo ocurre una vez.
+  _dispararPivot() {
+    if (!this.caso || this._bloqueado) return;
+    if (GAME.casosCompletados.includes(this.caso.id) || GAME.rtCasosCompletados.includes(this.caso.id)) return;
+    const res = prepararPivot(this.caso, this.hecho);
+    if (!res.aplicar) return;
+    this.caso.pivoteado = true;
+    // 1) Nuevos objetivos: se exigen para el informe igual que los originales
+    for (const [tipo, valores] of Object.entries(res.nuevas)) {
+      if (!this.caso.correctas[tipo]) this.caso.correctas[tipo] = [];
+      for (const v of valores) {
+        if (!this.caso.correctas[tipo].includes(v)) this.caso.correctas[tipo].push(v);
+      }
+    }
+    // 2) Penalización por no contener a tiempo (nunca en prácticas libres/especiales)
+    if (!this._sinPuntos()) addPuntos(-res.penalizacion);
+    // 3) Alerta + avisos
+    this.caso.alertas.push({
+      id: "ALT-PIV" + Math.floor(Math.random() * 900 + 100),
+      sev: res.alerta.sev,
+      fuente: "sistema",
+      titulo: res.alerta.titulo,
+    });
+    this.term.printWarn(`🔄 ATAQUE ADAPTATIVO: ${res.alerta.titulo}`);
+    this.term.print(res.alerta.detalle, "t-out-dim");
+    this.term.printWarn(`No contuviste a tiempo${this._sinPuntos() ? "" : ` (-${res.penalizacion} pts)`}: el checklist exige ahora los objetivos nuevos.`);
+    this.ui.feed(`ATAQUE ADAPTATIVO: ${res.alerta.titulo}`, "new-alert");
+    this.ui.notificar(res.alerta.titulo, res.alerta.detalle, "crit");
+    this.ui.jimmyDice("El atacante pivota cuando no lo encierras a tiempo. Contener el origen es la diferencia entre un incidente y una brecha.");
+    sonido.alerta();
+    this.ui.pulsoTema(1.5);
+    this.ui.mostrarCaso(this.caso, this.hecho);
   }
 
   _limpiarTimers() {

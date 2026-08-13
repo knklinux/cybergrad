@@ -296,6 +296,21 @@ export default {
     },
   ],
 
+  // Ataque adaptativo: si no aíslas HOST-104 en 3 minutos, el dropper
+  // pivota por la red e infecta un segundo host (el caso exige más).
+  pivot: {
+    en: 180,
+    siNo: "aislar:host:HOST-104",
+    correctas: { aislar: ["host:HOST-108"] },
+    alerta: {
+      sev: "HIGH",
+      titulo: "Pivote: HOST-108 infectado",
+      detalle: "El malware se ha propagado: HOST-108 (contabilidad) muestra conexiones salientes al mismo C2 185.220.101.34.",
+    },
+    detalle: "No aíslas HOST-104 a tiempo: el dropper se ha movido por la red y ha infectado HOST-108.",
+    penalizacion: 30,
+  },
+
   pistas: [
     "Revisa los correos (`mail`) y las alertas (`alertas`). El adjunto es un .docm: usa `strings` y `decode` sobre él.",
     "El dominio del remitente no pertenece a la empresa. Comprueba `whois acme-facturas.info` y `dig`.",
