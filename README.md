@@ -6,6 +6,17 @@
 
 [![CI](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml/badge.svg)](https://github.com/knklinux/cybergrad/actions) [![GitHub Pages](https://img.shields.io/github/deployments/knklinux/cybergrad/github-pages?label=GitHub%20Pages&logo=github)](https://github.com/knklinux/cybergrad/deployments) [![Licencia MIT](https://img.shields.io/github/license/knklinux/cybergrad?label=Licencia&color=green)](LICENSE) [![Verificación de producción · 69 checks](https://img.shields.io/github/actions/workflow/status/knklinux/cybergrad/ci.yml?label=Verificaci%C3%B3n%20de%20producci%C3%B3n%20%C2%B7%2069%20checks&logo=github)](https://github.com/knklinux/cybergrad/actions/workflows/ci.yml) — [último run del job `integracion`](https://github.com/knklinux/cybergrad/actions/runs/31725910397/job/94534110207)
 
+```text
+  ██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ 
+ ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗
+ ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝██║  ███╗██████╔╝███████║██║  ██║
+ ██║   ██  ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██╔══██╗██╔══██║██║  ██║
+ ╚██████╔╝  ██║   ██████╔╝███████╗██║  ██║╚██████╔╝██║  ██║██║  ██║██████╔╝
+  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ 
+```
+
+> 💡 **¿Por qué «CYBERGRAD»?** *grad* (град) significa **«ciudad»** en las lenguas eslavas — es el sufijo de Leningrado, Stalingrado o Volgogrado. **CYBERGRAD es «la ciudad del ciber»**: no un juego de partidas sueltas, sino un mundo donde construyes tu carrera de seguridad de analista junior a CISO. El banner de arriba es el mismo que imprime la terminal al arrancar.
+
 ## 🤖 Tu director: Jimmy
 
 Cada turno lo abre **Jimmy**, el director del SOC y tu socio sintético: te recibe con un briefing holográfico, comenta tus resultados, te da pistas con su estilo y aparece en los momentos clave (splash de incidente, lecciones, final de campaña). El fondo animado (red de nodos, partículas, radar) reacciona al tipo de ataque de cada caso. *(Personaje ficticio inspirado en el proyecto Aion Sincro de Ark & Jimmy.)*
