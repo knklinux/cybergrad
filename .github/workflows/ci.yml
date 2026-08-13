@@ -134,6 +134,11 @@ jobs:
           # tiene 1000 req/h; sin él, 60/h por IP compartida y el check sería flaky).
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: "Check vista móvil del README (banner intacto a 375px: scroll, nunca wrap)"
+        run: npm run test:readme-mobile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:

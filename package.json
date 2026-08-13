@@ -22,6 +22,7 @@
     "test:readme-banner": "node ci/readme-banner-test.mjs",
     "test:prod": "node ci/prod-test.mjs",
     "test:readme-prod": "node ci/readme-prod-test.mjs",
+    "test:readme-mobile": "node ci/readme-mobile-test.mjs",
     "test:visual": "node ci/visual-test.mjs",
     "test:meta": "node ci/meta-test.mjs",
     "test:headers": "node ci/headers-test.mjs",
