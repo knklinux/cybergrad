@@ -5,6 +5,7 @@
 // un PNG válido y el nombre de archivo se sanea (slug).
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
+import { codigoVerificacion, validarCertificado } from "../js/certificado.js";
 
 const BASE = process.env.CYBERGRAD_URL || "http://127.0.0.1:8000/";
 const PORT = parseInt(new URL(BASE).port || "8000", 10);
@@ -150,6 +151,27 @@ if (errs.length) {
   salir(1);
 }
 
+// ---------- Unidad (Node): código de verificación del certificado ----------
+// El módulo es puro (sin DOM), así que se importa directo en Node. El
+// código debe ser determinista (mismos datos → mismo código) y la
+// validación debe rechazar cualquier alteración del payload.
+const cv1 = codigoVerificacion({ nombre: "Ana García", fecha: "2026-08-13", rating: "S+", modo: "soc" });
+check("el código de verificación tiene formato CG-<payload>-<checksum>", /^CG-[A-Za-z0-9_-]+-[a-f0-9]{10}$/.test(cv1));
+check("el código es determinista (mismos datos → mismo código)", cv1 === codigoVerificacion({ nombre: "Ana García", fecha: "2026-08-13", rating: "S+", modo: "soc" }));
+check("el código cambia si cambia el rating", cv1 !== codigoVerificacion({ nombre: "Ana García", fecha: "2026-08-13", rating: "A", modo: "soc" }));
+check("el código cambia si cambia el nombre", cv1 !== codigoVerificacion({ nombre: "Ana", fecha: "2026-08-13", rating: "S+", modo: "soc" }));
+check("el código cambia si cambia la fecha", cv1 !== codigoVerificacion({ nombre: "Ana García", fecha: "2026-08-14", rating: "S+", modo: "soc" }));
+const vOk = validarCertificado(cv1);
+check("validarCertificado acepta un código íntegro", vOk.ok === true && vOk.datos.nombre === "Ana García" && vOk.datos.rating === "S+" && vOk.datos.modo === "soc");
+
+// Alterar un carácter del payload (nombre) rompe la firma
+const partes = cv1.split("-");
+const payloadTocado = partes[1].slice(0, -1) + (partes[1].endsWith("A") ? "B" : "A");
+const vAlterado = validarCertificado(`CG-${payloadTocado}-${partes[2]}`);
+check("validarCertificado rechaza un payload alterado (firma no coincide)", vAlterado.ok === false && /checksum/.test(vAlterado.error));
+check("validarCertificado rechaza formato inválido", validarCertificado("hola").ok === false);
+check("validarCertificado rechaza código vacío", validarCertificado("").ok === false);
+
 // ---------- Parte 3 (E2E): completar un examen REAL y verificar que el
 // botón de certificado PDF se renderiza en el modal de resultado ----------
 // `elegirCasoExamen()` usa Math.random(); lo forzamos a 0 para que elija
@@ -239,6 +261,27 @@ const pdfClick = await page2.evaluate(async () => {
 check("Parte 3: el botón PDF llama a imprimirCertificado (window.print)", pdfClick.n >= 1);
 check("Parte 3: la zona de impresión se puebla con el certificado", pdfClick.txt.includes("CERTIFICADO DE EXAMEN") && pdfClick.txt.includes("CI-ExamenReal"));
 check("Parte 3: el certificado PDF escapa el HTML del nombre (XSS)", !pdfClick.txt.includes("<script>"));
+
+// El certificado lleva su código de verificación (CG-…) en el pie
+const codigoEnPdf = (pdfClick.txt.match(/CG-[A-Za-z0-9_-]+-[a-f0-9]{10}/) || [])[0] || "";
+check("Parte 3: el PDF muestra el código de verificación CG-…", /^CG-[A-Za-z0-9_-]+-[a-f0-9]{10}$/.test(codigoEnPdf));
+
+// Jimmy valida el código con el comando real del juego (ruta E2E completa)
+await page2.fill("#terminal input", `verificar_certificado ${codigoEnPdf}`);
+await page2.press("#terminal input", "Enter");
+await page2.waitForTimeout(400);
+let salidaCert = await page2.locator("#terminal").innerText();
+check("Parte 3: Jimmy valida el certificado como auténtico", salidaCert.includes("Certificado auténtico"));
+check("Parte 3: la validación muestra el titular", salidaCert.includes("CI-ExamenReal"));
+check("Parte 3: la validación muestra la nota y la campaña", /Nota:\s+[SAB][+]?\s*\(BLUE TEAM/.test(salidaCert));
+
+// Un código con la firma rota debe ser rechazado por el comando
+const codigoRoto = codigoEnPdf.slice(0, -1) + (codigoEnPdf.endsWith("0") ? "1" : "0");
+await page2.fill("#terminal input", `verificar_certificado ${codigoRoto}`);
+await page2.press("#terminal input", "Enter");
+await page2.waitForTimeout(400);
+salidaCert = await page2.locator("#terminal").innerText();
+check("Parte 3: Jimmy rechaza un certificado con la firma alterada", salidaCert.includes("NO válido") && /checksum|alterado/.test(salidaCert));
 
 // Sin errores de consola en la parte 3
 if (errs2.length) {

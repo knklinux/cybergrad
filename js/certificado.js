@@ -9,7 +9,16 @@
 // Se genera al aprobar el modo examen (rating A o mejor). Módulo
 // sin dependencias: funciona en el navegador y es testeable con
 // Playwright (page.evaluate).
+//
+// Código de verificación: cada certificado lleva un código
+// auto-contenido `CG-<payload>-<checksum>` que codifica los datos
+// (nombre|fecha|rating|modo) en base64url y firma el payload con un
+// SHA-256 truncado. Jimmy lo valida con `verificar_certificado` sin
+// necesidad de historial: cualquiera con el certificado (PDF/PNG) puede
+// comprobar que nombre, fecha y calificación no han sido alterados.
 // ============================================================
+
+import { sha256 } from "./hash.js";
 
 // Escapa texto de usuario antes de interpolar en el HTML del
 // certificado (mismo criterio que esc() en ui.js: sin XSS en el
@@ -27,6 +36,74 @@ export function slugNombre(nombre) {
     .replace(/[^a-zA-Z0-9_-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 40) || "analista";
+}
+
+// Sal del checksum del certificado (constante del juego, no secreta:
+// el objetivo es detectar alteraciones accidentales o ediciones del
+// PDF, no resistir a un falsificador con acceso al código fuente).
+const CERT_SAL = "cybergrad-cert-v1";
+
+// ---- Código de verificación ----
+
+// Serializa los datos del certificado en el payload del código.
+// El separador es "\x1f" (unidad de separación), que no puede
+// aparecer en texto normal ni pegarse en el nombre de un usuario.
+const SEP = "\x1f";
+
+// base64url (sin padding) en JS puro, como el resto del módulo:
+// funciona igual en navegador y Node (TextEncoder, sin btoa/atob).
+const _B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const _B64_ENC = new TextEncoder();
+function b64url(s) {
+  const bytes = _B64_ENC.encode(s);
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i], b = bytes[i + 1], c = bytes[i + 2];
+    out += _B64[a >> 2];
+    out += _B64[((a & 3) << 4) | (b === undefined ? 0 : b >> 4)];
+    if (b !== undefined) out += _B64[((b & 15) << 2) | (c === undefined ? 0 : c >> 6)];
+    if (c !== undefined) out += _B64[c & 63];
+  }
+  return out;
+}
+function unb64url(s) {
+  const dec = new TextDecoder();
+  const bytes = [];
+  let buf = 0, bits = 0;
+  for (const ch of s) {
+    const v = _B64.indexOf(ch);
+    if (v < 0) continue; // tolera padding / caracteres sueltos
+    buf = (buf << 6) | v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buf >> bits) & 0xff);
+    }
+  }
+  return dec.decode(new Uint8Array(bytes));
+}
+
+// Código de verificación de un certificado: `CG-<payload>-<checksum>`.
+// Función pura y determinista: mismos datos → mismo código.
+export function codigoVerificacion(datos) {
+  const d = datos || {};
+  const payload = [String(d.nombre || ""), String(d.fecha || ""), String(d.rating || ""), String(d.modo || "soc")].join(SEP);
+  const checksum = sha256(CERT_SAL + payload).slice(0, 10);
+  return `CG-${b64url(payload)}-${checksum}`;
+}
+
+// Valida un código de verificación. Devuelve { ok, datos } si el
+// checksum coincide, o { ok: false, error } si el formato o la firma
+// fallan. También pura y determinista: misma entrada → mismo resultado.
+export function validarCertificado(codigo) {
+  const c = String(codigo || "").trim();
+  const m = /^CG-([A-Za-z0-9_-]+)-([a-f0-9]{10})$/.exec(c);
+  if (!m) return { ok: false, error: "formato inválido (esperado CG-<datos>-<checksum>)" };
+  const payload = unb64url(m[1]);
+  const checksum = sha256(CERT_SAL + payload).slice(0, 10);
+  if (checksum !== m[2]) return { ok: false, error: "checksum no coincide: el certificado fue alterado o el código está mal copiado" };
+  const [nombre, fecha, rating, modo] = payload.split(SEP);
+  return { ok: true, datos: { nombre, fecha, rating, modo } };
 }
 
 const ANCHO = 1400;
@@ -99,9 +176,17 @@ export function dibujarCertificado(ctx, datos) {
   // Firma
   ctx.fillStyle = "#8fd39e";
   ctx.font = "22px 'JetBrains Mono', 'Consolas', monospace";
-  ctx.fillText("Jimmy — Director del SOC de ACME Corp (sintético)", ANCHO / 2, 800);
+  ctx.fillText("Jimmy — Director del SOC de ACME Corp (sintético)", ANCHO / 2, 760);
   ctx.fillStyle = "#123a21";
-  ctx.fillText("─────────────", ANCHO / 2, 830);
+  ctx.fillText("─────────────", ANCHO / 2, 790);
+
+  // Código de verificación
+  ctx.fillStyle = "#5f8a6a";
+  ctx.font = "20px 'JetBrains Mono', 'Consolas', monospace";
+  ctx.fillText("código de verificación:", ANCHO / 2, 838);
+  ctx.fillStyle = "#35e0ff";
+  ctx.font = "bold 26px 'JetBrains Mono', 'Consolas', monospace";
+  ctx.fillText(codigoVerificacion(d), ANCHO / 2, 872);
 }
 
 // Genera el PNG del certificado y devuelve la URL de datos
@@ -152,6 +237,8 @@ export function htmlCertificado(datos) {
       <div class="cert-fecha">fecha: ${escHTML(fecha)}</div>
       <div class="cert-firma">Jimmy — Director del SOC de ACME Corp (sintético)</div>
       <div class="cert-guion">─────────────</div>
+      <div class="cert-codigo">código de verificación: <span class="cert-codigo-valor">${escHTML(codigoVerificacion(d))}</span></div>
+      <div class="cert-codigo-ayuda">Válidalo en el juego con: verificar_certificado &lt;código&gt;</div>
     </div>
   </div>`;
 }

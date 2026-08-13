@@ -12,6 +12,7 @@ import { preguntarJimmy, PREGUNTAR_AYUDA } from "./jimmy-ia.js";
 import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
 import { soportaVoz, escucharVoz } from "./voz.js";
 import { filasRankingReto } from "./reto.js";
+import { validarCertificado } from "./certificado.js";
 
 const AYUDA = {
   "ayuda": "ayuda [comando] — lista los comandos disponibles o explica uno",
@@ -47,6 +48,7 @@ const AYUDA = {
   "reto": "reto — abre el reto diario (mismo incidente, indicadores distintos cada día)",
   "ranking": "ranking — historial de tus marcas del reto diario (mejor rating y tiempo por día)",
   "examen": "examen — modo examen: caso sin pistas a contrarreloj; al aprobar (A o mejor) obtienes certificado",
+  "verificar_certificado": "verificar_certificado <código> — Jimmy valida la firma del certificado (CG-…): confirma titular, fecha y nota sin alteraciones",
   "sonido": "sonido [on|off|estado] — activa, silencia o muestra el estado del sonido",
   "habilidades": "habilidades — abre el árbol de habilidades MITRE ATT&CK",
   "demo": "demo — modo presentador: estado avanzado en memoria (nunca se guarda)",
@@ -841,6 +843,28 @@ export function crearComandos(ctx) {
     examen() { ui.mostrarExamen(); },
     habilidades() { ui.mostrarHabilidades(); },
     demo() { ui.mostrarPresentador(); },
+
+    verificar_certificado(a) {
+      const codigo = String(a || "").trim();
+      if (!codigo) {
+        term.printErr("Uso: verificar_certificado <código> — pega el código del certificado (CG-…).");
+        return;
+      }
+      term.separator("🔍 JIMMY — VALIDACIÓN DE CERTIFICADO");
+      const res = validarCertificado(codigo);
+      if (!res.ok) {
+        out("✖ Certificado NO válido: " + res.error, "t-out-warn");
+        out("El código aparece al pie del PDF/PNG. Cópialo entero, sin espacios.", "t-out-dim");
+        return;
+      }
+      const { nombre, fecha, rating, modo } = res.datos;
+      const campana = modo === "rt" ? "RED TEAM (PENTEST OFENSIVO)" : "BLUE TEAM (SOC)";
+      out("✔ Certificado auténtico. Datos firmados:", "t-out-hi");
+      out(`  Titular: ${nombre}`, "t-out");
+      out(`  Fecha:   ${fecha}`, "t-out");
+      out(`  Nota:    ${rating} (${campana})`, "t-out");
+      out("La firma SHA-256 coincide con el contenido: el certificado no ha sido alterado.", "t-out-dim");
+    },
 
     sonido(a) {
       const arg = String(a || "").trim().toLowerCase();
