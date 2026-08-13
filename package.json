@@ -7,8 +7,9 @@
   "scripts": {
     "start": "node serve.js",
     "build:icons": "node ci/build-icons.mjs",
+    "build:ico": "node ci/build-ico.mjs",
     "build:sw": "node ci/build-sw.mjs",
-    "build:pwa": "npm run build:icons && npm run build:sw",
+    "build:pwa": "npm run build:icons && npm run build:ico && npm run build:sw",
     "check": "node ci/check-syntax.mjs",
     "lint": "eslint js serve.js ci",
     "test:smoke": "node ci/smoke.mjs",

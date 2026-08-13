@@ -221,7 +221,7 @@ cybergrad/
     └── rt-casos/         # Un archivo por pentest red team (fácil de ampliar)
 ```
 
-PWA: `manifest.webmanifest` (instalación) · `sw.js` (offline, **generado** por `ci/build-sw.mjs`) · `assets/icon-192.png` y `icon-512.png` (**generados** por `ci/build-icons.mjs` desde `apple-touch-icon.png` con Node puro).
+PWA: `manifest.webmanifest` (instalación) · `sw.js` (offline, **generado** por `ci/build-sw.mjs`) · `assets/icon-192.png` y `icon-512.png` (**generados** por `ci/build-icons.mjs` desde `apple-touch-icon.png` con Node puro) · `assets/cybergrad.ico` (icono del acceso directo del escritorio, 16→256 px, **generado** por `ci/build-ico.mjs` reutilizando el mismo motor PNG).
 
 ### Añadir un caso nuevo (blue team)
 

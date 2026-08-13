@@ -20,7 +20,7 @@ const ROOT = path.join(__dirname, "..");
 const ORIGEN = path.join(ROOT, "assets", "apple-touch-icon.png");
 
 // ---------- Decodificar PNG (RGBA, 8 bits, sin interlace) ----------
-function decodificarPng(ruta) {
+export function decodificarPng(ruta) {
   const buf = readFileSync(ruta);
   const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
   for (let i = 0; i < 8; i++) if (buf[i] !== sig[i]) throw new Error("No es un PNG");
@@ -84,7 +84,7 @@ function decodificarPng(ruta) {
 }
 
 // ---------- Resample bilineal (RGBA) ----------
-function redimensionar(orig, nw, nh) {
+export function redimensionar(orig, nw, nh) {
   const { width: ow, height: oh, pixeles } = orig;
   const out = Buffer.alloc(nw * nh * 4);
   const sx = ow / nw;
@@ -115,7 +115,7 @@ function redimensionar(orig, nw, nh) {
 }
 
 // ---------- Codificar PNG (RGBA, 8 bits) ----------
-function crc32(buf) {
+export function crc32(buf) {
   let crc = 0xffffffff;
   for (let i = 0; i < buf.length; i++) {
     crc ^= buf[i];
@@ -123,7 +123,7 @@ function crc32(buf) {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
-function chunk(tipo, data) {
+export function chunk(tipo, data) {
   const len = Buffer.alloc(4);
   len.writeUInt32BE(data.length);
   const t = Buffer.from(tipo, "ascii");
@@ -131,7 +131,7 @@ function chunk(tipo, data) {
   crc.writeUInt32BE(crc32(Buffer.concat([t, data])));
   return Buffer.concat([len, t, data, crc]);
 }
-function codificarPng(width, height, pixeles) {
+export function codificarPng(width, height, pixeles) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
@@ -154,11 +154,13 @@ function codificarPng(width, height, pixeles) {
   ]);
 }
 
-// ---------- Generar los iconos ----------
-const origen = decodificarPng(ORIGEN);
-for (const tam of [192, 512]) {
-  const salida = path.join(ROOT, "assets", `icon-${tam}.png`);
-  const pixeles = redimensionar(origen, tam, tam);
-  writeFileSync(salida, codificarPng(tam, tam, pixeles));
-  console.log(`✔ assets/icon-${tam}.png (${tam}x${tam}, ${pixeles.length / 4} px)`);
+// ---------- Generar los iconos (solo al ejecutar este script directo) ----------
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const origen = decodificarPng(ORIGEN);
+  for (const tam of [192, 512]) {
+    const salida = path.join(ROOT, "assets", `icon-${tam}.png`);
+    const pixeles = redimensionar(origen, tam, tam);
+    writeFileSync(salida, codificarPng(tam, tam, pixeles));
+    console.log(`✔ assets/icon-${tam}.png (${tam}x${tam}, ${pixeles.length / 4} px)`);
+  }
 }

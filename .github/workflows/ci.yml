@@ -85,10 +85,10 @@ jobs:
       - name: Test PWA (manifest instalable + service worker con modo offline real)
         run: npm run test:pwa
 
-      - name: "PWA al día (build:pwa regenera sw.js e iconos; git diff debe estar vacío)"
+      - name: "PWA al día (build:pwa regenera sw.js, iconos y el .ico del escritorio; git diff debe estar vacío)"
         run: |
           npm run build:pwa
-          git diff --exit-code -- sw.js assets/icon-192.png assets/icon-512.png
+          git diff --exit-code -- sw.js assets/icon-192.png assets/icon-512.png assets/cybergrad.ico
 
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
   # sirve los artefactos visuales correctos (banner, subtítulo y separador;
