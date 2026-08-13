@@ -122,6 +122,62 @@ check("`preguntar off` cancela la sesión", salida.includes("cancelado") && logT
 salida = await ejecutar("preguntar off");
 check("`preguntar off` sin sesión informa", salida.includes("No hay sesión de voz activa"));
 
+// 6b) Error 'no-speech' → mensaje mapeado y SIN el genérico duplicado
+await ejecutar("voz");
+await page.evaluate(() => { window.__rec.onerror({ error: "no-speech" }); window.__rec.onend(); });
+await page.waitForTimeout(200);
+salida = await page.locator("#terminal").innerText();
+check("error no-speech → mensaje mapeado sin duplicado genérico", salida.includes("No he captado voz") && !salida.includes("No he captado nada"));
+
+// 6c) Error 'network' → mensaje mapeado de red
+await ejecutar("voz");
+await page.evaluate(() => { window.__rec.onerror({ error: "network" }); window.__rec.onend(); });
+await page.waitForTimeout(200);
+salida = await page.locator("#terminal").innerText();
+check("error network → mensaje de red", salida.includes("Error de red del servicio de voz"));
+
+// 6d) Cancelar y luego onerror('aborted') → sin ruido tras el aviso
+await ejecutar("voz");
+await ejecutar("preguntar off");
+const salidaAntesAbort = await page.locator("#terminal").innerText();
+await page.evaluate(() => { window.__rec.onerror({ error: "aborted" }); window.__rec.onend(); });
+await page.waitForTimeout(200);
+salida = await page.locator("#terminal").innerText();
+check("tras cancelar, onerror('aborted') no añade ruido", salida === salidaAntesAbort);
+
+// 6e) Cancelar y luego onresult tardío → no imprime la pregunta
+await ejecutar("voz");
+await ejecutar("preguntar off");
+const salidaAntesResult = await page.locator("#terminal").innerText();
+await page.evaluate(() => { window.__rec.onresult({ results: [[{ transcript: "pregunta tardía" }]] }); });
+await page.waitForTimeout(200);
+salida = await page.locator("#terminal").innerText();
+check("tras cancelar, un resultado tardío no se imprime", salida === salidaAntesResult);
+
+// 6f) rec.start() que lanza → mensaje de no-iniciar sin romper
+await page.evaluate(() => {
+  class ThrowingSR {
+    constructor() { this.lang = ""; this.interimResults = true; this.maxAlternatives = 0; this.onresult = null; this.onerror = null; this.onend = null; }
+    start() { throw new Error("InvalidStateError"); }
+    stop() {}
+  }
+  window.SpeechRecognition = ThrowingSR;
+  window.webkitSpeechRecognition = ThrowingSR;
+});
+salida = await ejecutar("preguntar");
+check("si start() lanza, avisa y no rompe", salida.includes("No se pudo iniciar el micrófono"));
+// Restaurar el mock funcional (sin resetear __vozLog: el conteo de starts se acumula)
+await page.evaluate(() => {
+  window.__rec = null;
+  class MockSR {
+    constructor() { window.__vozLog.push("new"); this.lang = ""; this.interimResults = true; this.maxAlternatives = 0; this.onresult = null; this.onerror = null; this.onend = null; window.__rec = this; }
+    start() { window.__vozLog.push("start"); }
+    stop() { window.__vozLog.push("stop"); }
+  }
+  window.SpeechRecognition = MockSR;
+  window.webkitSpeechRecognition = MockSR;
+});
+
 // 7) Alias `voz`, cierre normal y comando escrito
 salida = await ejecutar("voz");
 const logTrasVoz = await page.evaluate(() => window.__vozLog.join(","));

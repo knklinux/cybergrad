@@ -105,15 +105,30 @@ export function crearComandos(ctx) {
     }
     const estado = { cancelada: false };
     let recibida = false;
+    let huboError = false;
     const ctrl = escucharVoz({
       onResult: (texto) => {
+        // Si el usuario ya canceló, un resultado tardío no debe imprimir nada
+        if (estado.cancelada) return;
         recibida = true;
         term.separator("🗣 TU PREGUNTA");
         term.print(texto, "t-out-hi");
         term.separator("🧠 JIMMY — RESPUESTA");
-        term.print(preguntarJimmy(texto, { caso: engine.caso, hecho: engine.hecho, modoRT: engine.modoRT, game: GAME }), "t-out");
+        // Callback asíncrono: fuera del try/catch del terminal, así que
+        // cualquier fallo aquí debe avisar sin convertirse en pageerror.
+        try {
+          term.print(preguntarJimmy(texto, { caso: engine.caso, hecho: engine.hecho, modoRT: engine.modoRT, game: GAME }), "t-out");
+        } catch (e) {
+          huboError = true;
+          term.printErr("Jimmy no pudo responder: " + e.message);
+          console.error(e);
+        }
       },
       onError: (cod) => {
+        // Tras cancelar, algunos navegadores disparan onerror('aborted'):
+        // el aviso de cancelación ya se mostró, no se añade ruido.
+        if (estado.cancelada) return;
+        huboError = true;
         const msgs = {
           "no-soporte": "Este navegador no soporta reconocimiento de voz. Usa `preguntar <texto>`.",
           "no-iniciar": "No se pudo iniciar el micrófono. Comprueba los permisos y vuelve a intentarlo.",
@@ -127,7 +142,8 @@ export function crearComandos(ctx) {
       },
       onEnd: () => {
         vozSesion = null;
-        if (!recibida && !estado.cancelada) {
+        // Sin resultado, sin error y sin cancelación: solo entonces el aviso genérico.
+        if (!recibida && !huboError && !estado.cancelada) {
           term.printWarn("No he captado nada. Vuelve a `preguntar` o escribe la pregunta: `preguntar <texto>`.");
         }
       },
