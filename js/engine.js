@@ -9,6 +9,10 @@ import { numCaso } from "./casos.js";
 import { numCasoRT, siguienteCasoRT } from "./rt-casos.js";
 import { registrarMarcaReto } from "./reto.js";
 import { prepararPivot } from "./pivot.js";
+import {
+  crearDuelo, accionDuelo, turnoFallido, tipoDeClave,
+  ladoDeTipo, construirCasoDuelo, KITS, INFO_CMDS, FUERA_DUELO,
+} from "./duelo.js";
 
 // Cómo se construye la clave en `hecho` y la etiqueta de cada tipo de objetivo
 const TIPOS_OBJETIVO = {
@@ -61,6 +65,9 @@ export class Engine {
     this._opciones = {};          // opciones del caso en curso (para reintentar)
     this.tutorialIdx = 0;
     this.tutorialFin = false;
+    this.duelo = null;            // estado del modo enfrentamiento SOC vs Red Team
+    this._casoPreDuelo = null;    // caso de carrera antes de entrar en duelo (se restaura)
+    this._hechoPreDuelo = null;
   }
 
   _gratis() { return this.lab || this.tutorial || this.becario; }
@@ -70,12 +77,13 @@ export class Engine {
   _especial() { return this.reto || this.examen; }
   _especialLabel() { return this.reto ? "reto diario" : "examen"; }
   // Sin puntos en práctica libre Y en modos especiales (la carrera no se ensucia)
-  _sinPuntos() { return this._gratis() || this._especial(); }
+  _sinPuntos() { return this._gratis() || this._especial() || this.duelo; }
   // Sufijo de mensaje: sin penalización en modos de práctica
   _sinPenalizacion() {
     if (this.lab) return " (sin penalización: laboratorio)";
     if (this._guiado()) return " (sin penalización: " + this._gratisLabel() + ")";
     if (this._especial()) return " (sin penalización: " + this._especialLabel() + ")";
+    if (this.duelo) return " (sin penalización: duelo)";
     return "";
   }
   // Nombre del paso guiado según el modo
@@ -268,7 +276,7 @@ export class Engine {
     this.ui.jimmyDice("El atacante pivota cuando no lo encierras a tiempo. Contener el origen es la diferencia entre un incidente y una brecha.");
     sonido.alerta();
     this.ui.pulsoTema(1.5);
-    this.ui.mostrarCaso(this.caso, this.hecho);
+    this._refrescarUI();
   }
 
   _limpiarTimers() {
@@ -372,7 +380,7 @@ export class Engine {
       registrarAccion("bloquear", `${obj.tipo}:${obj.valor}`, true, PUNTOS.accionCorrecta);
       this.term.printOk(`Bloqueado en firewall/pasarela: ${obj.tipo} ${obj.valor}. Indicador neutralizado.`);
       sonido.ok();
-      this.ui.mostrarCaso(this.caso, this.hecho);
+      this._refrescarUI();
       this._sugerirInforme();
       return;
     }
@@ -383,7 +391,7 @@ export class Engine {
       registrarAccion("bloquear", `${obj.tipo}:${obj.valor}`, false, pts);
       this.term.printErr(`⚠ ¡Cuidado! ${obj.valor} es un indicador LEGÍTIMO o no relacionado. Bloquearlo dañaría la operación${this._sinPenalizacion() || ` (-${Math.abs(PUNTOS.accionIncorrecta)} pts)`}.`);
       sonido.err();
-      this.ui.mostrarCaso(this.caso, this.hecho);
+      this._refrescarUI();
       return;
     }
     const pts = this._sinPuntos() ? 0 : PUNTOS.accionNoProcede;
@@ -404,7 +412,7 @@ export class Engine {
       registrarAccion("aislar", `host:${obj.valor}`, true, PUNTOS.accionCorrecta);
       this.term.printOk(`Host ${obj.valor.toUpperCase()} aislado de la red (segmento de cuarentena). Evidencias preservadas.`);
       sonido.ok();
-      this.ui.mostrarCaso(this.caso, this.hecho);
+      this._refrescarUI();
       this._sugerirInforme();
       return;
     }
@@ -435,7 +443,7 @@ export class Engine {
       registrarAccion("deshabilitar", `usuario:${obj.valor}`, true, PUNTOS.accionCorrecta);
       this.term.printOk(`Cuenta ${obj.valor} deshabilitada y sesiones revocadas. Credenciales marcadas para rotación.`);
       sonido.ok();
-      this.ui.mostrarCaso(this.caso, this.hecho);
+      this._refrescarUI();
       this._sugerirInforme();
       return;
     }
@@ -462,7 +470,7 @@ export class Engine {
       registrarAccion("escalar", "a CSIRT / Nivel 2", true, PUNTOS.escalar);
       this.term.printOk("Incidente escalado a CSIRT con toda la información recopilada. Bien coordinado.");
       sonido.ok();
-      this.ui.mostrarCaso(this.caso, this.hecho);
+      this._refrescarUI();
       this._sugerirInforme();
       return;
     }
@@ -483,7 +491,7 @@ export class Engine {
       this.term.printOk(`Caso cerrado como FALSO POSITIVO${razon ? `: ${razon}` : ""}. Excelente triaje: has evitado interrumpir una operación legítima.`);
       sonido.ok();
       this.term.printInfo("Completa la documentación con `informe`.");
-      this.ui.mostrarCaso(this.caso, this.hecho);
+      this._refrescarUI();
       return;
     }
     this.errores++;
@@ -494,6 +502,9 @@ export class Engine {
   }
 
   pista() {
+    if (this.duelo) {
+      return this.term.printErr("Sin pistas en el duelo: aquí se juega con criterio, no con memoria.");
+    }
     if (this._especial()) {
       return this.term.printErr("No hay pistas en el " + this._especialLabel() + ". Este modo pone a prueba tu criterio, no tu memoria.");
     }
@@ -590,7 +601,7 @@ export class Engine {
     registrarAccion(tipo, canon, true, pts);
     this.term.printOk(this._etiquetaObjetivo(tipo, canon));
     sonido.ok();
-    this.ui.mostrarCaso(this.caso, this.hecho);
+    this._refrescarUI();
     this._sugerirInforme();
     return true;
   }
@@ -606,6 +617,140 @@ export class Engine {
     return T ? T.etiqueta(valor) : `${tipo}: ${valor}`;
   }
 
+  // ---------- Duelo SOC vs Red Team ----------
+  // Arranca un enfrentamiento: dos jugadores, turnos alternos sobre el
+  // mismo escenario. El ROJO ataca con su kit ofensivo y el AZUL defiende.
+  // No toca la carrera (XP/puntos/casos): es un modo de partida local.
+  iniciarDuelo(escenario) {
+    if (this.duelo) this.salirDuelo();
+    this._casoPreDuelo = this.caso;
+    this._hechoPreDuelo = new Set(this.hecho);
+    this._limpiarTimers();
+    this.caso = construirCasoDuelo(escenario);
+    this.duelo = crearDuelo(escenario);
+    this.modoRT = false;
+    this.lab = false;
+    this.tutorial = false;
+    this.becario = false;
+    this.reto = false;
+    this.examen = false;
+    this.hecho = new Set();
+    this.errores = 0;
+    this.pistasUsadas = 0;
+    this._bloqueado = false;
+    this.vtRuntime = {};
+    this.ui.setTemaCaso(temaParaCaso({ modo: "rt" }));
+    this.term.clear();
+    this.term.separator("⚔  D U E L O  ·  SOC vs RED TEAM");
+    this.term.printHi(`🎮 ${escenario.titulo}`);
+    this.term.printInfo(escenario.escenario);
+    this.term.print("Un jugador ataca (ROJO), el otro defiende (AZUL). Turnos alternos: cada jugada consume el turno, acierte o falle. Gana quien complete todos sus objetivos primero.", "t-out-dim");
+    this.term.print("`ayuda` lista los comandos · `salir_duelo` abandona la partida.", "t-out-dim");
+    this.term.print("");
+    this.ui.mostrarDuelo(this);
+    this.ui.feed(`⚔ Duelo iniciado: ${escenario.titulo}`, "new-msg");
+    this._printTurno();
+  }
+
+  salirDuelo() {
+    if (!this.duelo) return;
+    this.duelo = null;
+    this.caso = this._casoPreDuelo;
+    this.hecho = this._hechoPreDuelo || new Set();
+    this._casoPreDuelo = null;
+    this._hechoPreDuelo = null;
+    this._limpiarTimers();
+    this.term.printInfo("Duelo finalizado. Vuelves a tu carrera normal.");
+    if (this.caso) {
+      this.ui.setTemaCaso(temaParaCaso(this.caso));
+      this.ui.mostrarCaso(this.caso, this.hecho);
+    }
+  }
+
+  _printTurno() {
+    const d = this.duelo;
+    if (!d) return;
+    const esRojo = d.turno === "rojo";
+    this.term.separator(`TURNO ${d.turnos + 1}/${d.escenario.turnosMax} — ${esRojo ? "🔴 RED TEAM (ataca)" : "🔵 SOC (defiende)"}`);
+    this.term.printHi(esRojo
+      ? "Juega el ROJO: recon, acceso, exfiltración... (nmap, hydra, sqlmap, mimikatz, exfiltrar...)"
+      : "Juega el AZUL: contiene y responde... (bloquear, aislar, deshabilitar, escalar...)");
+  }
+
+  // Router de comandos durante el duelo. Devuelve true si el comando se
+  // gestionó en modo duelo (y main.js no debe volver a procesarlo).
+  procesarDuelo(nombre, args, cmds) {
+    const d = this.duelo;
+    if (!d) return false;
+    if (!cmds[nombre]) {
+      this.term.printErr(`Comando no reconocido: '${nombre}'. Escribe 'ayuda'.`);
+      return true;
+    }
+    // Salida / interfaz
+    if (nombre === "salir_duelo") { this.salirDuelo(); return true; }
+    if (INFO_CMDS.includes(nombre)) { cmds[nombre](args); return true; }
+    if (FUERA_DUELO.includes(nombre)) {
+      this.term.printWarn(`'${nombre}' no está disponible durante el duelo. Termina la partida con 'salir_duelo'.`);
+      return true;
+    }
+    // ¿Comando de acción? ¿Del bando activo?
+    const kit = KITS[d.turno];
+    const delOtroKit = (KITS.rojo.includes(nombre) || KITS.azul.includes(nombre)) && !kit.includes(nombre);
+    if (delOtroKit) {
+      const otro = d.turno === "rojo" ? "AZUL (SOC)" : "ROJO (Red Team)";
+      this.term.printWarn(`Ese comando es del kit del ${otro}. Juega con el tuyo: ${kit.slice(0, 5).join(", ")}...`);
+      return true;
+    }
+    if (!kit.includes(nombre)) {
+      this.term.printWarn(`'${nombre}' no es una acción válida del kit ${d.turno === "rojo" ? "ROJO" : "AZUL"}.`);
+      return true;
+    }
+    // Jugada de acción: ejecuta el comando real y atribuye el resultado
+    const antes = new Set(this.hecho);
+    cmds[nombre](args);
+    const nuevos = [...this.hecho].filter((k) => !antes.has(k));
+    const clave = nuevos[0] || null;
+    const tipo = clave ? tipoDeClave(clave) : null;
+    const canon = this._canonDeClave(clave);
+    const lado = tipo ? ladoDeTipo(tipo) : null;
+    if (lado === d.turno) {
+      this.duelo = accionDuelo(this.duelo, tipo, canon);
+      this.ui.mostrarDuelo(this);
+    } else {
+      // Comando del kit que no logró nada (fuera de scope, ya hecho...): el turno se pierde
+      this.term.printWarn("Jugada sin resultado: se pierde el turno.");
+      this.duelo = turnoFallido(this.duelo);
+      this.ui.mostrarDuelo(this);
+    }
+    const fin = this.duelo.fin;
+    if (fin) {
+      this.term.separator("🏁  F I N  D E L  D U E L O");
+      this.term.printHi(fin.ganador === "empate"
+        ? "🤝 ¡EMPATE! " + fin.motivo
+        : `${fin.ganador === "rojo" ? "🔴 RED TEAM" : "🔵 SOC"} GANA — ${fin.motivo}`);
+      this.ui.mostrarFinDuelo(this);
+    } else {
+      this._printTurno();
+    }
+    return true;
+  }
+
+  // Canon del objetivo a partir de la clave de `hecho` del motor
+  _canonDeClave(clave) {
+    if (!clave) return null;
+    if (clave === "escalar" || clave === "cerrar") return clave;
+    const m = /^objetivo:[^:]+:(.*)$/.exec(clave);
+    if (m) return m[1];
+    const m2 = /^[a-z_]+:(.*)$/.exec(clave);
+    return m2 ? m2[1] : clave;
+  }
+
+  // Refresca la UI tras una acción: en duelo pinta el HUD, en carrera el caso
+  _refrescarUI() {
+    if (this.duelo) this.ui.mostrarDuelo(this);
+    else this.ui.mostrarCaso(this.caso, this.hecho);
+  }
+
   // ---------- Logros ----------
   // Evalúa los logros pendientes, notifica los nuevos y refresca el HUD
   _notificarLogros() {
@@ -619,7 +764,7 @@ export class Engine {
 
   // ---------- Informe ----------
   _sugerirInforme() {
-    if (this._guiado()) return; // tutorial/becario guiado no necesita informe
+    if (this._guiado() || this.duelo) return; // guiados y duelo no necesitan informe
     const completados = this.modoRT ? GAME.rtCasosCompletados : GAME.casosCompletados;
     if (this._requisitosCumplidos() && !completados.includes(this.caso.id)) {
       this.term.printHi("✔ Has cubierto todos los requisitos. Redacta el informe con `informe` para cerrar el caso.");
@@ -643,6 +788,10 @@ export class Engine {
 
   abrirInforme() {
     if (this._bloqueado) return;
+    if (this.duelo) {
+      this.term.printInfo("En el duelo no hay informe: cada bando juega sus objetivos y gana quien los complete primero.");
+      return;
+    }
     if (this._guiado()) {
       this.term.printInfo("Modo " + this._gratisLabel() + ": aquí no hace falta informe. Sigue los pasos guiados de Jimmy.");
       return;

@@ -13,6 +13,7 @@ import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } fro
 import { retoDelDia, filasRankingReto } from "./reto.js";
 import { elegirCasoExamen, apruebaExamen, textoVeredicto } from "./examen.js";
 import { generarQuiz } from "./quiz.js";
+import { DUELO_ESCENARIOS } from "./duelo.js";
 import { descargarCertificado, imprimirCertificado } from "./certificado.js";
 import { estadoHabilidades } from "./habilidades.js";
 import { aplicarModoPresentador } from "./presentador.js";
@@ -1321,6 +1322,112 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
   }
 
   // ---------- Carrera ----------
+  // ---------- Duelo SOC vs Red Team ----------
+  mostrarSelectorDuelo(onElegir) {
+    const tarjetas = DUELO_ESCENARIOS.map((e, i) => `
+      <div class="modal-section">
+        <h3>⚔ ESCENARIO ${i + 1} — ${e.titulo}</h3>
+        <div class="modal-text" style="font-size:12.5px">${e.descripcion}</div>
+        <div class="duelo-kits-mini">
+          <span class="duelo-kit rojo">🔴 ROJO: ${e.rojo.objetivos.length} objetivos ofensivos</span>
+          <span class="duelo-kit azul">🔵 AZUL: ${e.azul.objetivos.length} objetivos defensivos</span>
+          <span class="duelo-kit neutro">⏱ ${e.turnosMax} turnos máx.</span>
+        </div>
+        <div class="btn-row" style="justify-content:flex-start">
+          <button class="btn-primary" data-action="duelo-${i}">⚔ JUGAR</button>
+        </div>
+      </div>`).join("");
+    const acciones = {
+      "cerrar-selector-duelo": () => this.cerrarModal(),
+    };
+    DUELO_ESCENARIOS.forEach((e, i) => {
+      acciones[`duelo-${i}`] = () => { this.cerrarModal(); onElegir(e); };
+    });
+    this.setAcciones(acciones);
+    this.abrirModal(`
+      <div class="modal-title">⚔ DUELO SOC vs RED TEAM</div>
+      <div class="modal-text">
+        Dos jugadores, un mismo escenario y turnos alternos. El <b>ROJO</b> ataca con su kit ofensivo
+        (nmap, hydra, sqlmap, mimikatz...) y el <b>AZUL</b> defiende (bloquear, aislar, deshabilitar, escalar...).
+        Cada jugada consume el turno: acierta o falla, el turno pasa. Gana quien complete todos sus objetivos
+        primero; si se agotan los turnos, decide quién tiene más.
+      </div>
+      ${tarjetas}
+      <div class="btn-row"><button class="btn-secondary" data-action="cerrar-selector-duelo">CERRAR</button></div>`);
+  }
+
+  _ultimaJugadaDuelo(d) {
+    const h = d.historial[d.historial.length - 1];
+    if (!h) return "Sin jugadas todavía. Empieza el ROJO.";
+    const bando = h.bando === "rojo" ? "🔴 ROJO" : "🔵 AZUL";
+    if (!h.ok) return `${bando} intentó algo que no resultó (se perdió el turno).`;
+    return `${bando} completó: ${h.canon.replace(/^[a-z_]+:/, "")} (+${h.puntos} pts).`;
+  }
+
+  mostrarDuelo(engine) {
+    const d = engine.duelo;
+    if (!d) return;
+    const e = d.escenario;
+    const columna = (lado) => {
+      const esRojo = lado === "rojo";
+      const ladoEsc = e[lado];
+      const items = ladoEsc.objetivos.map((o) => {
+        const ok = d.hecho[lado].has(`${o.tipo}|${o.canon}`);
+        return `<li class="duelo-obj ${ok ? "ok" : ""}">${ok ? "✔" : "○"} ${o.etiqueta}</li>`;
+      }).join("");
+      return `
+        <div class="duelo-lado ${esRojo ? "rojo" : "azul"}">
+          <div class="duelo-nombre">${esRojo ? "🔴" : "🔵"} ${ladoEsc.nombre}</div>
+          <div class="duelo-puntos">${d.puntos[lado]} pts</div>
+          <ul class="duelo-objetivos">${items}</ul>
+        </div>`;
+    };
+    const html = `
+      <div class="duelo-hud">
+        <div class="duelo-titulo">⚔ DUELO · ${e.titulo}</div>
+        <div class="duelo-turno ${d.turno === "rojo" ? "rojo" : "azul"}">▶ TURNO DE ${d.turno === "rojo" ? "🔴 RED TEAM" : "🔵 SOC"} · ${d.turnos}/${e.turnosMax} turnos</div>
+        <div class="duelo-columnas">
+          ${columna("rojo")}
+          <div class="duelo-vs">VS</div>
+          ${columna("azul")}
+        </div>
+        <div class="duelo-ultima">${this._ultimaJugadaDuelo(d)}</div>
+        <div class="btn-row">
+          <button class="btn-danger" data-action="salir-duelo-hud">🚪 ABANDONAR DUELO</button>
+        </div>
+      </div>`;
+    $("caso-info").innerHTML = html;
+    this.setAcciones({ "salir-duelo-hud": () => engine.salirDuelo() });
+    $("caso-info").querySelectorAll("[data-action]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const fn = this._acciones[btn.getAttribute("data-action")];
+        if (fn) fn();
+      });
+    });
+  }
+
+  mostrarFinDuelo(engine) {
+    const d = engine.duelo;
+    if (!d || !d.fin) return;
+    const fin = d.fin;
+    const titulo = fin.ganador === "empate" ? "🤝 ¡EMPATE!" : fin.ganador === "rojo" ? "🔴 GANA RED TEAM" : "🔵 GANA EL SOC";
+    this.setAcciones({
+      "revancha-duelo": () => { this.cerrarModal(); engine.iniciarDuelo(d.escenario); },
+      "salir-duelo-fin": () => { this.cerrarModal(); engine.salirDuelo(); },
+    });
+    this.abrirModal(`
+      <div class="modal-title">🏁 ${titulo}</div>
+      <div class="modal-text">${fin.motivo}</div>
+      <div class="duelo-marcador">
+        <span class="duelo-marcador-lado rojo">🔴 RED TEAM — ${d.puntos.rojo} pts</span>
+        <span class="duelo-marcador-lado azul">🔵 SOC — ${d.puntos.azul} pts</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" data-action="revancha-duelo">⚔ REVANCHA</button>
+        <button class="btn-secondary" data-action="salir-duelo-fin">SALIR DEL DUELO</button>
+      </div>`);
+  }
+
   mostrarCarrera() {
     const esRT = GAME.modo === "rt";
     const ranks = esRT ? RT_RANKS : RANKS;

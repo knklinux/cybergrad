@@ -74,6 +74,8 @@ const AYUDA = {
   "tutorial": "tutorial — mini tutorial para ponerte en contexto",
   "estado": "estado — muestra tu progreso y estadísticas",
   "carrera": "carrera — abre el panel de tu carrera profesional",
+  "duelo": "duelo — modo enfrentamiento: dos jugadores, SOC vs Red Team, turnos alternos",
+  "salir_duelo": "salir_duelo — abandona el duelo en curso y vuelve a tu carrera",
   "glosario": "glosario — abre el diccionario del analista",
   "whoami": "whoami — quién eres",
   "date": "date — fecha y hora",
@@ -891,6 +893,12 @@ export function crearComandos(ctx) {
     carrera() { ui.mostrarCarrera(); },
     glosario() { ui.mostrarGlosario(); },
     h() { cmds.ayuda(""); },
+
+    duelo() {
+      if (engine.duelo) { term.printWarn("Ya hay un duelo en curso. Termínalo con 'salir_duelo' antes de abrir otro."); return; }
+      ui.mostrarSelectorDuelo((escenario) => engine.iniciarDuelo(escenario));
+    },
+    salir_duelo() { engine.salirDuelo(); },
 
     history() {
       const h = term.historial.slice(-20);

@@ -893,3 +893,40 @@ body::after {
   .brand-sub, .topbar-center { display: none; }
   #notif-wrap { right: 10px; left: 10px; }
 }
+
+/* ---------- Duelo SOC vs Red Team ---------- */
+.duelo-hud { display: flex; flex-direction: column; gap: 10px; }
+.duelo-titulo { font-size: 14px; font-weight: 800; letter-spacing: 2px; color: #fff; text-align: center; }
+.duelo-turno {
+  font-size: 13px; font-weight: 700; text-align: center; padding: 7px 10px;
+  border-radius: 6px; letter-spacing: 1px;
+}
+.duelo-turno.rojo { color: #ff8a8a; border: 1px solid var(--red); background: rgba(255, 68, 68, 0.10); text-shadow: 0 0 8px rgba(255, 68, 68, 0.4); }
+.duelo-turno.azul { color: #8ad7ff; border: 1px solid var(--cyan); background: rgba(53, 224, 255, 0.08); text-shadow: 0 0 8px rgba(53, 224, 255, 0.4); }
+.duelo-columnas { display: flex; gap: 10px; align-items: stretch; }
+.duelo-lado {
+  flex: 1; border-radius: 8px; padding: 10px; border: 1px solid #2a4a3a;
+  background: rgba(10, 30, 20, 0.55);
+}
+.duelo-lado.rojo { border-color: rgba(255, 68, 68, 0.45); }
+.duelo-lado.azul { border-color: rgba(53, 224, 255, 0.45); }
+.duelo-nombre { font-size: 12px; font-weight: 800; letter-spacing: 1px; }
+.duelo-lado.rojo .duelo-nombre { color: #ff8a8a; }
+.duelo-lado.azul .duelo-nombre { color: #8ad7ff; }
+.duelo-puntos { font-size: 22px; font-weight: 900; margin: 2px 0 8px; color: #fff; }
+.duelo-objetivos { list-style: none; margin: 0; padding: 0; font-size: 11px; line-height: 1.75; color: #8fd39e; }
+.duelo-obj.ok { color: var(--green); }
+.duelo-obj:not(.ok) { color: #5f8a6a; }
+.duelo-vs {
+  align-self: center; font-size: 16px; font-weight: 900; color: var(--amber);
+  text-shadow: 0 0 10px rgba(255, 176, 0, 0.5); letter-spacing: 1px;
+}
+.duelo-ultima { font-size: 11.5px; color: #7fd6a0; text-align: center; min-height: 15px; }
+.duelo-kits-mini { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
+.duelo-kit { font-size: 11px; padding: 3px 8px; border-radius: 12px; border: 1px solid #2a4a3a; color: #b8e6c8; }
+.duelo-kit.rojo { border-color: rgba(255, 68, 68, 0.5); color: #ff9d9d; }
+.duelo-kit.azul { border-color: rgba(53, 224, 255, 0.5); color: #9cdcff; }
+.duelo-marcador { display: flex; gap: 10px; justify-content: center; margin: 10px 0; }
+.duelo-marcador-lado { font-size: 13px; font-weight: 800; padding: 6px 12px; border-radius: 6px; }
+.duelo-marcador-lado.rojo { color: #ff8a8a; border: 1px solid var(--red); }
+.duelo-marcador-lado.azul { color: #8ad7ff; border: 1px solid var(--cyan); }

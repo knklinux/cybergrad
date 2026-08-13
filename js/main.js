@@ -12,6 +12,7 @@ import { CASOS, siguienteCaso } from "./casos.js";
 import { siguienteCasoRT } from "./rt-casos.js";
 import { listarGuardados, cargar, nuevaPartida } from "./save.js";
 import { sonido } from "./sonido.js";
+import { DUELO_ESCENARIOS } from "./duelo.js";
 
 const BANNER = [
   "  ██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██████╗  █████╗ ██████╗ ",
@@ -22,10 +23,17 @@ const BANNER = [
   "  ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ",
 ].join("\n");
 
+// `engine` se declara antes del Terminal porque el provider del prompt lo
+// consulta para pintar el turno del duelo (rojo@pentest / azul@soc).
+let engine;
 const term = new Terminal(
   document.getElementById("terminal"),
   (cmd) => procesar(cmd),
-  () => '<span class="user">analista</span>@<span class="path">acme</span>:~$ '
+  () => engine && engine.duelo
+    ? engine.duelo.turno === "rojo"
+      ? '<span class="user">rojo</span>@<span class="path">pentest</span>:~$ '
+      : '<span class="user">azul</span>@<span class="path">soc</span>:~$ '
+    : '<span class="user">analista</span>@<span class="path">acme</span>:~$ '
 );
 
 // Motor gráfico (fondo animado)
@@ -33,7 +41,7 @@ const fx = new FX(document.getElementById("bg-fx"));
 fx.start();
 
 const ui = new UI(term, fx);
-const engine = new Engine({ term, ui });
+engine = new Engine({ term, ui });
 
 // El AudioContext se crea en el primer gesto del usuario (requisito de
 // los navegadores para reproducir audio sin interacción previa).
@@ -46,6 +54,11 @@ term.setSugerencias(lista);
 function procesar(linea) {
   const [nombre, ...resto] = linea.split(/\s+/);
   const args = resto.join(" ").trim();
+  // Durante un duelo, TODOS los comandos pasan por el router del duelo
+  if (engine.duelo) {
+    engine.procesarDuelo(nombre?.toLowerCase(), args, cmds);
+    return;
+  }
   const fn = cmds[nombre?.toLowerCase()];
   if (!fn) {
     term.printErr(`Comando no reconocido: '${nombre}'. Escribe 'ayuda' para ver la lista.`);
@@ -79,22 +92,28 @@ term.print("Simulador de carrera SOC + Red Team — defiende como analista y ata
 term.print("© CYBERGRAD · Uso educativo · Personajes y empresas ficticios", "t-out-dim");
 term.print("");
 
-// Si hay partidas guardadas se muestra el selector (continuar / empezar de cero);
-// si no, se entra directo al onboarding de una partida nueva.
-const guardados = listarGuardados();
-if (guardados.length > 0) {
-  ui.mostrarSelectorPartida(guardados, {
-    onContinuar: (slot) => {
-      cargar(slot);
-      continuarPartida();
-    },
-    onNueva: () => {
-      nuevaPartida();
-      empezarNueva();
-    },
-  });
+// Hook de test (`?dueloEn=N`): arranca directamente un duelo (escenario N)
+// para que el E2E del CI juegue sin pasar por onboarding ni selector.
+// Sin el parámetro, el flujo normal: selector de partida u onboarding.
+const DUELO_EN_TEST = parseInt(new URLSearchParams(location.search).get("dueloEn") || "", 10);
+if (Number.isFinite(DUELO_EN_TEST) && DUELO_ESCENARIOS[DUELO_EN_TEST]) {
+  engine.iniciarDuelo(DUELO_ESCENARIOS[DUELO_EN_TEST]);
 } else {
-  empezarNueva();
+  const guardados = listarGuardados();
+  if (guardados.length > 0) {
+    ui.mostrarSelectorPartida(guardados, {
+      onContinuar: (slot) => {
+        cargar(slot);
+        continuarPartida();
+      },
+      onNueva: () => {
+        nuevaPartida();
+        empezarNueva();
+      },
+    });
+  } else {
+    empezarNueva();
+  }
 }
 
 // Retoma una partida existente: sin onboarding, con bienvenida y el caso pendiente

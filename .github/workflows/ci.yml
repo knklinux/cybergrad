@@ -79,6 +79,9 @@ jobs:
       - name: Test quiz de repaso MITRE (estructura de los 15 casos + E2E completando el caso-01)
         run: npm run test:quiz
 
+      - name: Test duelo SOC vs Red Team (turnos alternos + E2E con duelo completo)
+        run: npm run test:duelo
+
       - name: Test PWA (manifest instalable + service worker con modo offline real)
         run: npm run test:pwa
 
