@@ -1354,8 +1354,9 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
       <div class="modal-title">🔥 RETO DIARIO</div>
       ${this.holoHTML("holo-md")}
       <div class="modal-text" style="font-size:12.5px">
-        El mismo incidente con <b>indicadores distintos cada día</b>: las IPs y los hosts cambian
-        según la semilla de la fecha. Sin pistas y con el SLA real — aquí se nota el criterio, no la memoria.
+        El mismo incidente con <b>indicadores distintos cada día</b>: las IPs, los hosts, los dominios y
+        los correos cambian según la semilla de la fecha (sustitución reversible: nada se rompe).
+        Sin pistas y con el SLA real — aquí se nota el criterio, no la memoria.
       </div>
       <div class="modal-section">
         <h3>RETO DE HOY · ${reto.fecha}</h3>

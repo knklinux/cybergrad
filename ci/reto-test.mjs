@@ -1,14 +1,18 @@
 // reto-test.mjs — Test del RETO DIARIO
-// Parte 1 (Node puro): determinismo y seguridad de la variación por semilla
+// Parte 1 (Node puro): determinismo, seguridad y REVERSIBILIDAD de la
+// variación por semilla
 //   - misma semilla → mismo caso variado (determinismo)
-//   - semilla distinta → indicadores (IPs) distintos
+//   - semilla distinta → indicadores distintos (IPs, hosts, DOMINIOS, CORREOS)
 //   - invariante: TODAS las cadenas conservan su longitud (no rompe base64)
+//   - idempotencia: variar dos veces = variar una vez
+//   - reversibilidad: desvariarCaso(variado, mapas) reconstruye el original
 // Parte 2 (E2E Playwright): el comando `reto` arranca el modo con la
 // cabecera correcta, bloquea `pista` y no produce errores de consola.
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { CASOS } from "../js/casos.js";
-import { variarCaso, variarCasoVerificado, retoDelDia } from "../js/reto.js";
+import { RT_CASOS } from "../js/rt-casos.js";
+import { variarCaso, variarCasoVerificado, retoDelDia, desvariarCaso, invertirMapas } from "../js/reto.js";
 
 let pass = 0;
 let fail = 0;
@@ -18,27 +22,82 @@ const check = (name, cond, extra = "") => {
 };
 
 // ---------- Unidad: variación por semilla ----------
-const base = CASOS[0]; // phishing-01: tiene IPs, hosts y base64 de PowerShell
-const a1 = variarCaso(base, "2026-08-13");
-const a2 = variarCaso(base, "2026-08-13");
-const b1 = variarCaso(base, "2026-08-14");
+const base = CASOS[0]; // phishing-01: tiene IPs, hosts, dominios, correos y base64
+const a1 = variarCaso(base, "2026-08-13").caso;
+const a1b = variarCaso(base, "2026-08-13");
+const a2 = variarCaso(base, "2026-08-13").caso;
+const b1 = variarCaso(base, "2026-08-14").caso;
+const json1 = JSON.stringify(a1);
 
 check("misma semilla → mismo caso variado (JSON idéntico)", JSON.stringify(a1) === JSON.stringify(a2));
-check("semilla distinta → caso distinto", JSON.stringify(a1) !== JSON.stringify(b1));
-check("la IP del caso original cambia (185.220.101.34)", !JSON.stringify(a1).includes("185.220.101.34"));
-check("los hosts cambian (HOST-104)", !JSON.stringify(a1).includes("HOST-104"));
+check("misma semilla → mismos mapas de variación", JSON.stringify([...a1b.mapas.dominio]) === JSON.stringify([...variarCaso(base, "2026-08-13").mapas.dominio]));
+check("semilla distinta → caso distinto", json1 !== JSON.stringify(b1));
+check("la IP del caso original cambia (185.220.101.34)", !json1.includes("185.220.101.34"));
+check("los hosts cambian (HOST-104)", !json1.includes("HOST-104"));
 check("el caso variado conserva el id de origen", a1.retoBaseId === base.id);
 check("el modo se conserva (soc)", a1.modo !== "rt");
 
-// Invariante de longitud: verificación oficial sobre TODAS las cadenas
-const { ok, errores } = variarCasoVerificado(base, "2026-08-13");
-check("invariante de longitud en todo el caso", ok, errores.join("; "));
+// ---------- Dominios y correos ----------
+check("el dominio original cambia (acme-facturas.info)", !json1.includes("acme-facturas.info"));
+check("el subdominio cambia (mail.acme-facturas.info)", !json1.includes("mail.acme-facturas.info"));
+check("los correos cambian (m.garcia@acme.com)", !json1.includes("m.garcia@acme.com"));
+check("el usuario del correo se conserva (m.garcia)", json1.includes("m.garcia"));
+check("las URLs se varían solo en el dominio (http://.../payment.exe)", !json1.includes("http://acme-facturas.info") && json1.includes("/payment.exe"));
+check("el whitelist protege archivos (alerts.json, proxy.log, powershell.exe)", json1.includes("alerts.json") && json1.includes("proxy.log") && json1.includes("powershell.exe"));
+check("el whitelist protege el usuario m.garcia", json1.includes("m.garcia"));
+// Los falsos positivos que no viven en el phishing se comprueban en los
+// casos que sí los contienen: update.exe y r.gutierrez (caso-07 APT),
+// l.fuentes (caso-08 insider).
+const j7 = JSON.stringify(variarCaso(CASOS[6], "2026-08-13").caso);
+const j8 = JSON.stringify(variarCaso(CASOS[7], "2026-08-13").caso);
+check("el whitelist protege update.exe y r.gutierrez (caso-07)", j7.includes("update.exe") && j7.includes("r.gutierrez"));
+check("el whitelist protege l.fuentes (caso-08)", j8.includes("l.fuentes"));
+
+// El dominio de un correo comparte variante con el dominio suelto
+const mapaDom = a1b.mapas.dominio;
+check("el correo y el dominio suelto comparten variante", a1b.mapas.correo.get("facturacion@acme-facturas.info") === "facturacion@" + mapaDom.get("acme-facturas.info"));
+
+// ---------- Reversibilidad ----------
+// Biyección: ninguna variante se repite dentro de cada mapa
+const biyectivo = (m) => new Set([...m.values()]).size === m.size && m.size > 0;
+check("los mapas son biyectivos (sin variantes repetidas)", biyectivo(a1b.mapas.dominio) && biyectivo(a1b.mapas.correo) && biyectivo(a1b.mapas.ip) && biyectivo(a1b.mapas.host));
+
+// Idempotencia estructural de dominios: las variantes nunca terminan en
+// un TLD del whitelist, así que una segunda pasada no las re-variaría.
+const TLDS_TEST = ["com", "co", "info", "top", "net", "xyz", "es", "onion", "local"];
+const variantesDom = [...a1b.mapas.dominio.values()];
+check("las variantes de dominio no son re-variables (TLD fuera del whitelist)", variantesDom.length > 0 && variantesDom.every((v) => !TLDS_TEST.includes(v.split(".").pop())));
+
+// Inversa exacta: desvariarCaso reconstruye el caso original byte a byte
+const reconstruido = desvariarCaso(a1, a1b.mapas);
+check("desvariarCaso reconstruye el caso original exacto", JSON.stringify(reconstruido) === JSON.stringify(base));
+
+// La inversa también funciona al revés (variante → original en el mapa)
+const inv = invertirMapas(a1b.mapas);
+check("invertirMapas devuelve variante → original", inv.dominio.get(mapaDom.get("acme-facturas.info")) === "acme-facturas.info" && inv.correo.get(a1b.mapas.correo.get("m.garcia@acme.com")) === "m.garcia@acme.com");
+
+// Invariante de longitud + reversibilidad en TODOS los casos (SOC + RT)
+let longOk = true;
+let longErrs = [];
+let revOk = true;
+let revErr = "";
+for (const c of [...CASOS, ...RT_CASOS]) {
+  const { ok: lo, errores, mapas, caso } = variarCasoVerificado(c, "2026-08-13");
+  if (!lo) { longOk = false; longErrs.push(c.id + ": " + errores.join("; ")); }
+  try {
+    const rec = desvariarCaso(caso, mapas);
+    if (JSON.stringify(rec) !== JSON.stringify(c)) { revOk = false; revErr = c.id; }
+  } catch (e) { revOk = false; revErr = c.id + " (" + e.message + ")"; }
+}
+check("invariante de longitud en TODOS los casos (SOC + RT)", longOk, longErrs.slice(0, 2).join(" | "));
+check("reversibilidad exacta en TODOS los casos (SOC + RT)", revOk, revErr);
 
 // La variación es estable entre llamadas con la misma semilla
 const r1 = retoDelDia(new Date("2026-08-13T12:00:00Z"));
 const r2 = retoDelDia(new Date("2026-08-13T23:59:59Z"));
 check("el reto es estable durante todo el día", r1.fecha === r2.fecha && r1.baseId === r2.baseId);
 check("retoDelDia devuelve caso variado", !!r1.caso && !!r1.caso.retoSemilla);
+check("retoDelDia expone los mapas de variación", !!r1.mapas && r1.mapas.dominio instanceof Map);
 
 // ---------- E2E ----------
 const BASE = process.env.CYBERGRAD_URL || "http://127.0.0.1:8000/";
