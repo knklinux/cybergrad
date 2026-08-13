@@ -9,7 +9,7 @@ export const PASOS_TUTORIAL = [
     icono: "🛡️",
     titulo: "¿QUÉ ES ESTO?",
     texto:
-      "<b>CYBERGRAD</b> es un simulador de carrera en un <b>SOC</b> (Security Operations Center): el centro de operaciones donde se detectan y responden los ciberataques de una empresa.<br/><br/>Tú eres un <b>analista de seguridad</b> en ACME Corp. Cada turno llega un incidente realista y tu trabajo es investigarlo y responderlo, igual que en un SOC de verdad.<br/><br/>¿Quieres cambiar de bando? La campaña <b>Red Team</b> te convierte en <b>pentester</b>: pentests ofensivos autorizados con herramientas reales (nmap, hydra, Metasploit…).",
+      "<b>CYBERGRAD</b> es un simulador de carrera en un <b>SOC</b> (Security Operations Center): el centro de operaciones donde se detectan y responden los ciberataques de una empresa.<br/><br/>Tú eres un <b>analista de seguridad</b> en ACME Corp. Cada turno llega un incidente realista y tu trabajo es investigarlo y responderlo, igual que en un SOC de verdad.<br/><br/>¿Quieres cambiar de bando? La campaña <b>Red Team</b> te convierte en <b>pentester</b>: pentests ofensivos autorizados con herramientas reales (nmap, hydra, Metasploit…).<br/><br/>🎓 <b>¿Por qué «CYBERGRAD»?</b> «grad» (град) significa <b>«ciudad»</b> en las lenguas eslavas (Leningrado, Stalingrado, Volgogrado…). Esta es <b>la ciudad del ciber</b>: aquí construyes tu carrera, de analista junior a CISO. ¿Curiosidad? Escribe <span class='mono'>porque_cybergrad</span> o pregúntale a Jimmy.",
     ejemplo: "SOC = Security Operations Center · El 'bombero digital' de la empresa",
   },
   {

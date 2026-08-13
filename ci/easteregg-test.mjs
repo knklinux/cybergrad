@@ -9,6 +9,7 @@
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { preguntarJimmy } from "../js/jimmy-ia.js";
+import { PASOS_TUTORIAL } from "../js/tutorial.js";
 
 let pass = 0;
 let fail = 0;
@@ -43,6 +44,12 @@ r = preguntarJimmy("¿qué hago ahora?", ctxConCaso);
 check("«qué hago» NO dispara la etimología", !r.includes("eslav"));
 r = preguntarJimmy("¿qué es T1566?", ctxConCaso);
 check("una técnica MITRE NO dispara la etimología", !r.includes("eslav"));
+
+// El tutorial (primera slide) también cuenta el origen del nombre
+const slide1 = PASOS_TUTORIAL[0];
+check("el tutorial abre con «¿QUÉ ES ESTO?»", slide1.titulo === "¿QUÉ ES ESTO?");
+check("la primera slide explica grad = ciudad en eslavo", slide1.texto.includes("grad") && slide1.texto.includes("ciudad") && slide1.texto.includes("eslav"));
+check("la primera slide revela el comando porque_cybergrad", slide1.texto.includes("porque_cybergrad"));
 
 // ---------- Parte 2: E2E en la terminal ----------
 const BASE = process.env.CYBERGRAD_URL || "http://127.0.0.1:8000/";
