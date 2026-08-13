@@ -52,6 +52,9 @@ jobs:
       - name: Test metadatos (título de pestaña + Open Graph + Twitter Card con mutaciones)
         run: npm run test:meta
 
+      - name: Test _headers en host compatible (CDN local aplica la CSP como cabecera HTTP real)
+        run: npm run test:headers
+
       - name: Test reto diario (variación por semilla + modo sin pistas)
         run: npm run test:reto
 
