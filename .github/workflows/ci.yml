@@ -49,6 +49,9 @@ jobs:
       - name: Test artefactos visuales (subtítulo, pie, separador ASCII y rangos del tutorial)
         run: npm run test:visual
 
+      - name: Test metadatos (título de pestaña + Open Graph + Twitter Card con mutaciones)
+        run: npm run test:meta
+
       - name: Test reto diario (variación por semilla + modo sin pistas)
         run: npm run test:reto
 

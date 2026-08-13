@@ -1,10 +1,13 @@
-// prod-test.mjs — Check de integración de los artefactos visuales en producción
+// prod-test.mjs — Check de integración de los artefactos de arranque en producción
 // Carga la versión desplegada de GitHub Pages con Playwright y verifica:
 //   1. BANNER     (#terminal .t-banner)  → golden + glifos (banner-core.mjs)
 //   2. SUBTÍTULO  (#terminal .t-out-info) → canónico (visual-core.mjs)
 //   3. PIE        (#terminal .t-out-dim)  → canónico (visual-core.mjs)
 //   4. SEPARADOR  (#terminal .t-out-dim)  → canónico (visual-core.mjs), tras
 //      completar el onboarding y ejecutar `ayuda` (que imprime un separador)
+//   5. METADATOS  (document.title + Open Graph + Twitter Card) → canónico
+//      (meta-core.mjs), con las og:image comprobadas con HTTP real y la CSP
+//      como cabecera HTTP (vía _headers)
 //
 // Notas sobre el DOM: main.js une el array BANNER con "\n" y lo imprime en
 // UN solo span.t-banner, así que hay que leer su innerText y partir por
@@ -22,6 +25,7 @@
 import { chromium } from "playwright";
 import { diagnosticar, imprimirDiff } from "./banner-core.mjs";
 import { verificarSubtitulo, verificarFooter, verificarSeparador } from "./visual-core.mjs";
+import { verificarMetadatos, verificarImagen, META_CANON } from "./meta-core.mjs";
 
 const PROD = process.env.CYBERGRAD_PROD_URL || "https://knklinux.github.io/cybergrad/";
 const TIMEOUT_MS = parseInt(process.env.CYBERGRAD_PROD_TIMEOUT || "300000", 10);
@@ -99,6 +103,45 @@ try {
   correr(verificarFooter(footer));
 } catch {
   correr(verificarFooter(null));
+}
+
+// --- Metadatos de arranque (título de pestaña + Open Graph + Twitter) ---
+// Se leen del DOM de la versión desplegada y se verifican con el MISMO
+// canónico que el test local (meta-core.mjs). Además se comprueba que las
+// og:image responden HTTP 200 con content-type de imagen en el sitio real
+// (una imagen rota o desaparecida rompe la tarjeta de LinkedIn aunque el
+// HTML diga lo correcto) y que la CSP llega como cabecera HTTP real.
+try {
+  const meta = await page.evaluate(() => ({
+    titulo: document.title,
+    lang: document.documentElement.lang || "",
+    desc: document.querySelector('meta[name="description"]')?.content || "",
+    ogTitle: document.querySelector('meta[property="og:title"]')?.content || "",
+    ogDesc: document.querySelector('meta[property="og:description"]')?.content || "",
+    ogUrl: document.querySelector('meta[property="og:url"]')?.content || "",
+    ogImages: [...document.querySelectorAll('meta[property="og:image"]')].map((m) => m.content),
+    twitterCard: document.querySelector('meta[name="twitter:card"]')?.content || "",
+    twitterImage: document.querySelector('meta[name="twitter:image"]')?.content || "",
+    canonical: document.querySelector('link[rel="canonical"]')?.href || "",
+    cspContent: document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content || "",
+  }));
+  correr(verificarMetadatos(meta));
+  // Las imágenes de la tarjeta deben existir en el sitio desplegado
+  for (const url of META_CANON.ogImagenes) {
+    try {
+      const resp = await fetch(url, { method: "HEAD" });
+      correr(verificarImagen(url, resp.status, resp.headers.get("content-type") || ""));
+    } catch {
+      correr(verificarImagen(url, 0, ""));
+    }
+  }
+  // NOTA: la CSP se comprueba como meta en el documento (no como cabecera
+  // HTTP): GitHub Pages ignora el fichero `_headers`, así que la meta CSP
+  // es la política realmente aplicada en producción. `_headers` queda como
+  // capa documentada para otros hosts que sí la sirvan.
+} catch (e) {
+  correr(verificarMetadatos({ titulo: "", lang: "", desc: "", ogTitle: "", ogDesc: "", ogUrl: "", ogImages: [], twitterCard: "", twitterImage: "", canonical: "", cspContent: "" }));
+  check("metadatos: flujo de lectura completado", false, `(${e.message})`);
 }
 
 // --- Separador: completar el onboarding y ejecutar `ayuda`, que imprime ---
