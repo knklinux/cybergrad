@@ -46,6 +46,9 @@ jobs:
       - name: Test banner (CYBERGRAD completo y sin glifos de otra letra)
         run: npm run test:banner
 
+      - name: Test banner del README (coincide EXACTO con el de js/main.js, con mutación)
+        run: npm run test:readme-banner
+
       - name: Test artefactos visuales (subtítulo, pie, separador ASCII y rangos del tutorial)
         run: npm run test:visual
 
