@@ -11,6 +11,7 @@ import { explicarTutor, EXPLICAR_AYUDA } from "./tutor.js";
 import { preguntarJimmy, PREGUNTAR_AYUDA } from "./jimmy-ia.js";
 import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
 import { soportaVoz, escucharVoz } from "./voz.js";
+import { filasRankingReto } from "./reto.js";
 
 const AYUDA = {
   "ayuda": "ayuda [comando] — lista los comandos disponibles o explica uno",
@@ -44,6 +45,7 @@ const AYUDA = {
   "jimmy": "jimmy [texto] — alias de preguntar: Jimmy responde sobre el caso actual (sin texto, escucha tu voz)",
   "voz": "voz [off] — pregunta a Jimmy por voz (igual que `preguntar` sin texto); voz off cancela la escucha",
   "reto": "reto — abre el reto diario (mismo incidente, indicadores distintos cada día)",
+  "ranking": "ranking — historial de tus marcas del reto diario (mejor rating y tiempo por día)",
   "examen": "examen — modo examen: caso sin pistas a contrarreloj; al aprobar (A o mejor) obtienes certificado",
   "sonido": "sonido [on|off|estado] — activa, silencia o muestra el estado del sonido",
   "habilidades": "habilidades — abre el árbol de habilidades MITRE ATT&CK",
@@ -806,6 +808,18 @@ export function crearComandos(ctx) {
     voz: (a) => cmds.preguntar(a),
 
     reto() { ui.mostrarRetoDiario(); },
+    ranking() {
+      const ranking = filasRankingReto(GAME.estadisticas?.retoHistorial || []);
+      term.separator("🏆 RANKING DE RETOS DIARIOS");
+      if (!ranking.length) {
+        out("Sin marcas todavía: completa el reto diario (`reto`) para estrenar el ranking.", "t-out-dim");
+        return;
+      }
+      for (const m of ranking) {
+        out(`${m.fecha} · ${m.titulo} · ${m.rating} · ${m.tiempo}`, "t-out");
+      }
+      out("Mejor marca por día · hasta 30 días. `reto` para jugar el de hoy.", "t-out-dim");
+    },
     examen() { ui.mostrarExamen(); },
     habilidades() { ui.mostrarHabilidades(); },
     demo() { ui.mostrarPresentador(); },

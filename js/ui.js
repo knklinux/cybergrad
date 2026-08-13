@@ -10,7 +10,7 @@ import { GLOSARIO } from "./glosario.js";
 import { PASOS_TUTORIAL, MICROCASO } from "./tutorial.js";
 import { BECARIO_CASOS, BECARIO_RT_CASOS } from "./becario.js";
 import { logrosDesbloqueados, logrosPendientes, totalLogros, evaluarLogros } from "./logros.js";
-import { retoDelDia } from "./reto.js";
+import { retoDelDia, filasRankingReto } from "./reto.js";
 import { elegirCasoExamen, apruebaExamen, textoVeredicto } from "./examen.js";
 import { descargarCertificado, imprimirCertificado } from "./certificado.js";
 import { estadoHabilidades } from "./habilidades.js";
@@ -1350,6 +1350,16 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
   mostrarRetoDiario() {
     const reto = retoDelDia();
     const yaHoy = GAME.estadisticas?.reto?.fecha === reto.fecha;
+    const ranking = filasRankingReto(GAME.estadisticas?.retoHistorial || []);
+    const filasRanking = ranking.length
+      ? ranking.map((m) => `
+        <div class="rk-fila">
+          <span class="rk-fecha">${m.fecha}</span>
+          <span class="rk-titulo">${m.titulo}</span>
+          <span class="rk-rating">${m.rating}</span>
+          <span class="rk-tiempo">${m.tiempo}</span>
+        </div>`).join("")
+      : `<div class="rk-vacia">Aún no hay marcas. Completa el reto de hoy para estrenar el ranking.</div>`;
     const html = `
       <div class="modal-title">🔥 RETO DIARIO</div>
       ${this.holoHTML("holo-md")}
@@ -1365,6 +1375,10 @@ ${logs.length ? logs.map((l) => `- ${l.icono} **${l.nombre}**: ${l.desc}`).join(
           <span style="color:#8fd39e">${reto.esRT ? "Campaña Red Team" : "Campaña SOC"} · Severidad ${reto.caso.severidad} · SLA ${Math.floor(reto.caso.sla / 60)} min</span>
         </div>
         ${yaHoy ? `<div class="modal-text" style="font-size:12px;color:#33ff66">✔ Ya superaste el reto de hoy con ${GAME.estadisticas.reto.rating}. Puedes repetirlo para mejorar tu marca.</div>` : ""}
+      </div>
+      <div class="modal-section">
+        <h3>🏆 RANKING LOCAL · ÚLTIMAS 30 MARCAS</h3>
+        <div class="rk-lista">${filasRanking}</div>
       </div>
       <div class="jimmy-habla">Repetir el mismo caso con indicadores nuevos: así se aprende el patrón, no las respuestas. — Jimmy</div>
       <div class="btn-row">

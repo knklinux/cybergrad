@@ -133,6 +133,8 @@ export const GAME = {
     accionesErr: 0,           // acciones incorrectas mal ejecutadas (total)
     pistasUsadas: 0,          // pistas pedidas (total acumulado)
     ratings: [],              // [{casoId, rating, modo}] por cada caso completado
+    reto: null,               // última marca del reto diario {fecha, casoId, rating, segundos}
+    retoHistorial: [],        // ranking local: últimas 30 marcas (una por día, la mejor)
   },
 };
 

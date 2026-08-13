@@ -105,6 +105,7 @@ export function cargar(slot = 1) {
     }
     if (!Array.isArray(GAME.estadisticas.ratings)) GAME.estadisticas.ratings = [];
     if (GAME.estadisticas.reto === undefined) GAME.estadisticas.reto = null;
+    if (!Array.isArray(GAME.estadisticas.retoHistorial)) GAME.estadisticas.retoHistorial = [];
     if (!Array.isArray(GAME.estadisticas.examenes)) GAME.estadisticas.examenes = [];
     GAME.demo = false;
     GAME.casoActual = null;
@@ -155,6 +156,10 @@ export function nuevaPartida() {
   GAME.casoSinPistas = false;
   GAME.secretos = [];
   GAME.demo = false;
+  GAME.estadisticas = {
+    tiempoJugado: 0, accionesOk: 0, accionesErr: 0, pistasUsadas: 0, ratings: [],
+    reto: null, retoHistorial: [], examenes: [],
+  };
   GAME.casoActual = null;
   GAME.casoIniciadoEn = 0;
   GAME.reloj = 0;

@@ -255,6 +255,48 @@ export function desvariarCaso(casoVariado, mapas) {
   return original;
 }
 
+// ---------- Ranking local de retos diarios ----------
+// Orden de calificaciones (de peor a mejor)
+export const ORDEN_RATING_RETO = ["C", "B", "A", "S", "S+"];
+
+// ¿La marca nueva es mejor que la registrada? Mismo rating → gana el tiempo.
+export function esMejorMarca(nueva, actual) {
+  if (!actual) return true;
+  const n = ORDEN_RATING_RETO.indexOf(nueva.rating);
+  const a = ORDEN_RATING_RETO.indexOf(actual.rating);
+  if (n !== a) return n > a;
+  return (nueva.segundos ?? Infinity) < (actual.segundos ?? Infinity);
+}
+
+// Registra una marca en el historial: UNA entrada por día (la mejor),
+// ordenada de más reciente a más antigua, máximo 30 marcas.
+// Devuelve el historial nuevo (no muta el recibido).
+export function registrarMarcaReto(marca, historial = []) {
+  const copia = (Array.isArray(historial) ? historial : []).map((m) => ({ ...m }));
+  const idx = copia.findIndex((m) => m.fecha === marca.fecha);
+  if (idx !== -1) {
+    if (esMejorMarca(marca, copia[idx])) copia[idx] = { ...marca };
+  } else {
+    copia.push({ ...marca });
+  }
+  copia.sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
+  return copia.slice(0, 30);
+}
+
+// Líneas legibles del historial para la terminal y el panel (máx 30,
+// más reciente primero), con el tiempo formateado mm:ss.
+export function filasRankingReto(historial = []) {
+  const seg = (s) => {
+    const total = Math.max(0, Math.floor(s || 0));
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  };
+  return (Array.isArray(historial) ? historial : [])
+    .slice()
+    .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0))
+    .slice(0, 30)
+    .map((m) => ({ ...m, tiempo: seg(m.segundos) }));
+}
+
 // Estructura completa del reto de hoy (para el panel y la terminal)
 export function retoDelDia(fecha = new Date()) {
   const fechaStr = fechaReto(fecha);

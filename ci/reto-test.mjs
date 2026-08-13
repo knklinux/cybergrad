@@ -12,7 +12,7 @@ import { spawn } from "node:child_process";
 import { chromium } from "playwright";
 import { CASOS } from "../js/casos.js";
 import { RT_CASOS } from "../js/rt-casos.js";
-import { variarCaso, variarCasoVerificado, retoDelDia, desvariarCaso, invertirMapas } from "../js/reto.js";
+import { variarCaso, variarCasoVerificado, retoDelDia, desvariarCaso, invertirMapas, registrarMarcaReto, esMejorMarca, filasRankingReto } from "../js/reto.js";
 
 let pass = 0;
 let fail = 0;
@@ -99,6 +99,39 @@ check("el reto es estable durante todo el día", r1.fecha === r2.fecha && r1.bas
 check("retoDelDia devuelve caso variado", !!r1.caso && !!r1.caso.retoSemilla);
 check("retoDelDia expone los mapas de variación", !!r1.mapas && r1.mapas.dominio instanceof Map);
 
+// ---------- Ranking local ----------
+let hist = [];
+hist = registrarMarcaReto({ fecha: "2026-08-13", casoId: "rt-05-mimikatz", titulo: "Mimikatz", rating: "A", segundos: 400 }, hist);
+hist = registrarMarcaReto({ fecha: "2026-08-12", casoId: "caso-01-phishing", titulo: "Phishing", rating: "S", segundos: 300 }, hist);
+check("el ranking registra marcas de días distintos", hist.length === 2);
+check("el ranking ordena de más reciente a más antigua", hist[0].fecha === "2026-08-13" && hist[1].fecha === "2026-08-12");
+
+hist = registrarMarcaReto({ fecha: "2026-08-13", casoId: "rt-05-mimikatz", titulo: "Mimikatz", rating: "S+", segundos: 380 }, hist);
+check("repetir el día con mejor rating mejora la marca", hist.length === 2 && hist[0].rating === "S+");
+
+hist = registrarMarcaReto({ fecha: "2026-08-13", casoId: "rt-05-mimikatz", titulo: "Mimikatz", rating: "S+", segundos: 200 }, hist);
+check("mismo rating → gana el mejor tiempo", hist[0].segundos === 200);
+
+hist = registrarMarcaReto({ fecha: "2026-08-12", casoId: "caso-01-phishing", titulo: "Phishing", rating: "B", segundos: 700 }, hist);
+check("una marca peor no pisa la mejor del día", hist[1].rating === "S" && hist[1].segundos === 300);
+
+check("esMejorMarca: S+ gana a S", esMejorMarca({ rating: "S+", segundos: 999 }, { rating: "S", segundos: 10 }));
+check("esMejorMarca: mismo rating gana el menor tiempo", esMejorMarca({ rating: "A", segundos: 100 }, { rating: "A", segundos: 200 }));
+check("esMejorMarca: sin marca previa siempre gana", esMejorMarca({ rating: "C", segundos: 999 }, null));
+
+let h30 = [];
+for (let d = 1; d <= 40; d++) {
+  h30 = registrarMarcaReto({ fecha: `2026-10-${String(d).padStart(2, "0")}`, casoId: "caso-01-phishing", titulo: "Phishing", rating: "A", segundos: 500 }, h30);
+}
+check("el ranking guarda como máximo 30 marcas", h30.length === 30);
+check("el ranking conserva los 30 días más recientes", h30[0].fecha === "2026-10-40" && h30[29].fecha === "2026-10-11");
+
+const filas = filasRankingReto(hist);
+check("filasRankingReto formatea el tiempo mm:ss", filas[0].tiempo === "3:20" && filas[1].tiempo === "5:00");
+
+const rec = registrarMarcaReto({ fecha: "2026-08-11", casoId: "caso-02-bec", titulo: "BEC", rating: "S", segundos: 100 }, JSON.parse(JSON.stringify(hist)));
+check("el historial sobrevive un round-trip de guardado", rec.length === 3 && rec[0].fecha === "2026-08-13");
+
 // ---------- E2E ----------
 const BASE = process.env.CYBERGRAD_URL || "http://127.0.0.1:8000/";
 const PORT = parseInt(new URL(BASE).port || "8000", 10);
@@ -147,6 +180,9 @@ await page.waitForSelector("#terminal input", { timeout: 15000 }).catch(() => fa
 // Arrancar el reto diario por comando
 await ejecutar("reto");
 await page.locator("#modal-content .modal-title", { hasText: "RETO DIARIO" }).waitFor({ timeout: 10000 }).catch(() => falla("No se abrió el panel del reto diario"));
+const panelReto = await page.locator("#modal-content").innerText();
+check("el panel del reto muestra el ranking local", panelReto.includes("RANKING LOCAL") && panelReto.includes("30 MARCAS"));
+check("sin marcas el ranking muestra el estado vacío", panelReto.includes("Aún no hay marcas"));
 await page.locator('[data-action="jugar-reto"]').first().click();
 
 // Splash → briefing → terminal con la cabecera del reto
@@ -161,6 +197,10 @@ check("la terminal muestra la cabecera RETO DIARIO", salida.includes("RETO DIARI
 // En el reto NO hay pistas
 salida = await ejecutar("pista");
 check("`pista` está bloqueado en el reto", salida.includes("No hay pistas en el reto diario"));
+
+// El comando ranking funciona desde la terminal (sin marcas → estado vacío)
+salida = await ejecutar("ranking");
+check("`ranking` muestra el estado vacío sin marcas", salida.includes("Sin marcas todavía"));
 
 // Sin errores de consola
 if (errs.length) {

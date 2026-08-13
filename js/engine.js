@@ -7,6 +7,7 @@
 import { GAME, addXP, addRTXP, addPuntos, registrarAccion, resetAccionesCaso } from "./state.js";
 import { numCaso } from "./casos.js";
 import { numCasoRT, siguienteCasoRT } from "./rt-casos.js";
+import { registrarMarcaReto } from "./reto.js";
 
 // Cómo se construye la clave en `hecho` y la etiqueta de cada tipo de objetivo
 const TIPOS_OBJETIVO = {
@@ -688,7 +689,9 @@ export class Engine {
       const fecha = this.reto ? (caso.retoSemilla || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10);
       if (!GAME.estadisticas) GAME.estadisticas = {};
       if (this.reto) {
-        GAME.estadisticas.reto = { fecha, casoId: caso.retoBaseId || caso.id, rating, segundos: GAME.reloj };
+        GAME.estadisticas.reto = { fecha, casoId: caso.retoBaseId || caso.id, titulo: caso.titulo, rating, segundos: GAME.reloj };
+        // Ranking local: una marca por día (la mejor), máx 30
+        GAME.estadisticas.retoHistorial = registrarMarcaReto(GAME.estadisticas.reto, GAME.estadisticas.retoHistorial);
       } else {
         if (!Array.isArray(GAME.estadisticas.examenes)) GAME.estadisticas.examenes = [];
         GAME.estadisticas.examenes.push({ fecha, casoId: caso.id, rating, segundos: GAME.reloj });
