@@ -19,6 +19,8 @@ import { fileURLToPath } from "node:url";
 import {
   extraerSubtituloLocal,
   verificarSubtitulo,
+  extraerFooterLocal,
+  verificarFooter,
   extraerSeparadorLocal,
   verificarSeparador,
 } from "./visual-core.mjs";
@@ -46,7 +48,16 @@ try {
 }
 
 // ============================================================
-// 2. SEPARADOR ASCII DE LA TERMINAL (js/terminal.js)
+// 2. PIE DE ARRANQUE (js/main.js)
+// ============================================================
+try {
+  correr(verificarFooter(extraerFooterLocal()));
+} catch (e) {
+  check("pie: presente en main.js", false, `(${e.message})`);
+}
+
+// ============================================================
+// 3. SEPARADOR ASCII DE LA TERMINAL (js/terminal.js)
 // ============================================================
 try {
   const sep = extraerSeparadorLocal();

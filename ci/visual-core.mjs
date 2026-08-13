@@ -51,7 +51,40 @@ export function verificarSubtitulo(sub) {
 }
 
 // ============================================================
-// 2. SEPARADOR ASCII DE LA TERMINAL (js/terminal.js)
+// 2. PIE DE ARRANQUE (js/main.js)
+// ============================================================
+export const FOOTER_CANON =
+  "\u00A9 CYBERGRAD \u00B7 Uso educativo \u00B7 Personajes y empresas ficticios";
+
+// Extrae el pie del código fuente (la fuente de verdad local).
+export function extraerFooterLocal() {
+  const src = fs.readFileSync(path.join(root, "js", "main.js"), "utf8");
+  const m = src.match(/term\.print\("([^"]*CYBERGRAD[^"]*Uso educativo[^"]*)"\s*,\s*"t-out-dim"\)/);
+  if (!m) throw new Error("No se encontró el pie de arranque en js/main.js");
+  return m[1];
+}
+
+// Verifica un pie (local o renderizado) contra el canónico.
+export function verificarFooter(footer) {
+  const checks = [];
+  checks.push({ nombre: "pie: presente", ok: typeof footer === "string" && footer.length > 0 });
+  if (typeof footer === "string" && footer.length > 0) {
+    checks.push({
+      nombre: "pie: coincide con el canónico",
+      ok: footer === FOOTER_CANON,
+      extra: `(esperado |${FOOTER_CANON}| real |${footer}|)`,
+    });
+    checks.push({
+      nombre: "pie: menciona la marca y el uso educativo",
+      ok: footer.includes("CYBERGRAD") && footer.includes("Uso educativo"),
+      extra: "(debe incluir 'CYBERGRAD' y 'Uso educativo')",
+    });
+  }
+  return checks;
+}
+
+// ============================================================
+// 3. SEPARADOR ASCII DE LA TERMINAL (js/terminal.js)
 // ============================================================
 export const SEPARADOR_CHAR = "\u2500"; // ─
 export const SEPARADOR_N = 52;

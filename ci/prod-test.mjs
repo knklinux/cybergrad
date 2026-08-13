@@ -2,7 +2,8 @@
 // Carga la versión desplegada de GitHub Pages con Playwright y verifica:
 //   1. BANNER     (#terminal .t-banner)  → golden + glifos (banner-core.mjs)
 //   2. SUBTÍTULO  (#terminal .t-out-info) → canónico (visual-core.mjs)
-//   3. SEPARADOR  (#terminal .t-out-dim)  → canónico (visual-core.mjs), tras
+//   3. PIE        (#terminal .t-out-dim)  → canónico (visual-core.mjs)
+//   4. SEPARADOR  (#terminal .t-out-dim)  → canónico (visual-core.mjs), tras
 //      completar el onboarding y ejecutar `ayuda` (que imprime un separador)
 //
 // Notas sobre el DOM: main.js une el array BANNER con "\n" y lo imprime en
@@ -20,7 +21,7 @@
 // ajeno y daría falsos fallos.
 import { chromium } from "playwright";
 import { diagnosticar, imprimirDiff } from "./banner-core.mjs";
-import { verificarSubtitulo, verificarSeparador } from "./visual-core.mjs";
+import { verificarSubtitulo, verificarFooter, verificarSeparador } from "./visual-core.mjs";
 
 const PROD = process.env.CYBERGRAD_PROD_URL || "https://knklinux.github.io/cybergrad/";
 const TIMEOUT_MS = parseInt(process.env.CYBERGRAD_PROD_TIMEOUT || "300000", 10);
@@ -84,6 +85,14 @@ try {
   correr(verificarSubtitulo(sub));
 } catch {
   correr(verificarSubtitulo(null));
+}
+
+// --- Pie de arranque (impreso al arrancar, primer span .t-out-dim de la terminal) ---
+try {
+  const footer = await page.locator("#terminal .t-out-dim").first().innerText();
+  correr(verificarFooter(footer));
+} catch {
+  correr(verificarFooter(null));
 }
 
 // --- Separador: completar el onboarding y ejecutar `ayuda`, que imprime ---
