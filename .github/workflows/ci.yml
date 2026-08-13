@@ -79,6 +79,14 @@ jobs:
       - name: Test quiz de repaso MITRE (estructura de los 15 casos + E2E completando el caso-01)
         run: npm run test:quiz
 
+      - name: Test PWA (manifest instalable + service worker con modo offline real)
+        run: npm run test:pwa
+
+      - name: "PWA al día (build:pwa regenera sw.js e iconos; git diff debe estar vacío)"
+        run: |
+          npm run build:pwa
+          git diff --exit-code -- sw.js assets/icon-192.png assets/icon-512.png
+
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
   # sirve los artefactos visuales correctos (banner, subtítulo y separador;
   # mismos canónicos que los tests locales). Solo corre en push a main y

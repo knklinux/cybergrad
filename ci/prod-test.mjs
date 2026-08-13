@@ -8,6 +8,8 @@
 //   5. METADATOS  (document.title + Open Graph + Twitter Card) → canónico
 //      (meta-core.mjs), con las og:image comprobadas con HTTP real y la CSP
 //      como cabecera HTTP (vía _headers)
+//   6. PWA         (manifest.webmanifest instalable + iconos 192/512 con HTTP
+//      real + sw.js con precache y estrategia offline)
 //
 // Notas sobre el DOM: main.js une el array BANNER con "\n" y lo imprime en
 // UN solo span.t-banner, así que hay que leer su innerText y partir por
@@ -142,6 +144,35 @@ try {
 } catch (e) {
   correr(verificarMetadatos({ titulo: "", lang: "", desc: "", ogTitle: "", ogDesc: "", ogUrl: "", ogImages: [], twitterCard: "", twitterImage: "", canonical: "", cspContent: "" }));
   check("metadatos: flujo de lectura completado", false, `(${e.message})`);
+}
+
+// --- PWA en producción: manifest instalable + service worker (offline) ---
+try {
+  const hrefManifest = await page.evaluate(() => document.querySelector('link[rel="manifest"]')?.getAttribute("href"));
+  check("pwa: el HTML enlaza el manifest", hrefManifest === "manifest.webmanifest");
+
+  const resManifest = await fetch(PROD + "manifest.webmanifest");
+  const ctypeMan = resManifest.headers.get("content-type") || "";
+  check("pwa: manifest.webmanifest → 200", resManifest.status === 200);
+  check("pwa: content-type manifest+json", ctypeMan.includes("manifest+json"), ctypeMan);
+  const manifest = JSON.parse(await resManifest.text());
+  check("pwa: manifest válido e instalable (start_url ./ + standalone)", manifest.start_url === "./" && manifest.display === "standalone");
+  const sizes = (manifest.icons || []).map((i) => i.sizes);
+  check("pwa: iconos 192 y 512 declarados", sizes.includes("192x192") && sizes.includes("512x512"));
+
+  for (const ic of manifest.icons || []) {
+    const resIcon = await fetch(PROD + ic.src, { method: "HEAD" });
+    check(`pwa: icono ${ic.src} → 200 como imagen`, resIcon.status === 200 && (resIcon.headers.get("content-type") || "").startsWith("image/"), `${resIcon.status} ${resIcon.headers.get("content-type")}`);
+  }
+
+  const resSw = await fetch(PROD + "sw.js");
+  const swTexto = await resSw.text();
+  check("pwa: sw.js → 200 como javascript", resSw.status === 200 && (resSw.headers.get("content-type") || "").includes("javascript"));
+  check("pwa: sw.js con versión hash cybergrad-*", /const VERSION = "cybergrad-[0-9a-f]{12}";/.test(swTexto));
+  check("pwa: sw.js precachea el shell (index.html + manifest)", swTexto.includes('"index.html"') && swTexto.includes('"manifest.webmanifest"'));
+  check("pwa: sw.js con estrategia offline (network-first + claim)", swTexto.includes('req.mode === "navigate"') && swTexto.includes("self.clients.claim()"));
+} catch (e) {
+  check("pwa: bloque de comprobación completado", false, `(${e.message})`);
 }
 
 // --- Separador: completar el onboarding y ejecutar `ayuda`, que imprime ---

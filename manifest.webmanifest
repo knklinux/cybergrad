@@ -1,0 +1,39 @@
+{
+  "name": "CYBERGRAD — Simulador de Carrera SOC + Red Team",
+  "short_name": "CYBERGRAD",
+  "description": "Aprende ciberseguridad jugando: defiende incidentes como analista SOC y ejecuta pentests como red team desde una terminal realista, de analista junior a CISO con Jimmy.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050d0a",
+  "theme_color": "#050d0a",
+  "categories": ["education", "games"],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
