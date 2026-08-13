@@ -46,6 +46,9 @@ jobs:
       - name: Test banner (CYBERGRAD completo y sin glifos de otra letra)
         run: npm run test:banner
 
+      - name: Test artefactos visuales (subtítulo, separador ASCII y rangos del tutorial)
+        run: npm run test:visual
+
   # Check de integración real: verifica que lo DESPLEGADO en GitHub Pages
   # sirve el banner correcto (mismo canónico que el test local). Solo corre
   # en push a main y manualmente (workflow_dispatch): en un PR la URL de

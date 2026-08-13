@@ -173,6 +173,7 @@ cybergrad/
 ├── make-icons.ps1        # Genera favicon, apple-touch-icon y portada cuadrada
 ├── css/style.css         # Estética de terminal / HUD / hologramas
 ├── assets/               # Avatar de Jimmy, favicon, iconos y portadas
+├── ci/                   # Tests del CI: unit, serve, smoke, XSS, whoami, banner, visual (+ integración en producción)
 └── js/
     ├── main.js           # Arranque (restaura la partida guardada si existe)
     ├── terminal.js       # Motor de terminal (entrada, historial, autocompletado)
@@ -216,6 +217,25 @@ cybergrad/
    - `leccion` — resumen, detección, respuesta, MITRE, glosario
 2. Impórtalo en `js/rt-casos.js`.
 3. El panel Red Team lo usa automáticamente.
+
+## 🧪 Pruebas y CI
+
+Cada push o PR ejecuta el workflow `ci.yml` con tres jobs:
+
+- **`checks`** — la cadena completa de **9 tests** (`npm test`):
+  1. **Sintaxis** (`check`) — `node --check` sobre todos los `.js` del repo.
+  2. **Lint** (`lint`) — ESLint básico sobre `js/`, `serve.js` y `ci/`.
+  3. **Unit · `esc()`** (`test:unit`) — el helper de escape HTML contra XSS funciona.
+  4. **Serve** (`test:serve`) — `serve.js` responde **400 ante una URL malformada** sin caerse.
+  5. **Smoke E2E** (`test:smoke`) — el juego carga sin errores de consola, el onboarding funciona y la terminal arranca.
+  6. **XSS E2E** (`test:xss`) — un nombre de jugador con HTML malicioso **nunca se ejecuta ni se renderiza**.
+  7. **Whoami E2E** (`test:whoami`) — el comando `whoami` distingue "del SOC de ACME Corp" (blue team) de "de la Unidad Red Team de ACME Corp" (pentests).
+  8. **Banner** (`test:banner`) — las 9 letras del banner ASCII (**CYBERGRAD**) están completas y ninguna es el glifo de otra letra (regresión golden contra figlet Standard: cazó la G que era una O y la C sin su interior).
+  9. **Artefactos visuales** (`test:visual`) — regresión golden del **subtítulo del banner**, el **separador ASCII de la terminal** (52 guiones `─` con formato línea/título/línea) y las **escalas de rango del tutorial** (emojis y orden exactos de SOC y Red Team), con prueba de mutación: las tres regresiones se cazan y se restauran.
+- **`integracion`** — check de integración real: `test:banner-prod` carga la **versión desplegada en GitHub Pages** con Playwright y verifica que el banner que sirve producción coincide con el canónico. Solo corre en push a `main` (y manual vía `workflow_dispatch`), reintentando hasta 5 min por si el deploy de Pages está en curso.
+- **`gitleaks`** — escaneo de secretos sobre el **historial completo** (más detalle en `SECURITY.md`).
+
+Ejecuta todo en local con `npm test` (necesita Chromium: `npx playwright install chromium`). El check de producción se lanza aparte con `npm run test:banner-prod`.
 
 ## 🗺️ Roadmap
 
