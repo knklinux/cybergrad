@@ -259,7 +259,13 @@ export function crearComandos(ctx) {
       term.print("");
       out(c.briefing, "t-out");
       term.print("");
-      term.print("Pistas disponibles: " + (c.pistas?.length || 0) + " (usa `pista`)", "t-out-dim");
+      // En reto/examen las pistas están bloqueadas por diseño: el contador
+      // de pistas del caso base sería contradictorio en esa pantalla.
+      term.print(engine.reto
+        ? "Sin pistas: el reto pone a prueba tu criterio, no tu memoria. (Indicadores: usa los de HOY, los ves en el briefing y en el panel del reto)."
+        : engine.examen
+          ? "Sin pistas: el examen pone a prueba tu criterio, no tu memoria."
+          : "Pistas disponibles: " + (c.pistas?.length || 0) + " (usa `pista`)", "t-out-dim");
     },
 
     mail(a) {

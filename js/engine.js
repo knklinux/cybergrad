@@ -143,6 +143,7 @@ export class Engine {
     this.term.print("");
     if (this.reto) {
       this.term.print("🔥 Mismo incidente, indicadores distintos cada día. Sin pistas: aquí se prueba tu criterio.", "t-out-warn");
+      this.term.print("📌 Los indicadores de HOY son los del briefing (IPs, rutas…): los valores de la campaña no valen en el reto.", "t-out-dim");
     } else if (this.examen) {
       this.term.print("🎓 Examen de certificación: sin pistas, sin ayuda. Aprobar (A o mejor) desbloquea tu certificado.", "t-out-warn");
     } else {

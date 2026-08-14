@@ -238,6 +238,15 @@ await page.waitForTimeout(500);
 let salida = await page.locator("#terminal").innerText();
 check("la terminal muestra la cabecera RETO DIARIO", salida.includes("RETO DIARIO"));
 
+// El arranque del reto recuerda usar los indicadores de HOY (los de la
+// campaña no valen: es lo que confunde al jugador nuevo)
+check("el arranque del reto recuerda usar los valores de HOY", salida.includes("valores de la campaña no valen en el reto"));
+
+// ver_caso en el reto NO ofrece pistas (contradicción corregida: antes
+// decía «Pistas disponibles: 3» mientras `pista` está bloqueado)
+salida = await ejecutar("ver_caso");
+check("`ver_caso` en el reto no ofrece pistas", salida.includes("Sin pistas: el reto pone a prueba tu criterio"));
+
 // En el reto NO hay pistas
 salida = await ejecutar("pista");
 check("`pista` está bloqueado en el reto", salida.includes("No hay pistas en el reto diario"));
