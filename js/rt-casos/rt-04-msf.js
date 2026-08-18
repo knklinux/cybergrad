@@ -16,7 +16,7 @@ export default {
   red: {
     hosts: {
       "10.10.10.50": {
-        hostname: "web02.acme.local",
+        hostname: "web02.cibercorp.local",
         os: "Linux Ubuntu 20.04",
         puertos: "22/tcp open ssh  OpenSSH 8.2p1\n80/tcp open http nginx 1.18.0",
       },
@@ -25,7 +25,7 @@ export default {
   web: {
     "http://10.10.10.50": {
       raiz:
-        "<html><head><title>Intranet ACME</title></head>\n<body><h1>Intranet corporativa</h1><a href='/upload'>Subir archivo</a></body></html>",
+        "<html><head><title>Intranet CiberCorp</title></head>\n<body><h1>Intranet corporativa</h1><a href='/upload'>Subir archivo</a></body></html>",
       rutas: {
         "/upload": "<h1>Subida de archivos</h1><form enctype='multipart/form-data'><input type='file'><button>Subir</button></form><p style='color:red'>Sin validacion de extension ni contenido</p>",
       },
@@ -41,14 +41,14 @@ export default {
       objetivo: "http://10.10.10.50/upload",
       tipo: "meterpreter",
       resultado:
-        "[*] Uploading shell.php...\n[*] Payload ejecutado en web02.acme.local (uid=33(www-data))\n[*] Meterpreter session 1 opened (10.10.10.50:4444 -> 10.10.10.50:80)\nmeterpreter > getuid\nServer username: www-data\nmeterpreter > shell\n$ sudo -l\nUser www-data may run the following commands on web02:\n    (root) NOPASSWD: /usr/bin/find",
+        "[*] Uploading shell.php...\n[*] Payload ejecutado en web02.cibercorp.local (uid=33(www-data))\n[*] Meterpreter session 1 opened (10.10.10.50:4444 -> 10.10.10.50:80)\nmeterpreter > getuid\nServer username: www-data\nmeterpreter > shell\n$ sudo -l\nUser www-data may run the following commands on web02:\n    (root) NOPASSWD: /usr/bin/find",
     },
   },
   fs: {
     "/var/www/config/": ["app.env"],
     "/var/www/config/app.env": [
       "DB_HOST=10.10.10.30",
-      "DB_NAME=acme_shop",
+      "DB_NAME=cibercorp_shop",
       "DB_USER=app",
       "DB_PASS=App#2024$db",
       "API_KEY=sk_live_51a7f9e2b8c4d3e2f1a0b",

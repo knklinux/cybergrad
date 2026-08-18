@@ -12,6 +12,7 @@ import { CASOS, siguienteCaso } from "./casos.js";
 import { siguienteCasoRT } from "./rt-casos.js";
 import { listarGuardados, cargar, nuevaPartida } from "./save.js";
 import { sonido } from "./sonido.js";
+import { iniciarAudio } from "./piper.js";
 import { DUELO_ESCENARIOS } from "./duelo.js";
 
 const BANNER = [
@@ -33,7 +34,7 @@ const term = new Terminal(
     ? engine.duelo.turno === "rojo"
       ? '<span class="user">rojo</span>@<span class="path">pentest</span>:~$ '
       : '<span class="user">azul</span>@<span class="path">soc</span>:~$ '
-    : '<span class="user">analista</span>@<span class="path">acme</span>:~$ '
+    : '<span class="user">analista</span>@<span class="path">cibercorp</span>:~$ '
 );
 
 // Motor gráfico (fondo animado)
@@ -45,8 +46,8 @@ engine = new Engine({ term, ui });
 
 // El AudioContext se crea en el primer gesto del usuario (requisito de
 // los navegadores para reproducir audio sin interacción previa).
-document.addEventListener("pointerdown", () => sonido.iniciar(), { once: true });
-document.addEventListener("keydown", () => sonido.iniciar(), { once: true });
+document.addEventListener("pointerdown", () => { sonido.iniciar(); iniciarAudio(); }, { once: true });
+document.addEventListener("keydown", () => { sonido.iniciar(); iniciarAudio(); }, { once: true });
 
 const { cmds, lista } = crearComandos({ engine, term, ui });
 term.setSugerencias(lista);

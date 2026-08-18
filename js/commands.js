@@ -11,6 +11,10 @@ import { explicarTutor, EXPLICAR_AYUDA } from "./tutor.js";
 import { preguntarJimmy, PREGUNTAR_AYUDA } from "./jimmy-ia.js";
 import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
 import { soportaVoz, escucharVoz } from "./voz.js";
+import {
+  fijarVoz, callar, comprobarPiper, estadoPiper,
+  fijarUrlPiper, fijarTokenPiper, vozPiper, fijarVozPiper,
+} from "./piper.js";
 import { filasRankingReto } from "./reto.js";
 import { validarCertificado } from "./certificado.js";
 
@@ -50,6 +54,7 @@ const AYUDA = {
   "examen": "examen — modo examen: caso sin pistas a contrarreloj; al aprobar (A o mejor) obtienes certificado",
   "verificar_certificado": "verificar_certificado <código> — Jimmy valida la firma del certificado (CG-…): confirma titular, fecha y nota sin alteraciones",
   "sonido": "sonido [on|off|estado] — activa, silencia o muestra el estado del sonido",
+  "piper": "piper [on|off|estado|url <url>|token <clave>|voz <slug>] — voz neuronal local de Jimmy (Piper TTS)",
   "habilidades": "habilidades — abre el árbol de habilidades MITRE ATT&CK",
   "demo": "demo — modo presentador: estado avanzado en memoria (nunca se guarda)",
   "nmap": "nmap <ip|rango> — escanea puertos y servicios (red team)",
@@ -242,7 +247,7 @@ export function crearComandos(ctx) {
     whoami() {
       const esRT = GAME.modo === "rt";
       const r = esRT ? estadoRangoRT() : estadoRango();
-      out(`${GAME.nombre} — ${r.icono} ${r.nombre} ${esRT ? "de la Unidad Red Team de ACME Corp" : "del SOC de ACME Corp"}`, "t-out-info");
+      out(`${GAME.nombre} — ${r.icono} ${r.nombre} ${esRT ? "de la Unidad Red Team de CiberCorp" : "del SOC de CiberCorp"}`, "t-out-info");
     },
     id() {
       out("uid=1001(analista) gid=1001(soc) groups=1001(soc),1002(incidentes)", "t-out");
@@ -903,6 +908,57 @@ export function crearComandos(ctx) {
         out(`🔊 Sonido: ${sonidoActivado() ? "activado" : "silenciado"}. Usa 'sonido on' o 'sonido off'.`, "t-out-info");
       }
       ui.actualizarBotonSonido();
+    },
+
+    piper(a) {
+      const [sub, ...resto] = String(a || "").trim().split(/\s+/);
+      const valor = resto.join(" ").trim();
+      const usa = "Usa 'piper on', 'piper off', 'piper estado', 'piper url <url>', 'piper token <clave>' o 'piper voz <slug>'.";
+      if (sub === "on") {
+        fijarVoz(true);
+        ui.actualizarBotonVoz();
+        comprobarPiper().then((online) => {
+          out(online
+            ? "🗣️ Voz de Jimmy activada. Servidor Piper local detectado: hablaré los briefings y lecciones."
+            : "🗣️ Voz activada, pero el servidor Piper local no responde. Inícialo con piper_server.py (ver 'piper estado').", "t-out-info");
+        });
+      } else if (sub === "off") {
+        callar();
+        fijarVoz(false);
+        ui.actualizarBotonVoz();
+        out("🤫 Voz de Jimmy silenciada.", "t-out-info");
+      } else if (sub === "url") {
+        if (!valor) { out("Indica la URL del servidor: piper url http://127.0.0.1:8766", "t-out-info"); return; }
+        fijarUrlPiper(valor);
+        comprobarPiper().then((online) => {
+          out(online
+            ? `Servidor Piper actualizado: ${valor} → ✅ responde.`
+            : `Servidor Piper actualizado: ${valor} → ❌ no responde (¿está piper_server.py en marcha?).`, "t-out-info");
+        });
+      } else if (sub === "token") {
+        fijarTokenPiper(valor);
+        out(valor ? "Token del servidor Piper guardado." : "Token del servidor Piper borrado.", "t-out-info");
+        comprobarPiper().then((online) => {
+          if (!online) out("El servidor sigue sin responder: revisa la URL y el token.", "t-out-dim");
+        });
+      } else if (sub === "voz") {
+        if (!valor) { out(`Voz actual: ${vozPiper()}. Indica otra con 'piper voz <slug>' (las instaladas las ves en 'piper estado').`, "t-out-info"); return; }
+        fijarVozPiper(valor);
+        out(`Voz de Jimmy: ${valor}.`, "t-out-info");
+      } else if (sub === "estado" || !sub) {
+        comprobarPiper().then((online) => {
+          const est = estadoPiper();
+          out("🗣️ Voz de Jimmy (Piper TTS local)", "t-out-hi");
+          out(`  Estado: ${est.activada ? "activada" : "desactivada"}`, "t-out");
+          out(`  Servidor: ${est.url} → ${online ? "✅ responde" : "❌ no responde"}`, "t-out");
+          out(`  Voz: ${est.voz}`, "t-out");
+          const voces = est.voces && est.voces.length ? est.voces.join(", ") : "(sin voces instaladas o servidor no disponible)";
+          out(`  Voces instaladas: ${voces}`, "t-out");
+          out("El servidor es el de Aion Sincro: .venv-piper\\Scripts\\python piper_server.py (Windows) o .venv-piper/bin/python piper_server.py (Linux/macOS).", "t-out-dim");
+        });
+      } else {
+        out(usa, "t-out-info");
+      }
     },
 
     explicar(a) {

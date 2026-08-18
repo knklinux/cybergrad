@@ -12,27 +12,27 @@ export default {
   sla: 900,
   xp: 240,
   briefing:
-    "Contrato firmado: ACME te autoriza a probar su propia infraestructura antes de que lo hagan los atacantes de verdad. Tu primera misión es RECONOCIMIENTO: descubre qué servicios están expuestos en el rango 10.10.10.0/24 y encuentra el panel de administración. No ataques todavía: primero, mapa. Empieza con `nmap`.",
+    "Contrato firmado: CiberCorp te autoriza a probar su propia infraestructura antes de que lo hagan los atacantes de verdad. Tu primera misión es RECONOCIMIENTO: descubre qué servicios están expuestos en el rango 10.10.10.0/24 y encuentra el panel de administración. No ataques todavía: primero, mapa. Empieza con `nmap`.",
   red: {
     subredes: {
       "10.10.10.0/24": {
         activos: ["10.10.10.5", "10.10.10.20", "10.10.10.50"],
-        desc: "DMZ de ACME Corp (segmento expuesto a Internet)",
+        desc: "DMZ de CiberCorp (segmento expuesto a Internet)",
       },
     },
     hosts: {
       "10.10.10.5": {
-        hostname: "web01.acme.local",
+        hostname: "web01.cibercorp.local",
         os: "Linux Ubuntu 22.04",
         puertos: "22/tcp   open  ssh       OpenSSH 8.9p1\n80/tcp   open  http      nginx 1.24.0\n8080/tcp open  http-proxy",
       },
       "10.10.10.20": {
-        hostname: "srv-backup.acme.local",
+        hostname: "srv-backup.cibercorp.local",
         os: "Linux Debian 12",
         puertos: "22/tcp open ssh  OpenSSH 9.2p1\n80/tcp open http nginx 1.24.0",
       },
       "10.10.10.50": {
-        hostname: "web02.acme.local",
+        hostname: "web02.cibercorp.local",
         os: "Linux Ubuntu 20.04",
         puertos: "22/tcp open ssh  OpenSSH 8.2p1\n80/tcp open http nginx 1.18.0",
       },
@@ -41,7 +41,7 @@ export default {
   web: {
     "http://10.10.10.5": {
       raiz:
-        "<html><head><title>ACME Corp - Inicio</title></head>\n<body><h1>Bienvenido a ACME Corp</h1>\n<p>Soluciones integrales desde 1998. <a href='/contacto'>Contacto</a></p></body></html>",
+        "<html><head><title>CiberCorp - Inicio</title></head>\n<body><h1>Bienvenido a CiberCorp</h1>\n<p>Soluciones integrales desde 1998. <a href='/contacto'>Contacto</a></p></body></html>",
       rutas: {
         "/contacto": "<h1>Formulario de contacto</h1><form>...</form>",
         "/admin": "<h1>Panel de administracion</h1><form action='/admin/login' method='POST'><input name='usuario'><input type='password' name='password'><button>Entrar</button></form>",

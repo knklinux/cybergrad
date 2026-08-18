@@ -16,12 +16,12 @@ export default {
   red: {
     hosts: {
       "10.10.10.70": {
-        hostname: "files.acme.local",
+        hostname: "files.cibercorp.local",
         os: "Linux Ubuntu 22.04",
         puertos: "22/tcp  open  ssh  OpenSSH 8.9p1\n443/tcp open  https nginx 1.24.0",
       },
       "10.10.10.100": {
-        hostname: "pentest-ops.acme.local (tu maquina)",
+        hostname: "pentest-ops.cibercorp.local (tu maquina)",
         os: "Kali Linux 2024",
         puertos: "4444/tcp open  netcat listener (exfil)",
       },
@@ -67,7 +67,7 @@ export default {
     "El informe se evalúa por cobertura de hallazgos: hosts, vulnerabilidades, datos obtenidos y recomendaciones.",
   ],
   eventos: [
-    { en: 600, tipo: "alerta", sev: "HIGH", titulo: "DLP: transferencia saliente de gran volumen desde files.acme.local" },
+    { en: 600, tipo: "alerta", sev: "HIGH", titulo: "DLP: transferencia saliente de gran volumen desde files.cibercorp.local" },
   ],
   leccion: {
     titulo: "Del acceso a la entrega: exfiltración y reporte profesional",

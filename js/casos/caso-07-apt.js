@@ -123,9 +123,9 @@ export default {
 
     "/home/analista/casos/evidencias/headers-apt.txt": [
       "Return-Path: <bounce@soporte.office365-suite.info>",
-      "Received: from mail.office365-suite.info (185.220.101.87) by mx01.acme.com",
+      "Received: from mail.office365-suite.info (185.220.101.87) by mx01.cibercorp.com",
       "From: \"Soporte Microsoft 365\" <soporte@office365-suite.info>",
-      "To: r.gutierrez@acme.com",
+      "To: r.gutierrez@cibercorp.com",
       "Reply-To: soporte@office365-suite.info",
       "Subject: Actualización de seguridad Office 365 — acción requerida",
       "Date: Fri, 23 Jan 2026 09:12:03 +0100",
@@ -163,7 +163,7 @@ export default {
     {
       id: 1,
       de: "soporte@office365-suite.info",
-      para: "r.gutierrez@acme.com",
+      para: "r.gutierrez@cibercorp.com",
       asunto: "Actualización de seguridad Office 365 — acción requerida",
       fecha: "23 Ene 2026 09:12",
       estado: "LEÍDO (abierto por r.gutierrez)",
@@ -190,7 +190,7 @@ export default {
     {
       id: 2,
       de: "newsletter@linkedin.com",
-      para: "r.gutierrez@acme.com",
+      para: "r.gutierrez@cibercorp.com",
       asunto: "Tus ofertas laborales de la semana",
       fecha: "13 Feb 2026 16:40",
       estado: "NO LEÍDO",
@@ -298,7 +298,7 @@ export default {
 
   incorrectas: [
     "bloquear|dominio:microsoft.com",
-    "bloquear|dominio:acme.com",
+    "bloquear|dominio:cibercorp.com",
     "aislar|host:srv-files-02",
     "deshabilitar|usuario:m.garcia",
   ],

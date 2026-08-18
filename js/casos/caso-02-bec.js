@@ -41,9 +41,9 @@ export default {
 
     "/home/analista/casos/evidencias/headers-bec.txt": [
       "Return-Path: <a.santos@ceo-santos.com>",
-      "Received: from mx.ceo-santos.com (185.61.134.29) by mx01.acme.com",
+      "Received: from mx.ceo-santos.com (185.61.134.29) by mx01.cibercorp.com",
       "From: \"A. Santos\" <a.santos@ceo-santos.com>",
-      "To: tesoreria@acme.com",
+      "To: tesoreria@cibercorp.com",
       "Cc: (sin destinatarios en copia)",
       "Reply-To: a.santos@ceo-santos.com",
       "Subject: RE: Transferencia urgente proveedor",
@@ -69,7 +69,7 @@ export default {
     {
       id: 1,
       de: "A. Santos <a.santos@ceo-santos.com>",
-      para: "tesoreria@acme.com",
+      para: "tesoreria@cibercorp.com",
       asunto: "RE: Transferencia urgente proveedor",
       fecha: "10 Feb 2026 11:03",
       estado: "SIN LEER (tesorería espera confirmación del SOC)",
@@ -97,7 +97,7 @@ export default {
     {
       id: 2,
       de: "a.santos@santos-corp.com",
-      para: "rrhh@acme.com",
+      para: "rrhh@cibercorp.com",
       asunto: "Aprobación de vacaciones Q1",
       fecha: "9 Feb 2026 09:12",
       estado: "LEÍDO",
@@ -131,7 +131,7 @@ export default {
       ip: "203.0.113.42",
       registrado: "Hace 14 años",
       registrador: "MarkMonitor Inc.",
-      whois: "Dominio legítimo de Santos Corp (empresa matriz de ACME).",
+      whois: "Dominio legítimo de Santos Corp (empresa matriz de CiberCorp).",
       vt: { repos: 88, maliciosos: 0, deteccion: "LIMPIO (0/88)" },
     },
   },
@@ -170,7 +170,7 @@ export default {
       tipo: "alerta",
       sev: "HIGH",
       titulo: "Segundo intento de fraude detectado",
-      detalle: "Un correo casi idéntico ha llegado a compras@acme.com con otros datos bancarios. Campaña BEC en curso.",
+      detalle: "Un correo casi idéntico ha llegado a compras@cibercorp.com con otros datos bancarios. Campaña BEC en curso.",
     },
   ],
 

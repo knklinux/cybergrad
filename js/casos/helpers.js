@@ -110,7 +110,7 @@ export function notaRescate() {
     "IMPORTANTE: no contacte con la policía ni con empresas de recuperación.",
     "No pague hasta recibir confirmación de que disponemos de su clave.",
     "",
-    "Su identificador de víctima: ACME-2026-8842",
+    "Su identificador de víctima: CIBERCORP-2026-8842",
     "========================================================================",
   ].join("\n");
 }

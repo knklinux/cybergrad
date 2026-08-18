@@ -72,7 +72,7 @@ export default {
 
     "/etc/crontab": [
       "# Minuto  Hora  Día  Mes  Semana  Usuario  Comando",
-      "0  3  *  *  1-6  backupsvc  /usr/local/bin/backup-to-cloud.sh --dest gdrive:acme-backups",
+      "0  3  *  *  1-6  backupsvc  /usr/local/bin/backup-to-cloud.sh --dest gdrive:cibercorp-backups",
       "",
       "# Nota: el backup diario a Google Drive se ejecuta cada noche a las 03:00.",
     ].join("\n"),
@@ -80,12 +80,12 @@ export default {
     "/usr/local/bin/backup-to-cloud.sh": [
       "#!/bin/bash",
       "# Backup automatizado de /mnt/backup a Google Drive (cuenta backupsvc)",
-      "rclone copy /mnt/backup gdrive:acme-backups --log-file /var/log/rclone.log",
+      "rclone copy /mnt/backup gdrive:cibercorp-backups --log-file /var/log/rclone.log",
     ].join("\n"),
 
     "/var/log/rclone.log": [
       "2026/02/11 03:00:01 INFO  : Starting backup run (backupsvc)",
-      "2026/02/11 03:00:01 INFO  : Copying 40.0 GiB from /mnt/backup to gdrive:acme-backups",
+      "2026/02/11 03:00:01 INFO  : Copying 40.0 GiB from /mnt/backup to gdrive:cibercorp-backups",
       "2026/02/11 04:00:03 INFO  : Finished: 40.0 GiB copied, 0 errors",
     ].join("\n"),
 

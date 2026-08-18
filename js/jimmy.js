@@ -45,7 +45,7 @@ export const JIMMY_CASO = {
   ],
   "rt-01-recon": [
     "Contrato firmado: ahora eres el atacante bueno. Mapea antes de tocar; el diablo vive en los detalles de la enumeración.",
-    "La superficie de ataque de ACME es más grande de lo que ellos creen. Demuéstramelo.",
+    "La superficie de ataque de CiberCorp es más grande de lo que ellos creen. Demuéstramelo.",
   ],
   "rt-02-hydra": [
     "Los humanos reutilizan passwords desde que existen las passwords. Hydra solo aprovecha esa costumbre.",

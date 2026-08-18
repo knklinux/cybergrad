@@ -37,7 +37,7 @@ export const GLOSARIO = {
   "SPF": { def: "Sender Policy Framework. Registro DNS que indica qué servidores pueden enviar correo por un dominio." },
   "DKIM": { def: "DomainKeys Identified Mail. Firma criptográfica del correo que permite verificar su autenticidad." },
   "DMARC": { def: "Domain-based Message Authentication Reporting. Política que dice qué hacer con correos que fallan SPF/DKIM." },
-  "Lookalike": { def: "Dominio que imita visualmente a uno legítimo (acme-facturas.info vs acme.com). Técnica típica de phishing." },
+  "Lookalike": { def: "Dominio que imita visualmente a uno legítimo (cibercorp-facturas.info vs cibercorp.com). Técnica típica de phishing." },
   "Macro": { def: "Código (VBA) embebido en documentos de Office. Los atacantes lo usan para descargar malware al abrir el archivo." },
   "RAT": { def: "Remote Access Trojan. Malware que da control remoto del equipo infectado al atacante." },
   "IOC": { def: "Indicator of Compromise. Evidencia de intrusión: dominios, IPs, hashes, URLs, comportamientos." },

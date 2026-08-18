@@ -176,7 +176,7 @@ export function dibujarCertificado(ctx, datos) {
   // Firma
   ctx.fillStyle = "#8fd39e";
   ctx.font = "22px 'JetBrains Mono', 'Consolas', monospace";
-  ctx.fillText("Jimmy — Director del SOC de ACME Corp (sintético)", ANCHO / 2, 760);
+  ctx.fillText("Jimmy — Director del SOC de CiberCorp (sintético)", ANCHO / 2, 760);
   ctx.fillStyle = "#123a21";
   ctx.fillText("─────────────", ANCHO / 2, 790);
 
@@ -235,7 +235,7 @@ export function htmlCertificado(datos) {
       <div class="cert-line">resolviendo el caso: ${escHTML(caso)}</div>
       <div class="cert-rating">CALIFICACIÓN ${escHTML(rating)}</div>
       <div class="cert-fecha">fecha: ${escHTML(fecha)}</div>
-      <div class="cert-firma">Jimmy — Director del SOC de ACME Corp (sintético)</div>
+      <div class="cert-firma">Jimmy — Director del SOC de CiberCorp (sintético)</div>
       <div class="cert-guion">─────────────</div>
       <div class="cert-codigo">código de verificación: <span class="cert-codigo-valor">${escHTML(codigoVerificacion(d))}</span></div>
       <div class="cert-codigo-ayuda">Válidalo en el juego con: verificar_certificado &lt;código&gt;</div>

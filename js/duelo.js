@@ -35,7 +35,7 @@ export const INFO_CMDS = [
   "grep", "wc", "less", "find", "strings", "file", "md5sum", "sha256sum",
   "decode", "base64", "whois", "dig", "host", "nslookup", "curl", "explicar",
   "preguntar", "jimmy", "voz", "estado", "glosario", "whoami", "date", "echo",
-  "sonido", "salir_duelo", "porque_cybergrad",
+  "sonido", "piper", "salir_duelo", "porque_cybergrad",
 ];
 
 // Comandos de la interfaz NO disponibles durante un duelo (cambiarían de
@@ -66,7 +66,7 @@ export function ladoDeTipo(tipo) {
 // Cada escenario define el ENTORNO (red, web, credenciales, fs) que
 // consumen los comandos reales, y los OBJETIVOS de cada bando como
 // { tipo, canon, etiqueta }. `canon` es el valor tal y como lo busca el
-// motor en caso.correctas (p. ej. "host:10.10.10.30" o "dominio:c2.acme.net").
+// motor en caso.correctas (p. ej. "host:10.10.10.30" o "dominio:c2.cibercorp.net").
 export const DUELO_ESCENARIOS = [
   {
     id: "duelo-01-vpn",
@@ -77,18 +77,18 @@ export const DUELO_ESCENARIOS = [
       "controlador de dominio. El AZUL juega al SOC: aislar el foco, cortar el C2, " +
       "deshabilitar la cuenta comprometida y escalar a CSIRT. Turnos alternos, sin prórroga.",
     turnosMax: 16,
-    escenario: "El portátil de m.garcia (HOST-104) está infectado y el dominio c2.acme.net " +
+    escenario: "El portátil de m.garcia (HOST-104) está infectado y el dominio c2.cibercorp.net " +
       "habla con el exterior cada 5 minutos. En la red hay un servidor web (10.10.10.30) " +
       "con SSH y un controlador de dominio Windows (10.10.10.60).",
     red: {
       hosts: {
         "10.10.10.30": {
-          hostname: "web-vpn.acme.local",
+          hostname: "web-vpn.cibercorp.local",
           os: "Linux Debian 12",
           puertos: "22/tcp open ssh   OpenSSH 9.2p1\n80/tcp open http  nginx 1.24.0",
         },
         "10.10.10.60": {
-          hostname: "dc-01.acme.local",
+          hostname: "dc-01.cibercorp.local",
           os: "Windows Server 2022",
           puertos: "445/tcp open smb  Windows 10.0.20348\n3389/tcp open rdp",
         },
@@ -116,7 +116,7 @@ export const DUELO_ESCENARIOS = [
         "Authentication Id : 0;123456 (00000000:0001e240)",
         "Session           : Interactive from 10.10.10.30",
         "User Name         : Administrator",
-        "Domain            : ACME",
+        "Domain            : CiberCorp",
         "Password          : DcAdmin#2024",
       ],
       nota: "El admin del DC tiene la sesión abierta desde el host comprometido.",
@@ -134,7 +134,7 @@ export const DUELO_ESCENARIOS = [
     fs: {
       "/opt/wordlists/": ["top1000.txt"],
       "/opt/wordlists/top1000.txt": [
-        "password", "123456", "admin", "acme", "Verano2024!", "Admin#2024$",
+        "password", "123456", "admin", "cibercorp", "Verano2024!", "Admin#2024$",
         "Passw0rd!2024", "clave123", "root", "qwerty", "letmein", "iloveyou",
       ].join("\n"),
       "/home/admin/": ["credenciales.txt"],
@@ -160,7 +160,7 @@ export const DUELO_ESCENARIOS = [
       kit: KITS.azul,
       objetivos: [
         { tipo: "aislar", canon: "host:HOST-104", etiqueta: "Aislar el portátil infectado" },
-        { tipo: "bloquear", canon: "dominio:c2.acme.net", etiqueta: "Bloquear el C2 (c2.acme.net)" },
+        { tipo: "bloquear", canon: "dominio:c2.cibercorp.net", etiqueta: "Bloquear el C2 (c2.cibercorp.net)" },
         { tipo: "deshabilitar", canon: "usuario:m.garcia", etiqueta: "Deshabilitar la cuenta comprometida" },
         { tipo: "escalar", canon: "escalar", etiqueta: "Escalar el incidente a CSIRT" },
       ],
@@ -181,7 +181,7 @@ export const DUELO_ESCENARIOS = [
     red: {
       hosts: {
         "10.10.10.50": {
-          hostname: "tienda.acme.local",
+          hostname: "tienda.cibercorp.local",
           os: "Ubuntu 22.04",
           puertos: "80/tcp open http  nginx 1.24.0\n443/tcp open https",
         },
@@ -206,7 +206,7 @@ export const DUELO_ESCENARIOS = [
     exploits: {
       "php-upload-rce": {
         objetivo: "http://10.10.10.50/upload",
-        resultado: "[+] Subido webshell.php → RCE como www-data\n[+] Sesión de meterpreter abierta: tienda.acme.local",
+        resultado: "[+] Subido webshell.php → RCE como www-data\n[+] Sesión de meterpreter abierta: tienda.cibercorp.local",
       },
     },
     hashes: {
@@ -222,9 +222,9 @@ export const DUELO_ESCENARIOS = [
       "/data/crown.db": [
         "=== BASE DE DATOS DE CLIENTES (crown.db) ===",
         "id | nombre        | email                | tarjeta",
-        "1  | Ana Torres    | a.torres@acme.local | **** 4242",
-        "2  | Luis Romero   | l.romero@acme.local | **** 1187",
-        "3  | Carmen Ibáñez | c.ibanez@acme.local | **** 9034",
+        "1  | Ana Torres    | a.torres@cibercorp.local | **** 4242",
+        "2  | Luis Romero   | l.romero@cibercorp.local | **** 1187",
+        "3  | Carmen Ibáñez | c.ibanez@cibercorp.local | **** 9034",
         "(12.483 filas más — datos personales de clientes)",
       ].join("\n"),
       "/tmp/": ["hash.txt"],

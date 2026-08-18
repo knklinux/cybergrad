@@ -7,7 +7,7 @@ export class Terminal {
   /**
    * @param {HTMLElement} el Contenedor de la terminal
    * @param {(cmd: string) => void} onCommand Callback con la línea escrita
-   * @param {() => string} promptProvider Devuelve el prompt actual (ej: "analista@acme:~$")
+   * @param {() => string} promptProvider Devuelve el prompt actual (ej: "analista@cibercorp:~$")
    */
   constructor(el, onCommand, promptProvider) {
     this.el = el;

@@ -18,6 +18,7 @@ import { descargarCertificado, imprimirCertificado } from "./certificado.js";
 import { estadoHabilidades } from "./habilidades.js";
 import { aplicarModoPresentador } from "./presentador.js";
 import { sonido, sonidoActivado, fijarSonido } from "./sonido.js";
+import { vozActivada, fijarVoz, hablar, callar, comprobarPiper } from "./piper.js";
 import {
   JIMMY, JIMMY_PRESENTACION, JIMMY_CASO, JIMMY_RESULTADO,
   JIMMY_LECCION, JIMMY_LAB, JIMMY_FINAL,
@@ -105,6 +106,8 @@ export class UI {
     $("btn-demo").addEventListener("click", () => this.mostrarPresentador());
     $("btn-sonido").addEventListener("click", () => this.toggleSonido());
     this.actualizarBotonSonido();
+    $("btn-voz").addEventListener("click", () => this.toggleVoz());
+    this.actualizarBotonVoz();
   }
 
   // ---------- Sonido ----------
@@ -122,6 +125,29 @@ export class UI {
     const on = sonidoActivado();
     btn.textContent = on ? "🔊" : "🔇";
     btn.title = on ? "Sonido: activado (clic para silenciar)" : "Sonido: silenciado (clic para activar)";
+    btn.classList.toggle("off", !on);
+  }
+
+  // ---------- Voz de Jimmy (Piper TTS local) ----------
+  toggleVoz() {
+    const on = !vozActivada();
+    fijarVoz(on);
+    if (on) {
+      callar();
+      comprobarPiper(); // sonda del servidor local (asíncrona, no bloquea)
+    }
+    this.actualizarBotonVoz();
+    if (on) sonido.ok();
+  }
+
+  actualizarBotonVoz() {
+    const btn = $("btn-voz");
+    if (!btn) return;
+    const on = vozActivada();
+    btn.textContent = on ? "🗣️" : "🤫";
+    btn.title = on
+      ? "Voz de Jimmy (Piper): activada — clic para silenciar"
+      : "Voz de Jimmy (Piper): desactivada — clic para activar (requiere el servidor local)";
     btn.classList.toggle("off", !on);
   }
 
@@ -242,6 +268,8 @@ export class UI {
       "aceptar-briefing": () => { this.cerrarModal(); cb(); },
     });
     this.abrirModal(html);
+    // Jimmy presenta el caso con su voz local (Piper) si está activa.
+    hablar(lineas.join(". ")).catch(() => {});
   }
 
   // ---------- Selector de partida (arranque con guardado) ----------
@@ -974,6 +1002,8 @@ ${acciones}
     });
     this.abrirModal(html);
     this.actualizarPerfil();
+    // Jimmy lee el título y el resumen de la lección con su voz local.
+    if (le) hablar(`${le.titulo}. ${le.resumen} ${jimmy}`).catch(() => {});
   }
 
   // ---------- Campaña red team ----------
@@ -993,7 +1023,7 @@ ${acciones}
       </div>`;
     }).join("");
     const html = `
-      <div class="modal-title">&#127919; CAMPAÑA RED TEAM — PENTEST DE ACME</div>
+      <div class="modal-title">&#127919; CAMPAÑA RED TEAM — PENTEST DE CiberCorp</div>
       ${this.holoHTML("holo-sm")}
       <div class="jimmy-habla">El SOC te contrata para atacar tu propia empresa antes que los atacantes reales. Contrato firmado: 6 objetivos autorizados, del reconocimiento al informe final.</div>
       <div class="modal-text" style="font-size:12.5px;margin-bottom:6px">

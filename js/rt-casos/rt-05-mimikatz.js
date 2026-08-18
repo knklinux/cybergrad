@@ -16,12 +16,12 @@ export default {
   red: {
     hosts: {
       "10.10.10.60": {
-        hostname: "srv-win01.acme.local",
+        hostname: "srv-win01.cibercorp.local",
         os: "Windows Server 2019 (sin parchear, MS17-010)",
         puertos: "135/tcp open  msrpc\n445/tcp open  microsoft-ds (SMB)\n3389/tcp open ms-wbt-server (RDP)",
       },
       "10.10.10.70": {
-        hostname: "files.acme.local",
+        hostname: "files.cibercorp.local",
         os: "Linux Ubuntu 22.04",
         puertos: "22/tcp  open  ssh  OpenSSH 8.9p1\n443/tcp open  https nginx 1.24.0",
       },
@@ -32,23 +32,23 @@ export default {
       objetivo: "10.10.10.60",
       tipo: "meterpreter",
       resultado:
-        "[*] EternalBlue exploit (MS17-010) ejecutado\n[*] Payload SYSTEM en srv-win01.acme.local\n[*] Meterpreter session 2 opened (10.10.10.60:445)\nmeterpreter > sysinfo\nComputer: SRV-WIN01\nOS: Windows Server 2019 (Build 17763)\nmeterpreter > getuid\nServer username: NT AUTHORITY\\SYSTEM",
+        "[*] EternalBlue exploit (MS17-010) ejecutado\n[*] Payload SYSTEM en srv-win01.cibercorp.local\n[*] Meterpreter session 2 opened (10.10.10.60:445)\nmeterpreter > sysinfo\nComputer: SRV-WIN01\nOS: Windows Server 2019 (Build 17763)\nmeterpreter > getuid\nServer username: NT AUTHORITY\\SYSTEM",
     },
   },
   mimikatz: {
     host: "10.10.10.60",
     creds: [
-      "ACME-DOMAIN\\admin : Passw0rd!2024  (plaintext)",
-      "ACME-DOMAIN\\j.castro : Tr0bador!77  (NTLM hash: aad3b435b51404ee...)",
+      "CIBERCORP-DOMAIN\\admin : Passw0rd!2024  (plaintext)",
+      "CIBERCORP-DOMAIN\\j.castro : Tr0bador!77  (NTLM hash: aad3b435b51404ee...)",
       "SRV-WIN01\\localadmin : Lab#2024$  (plaintext)",
-      "ACME-DOMAIN\\krbtgt : (hash, no descifrable)",
+      "CIBERCORP-DOMAIN\\krbtgt : (hash, no descifrable)",
     ],
     nota: "El dominio reutiliza la password de admin en el servidor de archivos (10.10.10.70).",
   },
   fs: {
     "/data/": ["clientes.db", "README.txt"],
     "/data/clientes.db": [
-      "=== BASE DE CLIENTES ACME (confidencial) ===",
+      "=== BASE DE CLIENTES CiberCorp (confidencial) ===",
       "registros: 42.000",
       "campos: nombre, DNI, email, direccion, IBAN",
       "ultima exportacion: hace 3 dias",

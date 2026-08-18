@@ -9,7 +9,7 @@ export const PASOS_TUTORIAL = [
     icono: "🛡️",
     titulo: "¿QUÉ ES ESTO?",
     texto:
-      "<b>CYBERGRAD</b> es un simulador de carrera en un <b>SOC</b> (Security Operations Center): el centro de operaciones donde se detectan y responden los ciberataques de una empresa.<br/><br/>Tú eres un <b>analista de seguridad</b> en ACME Corp. Cada turno llega un incidente realista y tu trabajo es investigarlo y responderlo, igual que en un SOC de verdad.<br/><br/>¿Quieres cambiar de bando? La campaña <b>Red Team</b> te convierte en <b>pentester</b>: pentests ofensivos autorizados con herramientas reales (nmap, hydra, Metasploit…).<br/><br/>🎓 <b>¿Por qué «CYBERGRAD»?</b> «grad» (град) significa <b>«ciudad»</b> en las lenguas eslavas (Leningrado, Stalingrado, Volgogrado…). Esta es <b>la ciudad del ciber</b>: aquí construyes tu carrera, de analista junior a CISO. ¿Curiosidad? Escribe <span class='mono'>porque_cybergrad</span> o pregúntale a Jimmy.",
+      "<b>CYBERGRAD</b> es un simulador de carrera en un <b>SOC</b> (Security Operations Center): el centro de operaciones donde se detectan y responden los ciberataques de una empresa.<br/><br/>Tú eres un <b>analista de seguridad</b> en CiberCorp. Cada turno llega un incidente realista y tu trabajo es investigarlo y responderlo, igual que en un SOC de verdad.<br/><br/>¿Quieres cambiar de bando? La campaña <b>Red Team</b> te convierte en <b>pentester</b>: pentests ofensivos autorizados con herramientas reales (nmap, hydra, Metasploit…).<br/><br/>🎓 <b>¿Por qué «CYBERGRAD»?</b> «grad» (град) significa <b>«ciudad»</b> en las lenguas eslavas (Leningrado, Stalingrado, Volgogrado…). Esta es <b>la ciudad del ciber</b>: aquí construyes tu carrera, de analista junior a CISO. ¿Curiosidad? Escribe <span class='mono'>porque_cybergrad</span> o pregúntale a Jimmy.",
     ejemplo: "SOC = Security Operations Center · El 'bombero digital' de la empresa",
   },
   {
@@ -24,7 +24,7 @@ export const PASOS_TUTORIAL = [
     titulo: "LA TERMINAL",
     texto:
       "Todo se hace desde esta terminal, con <b>comandos reales</b>:<br/>• <span class='mono'>mail</span> — lee el correo<br/>• <span class='mono'>alertas</span> — consulta el SIEM<br/>• <span class='mono'>ls</span> / <span class='mono'>cat</span> — explora archivos y logs<br/>• <span class='mono'>whois</span> / <span class='mono'>dig</span> — investiga dominios<br/>• <span class='mono'>md5sum</span> / <span class='mono'>vt</span> — analiza archivos<br/><br/>Escribe <span class='mono'>ayuda</span> para verlos todos. <span class='mono'>Tab</span> autocompleta.",
-    ejemplo: "analista@acme:~$ mail  ←  así se empieza a investigar",
+    ejemplo: "analista@cibercorp:~$ mail  ←  así se empieza a investigar",
   },
   {
     icono: "⚡",
@@ -89,14 +89,14 @@ export const MICROCASO = {
     {
       id: "t1",
       de: "soporte@phishing-tutorial.xyz",
-      para: "analista@acme.com",
+      para: "analista@cibercorp.com",
       asunto: "⚠ Acceso anómalo detectado en tu cuenta",
       fecha: "hace 5 minutos",
       estado: "SOSPECHOSO",
       adjunto: "ninguno",
       nota: "Marcado por la pasarela: dominio desconocido sin SPF/DKIM.",
       cuerpo:
-        "Hola,\n\nhemos detectado un acceso anómalo a tu cuenta desde otra ciudad.\nPara verificar tu identidad, entra aquí:\n\n  http://phishing-tutorial.xyz/verificar\n\n— Equipo de Seguridad de ACME",
+        "Hola,\n\nhemos detectado un acceso anómalo a tu cuenta desde otra ciudad.\nPara verificar tu identidad, entra aquí:\n\n  http://phishing-tutorial.xyz/verificar\n\n— Equipo de Seguridad de CiberCorp",
     },
   ],
   alertas: [
@@ -114,7 +114,7 @@ export const MICROCASO = {
     escalar: false,
     cerrar: false,
   },
-  incorrectas: ["bloquear|dominio:acme.com"],
+  incorrectas: ["bloquear|dominio:cibercorp.com"],
   pistas: [
     "El indicador clave es el dominio del remitente del correo (soporte@phishing-tutorial.xyz).",
   ],
@@ -148,7 +148,7 @@ export const MICROCASO = {
         cmd: "bloquear",
         tipo: "bloquear",
         objetivo: "phishing-tutorial.xyz",
-        ok: "¡Eso es, analista! Has neutralizado el primer indicador de tu carrera: bloqueado phishing-tutorial.xyz en la pasarela. Ese dominio ya no volverá a engañar a nadie de ACME.",
+        ok: "¡Eso es, analista! Has neutralizado el primer indicador de tu carrera: bloqueado phishing-tutorial.xyz en la pasarela. Ese dominio ya no volverá a engañar a nadie de CiberCorp.",
         fallback: "Casi. Bloquea el dominio malicioso: `bloquear phishing-tutorial.xyz` (no el dominio legítimo de la empresa).",
       },
     ],

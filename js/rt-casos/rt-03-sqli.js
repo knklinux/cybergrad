@@ -12,11 +12,11 @@ export default {
   sla: 1500,
   xp: 320,
   briefing:
-    "La tienda online de ACME (10.10.10.30) muestra productos con una URL sospechosa: /producto?id=1. Sospechas de inyección SQL. Tu misión: confirmarlo con `sqlmap`, volcar la base de datos, crackear el hash del admin con `john` y entrar en el panel /admin con sus credenciales. La tienda es de juguete y el contrato te cubre.",
+    "La tienda online de CiberCorp (10.10.10.30) muestra productos con una URL sospechosa: /producto?id=1. Sospechas de inyección SQL. Tu misión: confirmarlo con `sqlmap`, volcar la base de datos, crackear el hash del admin con `john` y entrar en el panel /admin con sus credenciales. La tienda es de juguete y el contrato te cubre.",
   red: {
     hosts: {
       "10.10.10.30": {
-        hostname: "app.acme.local",
+        hostname: "app.cibercorp.local",
         os: "Linux Ubuntu 22.04",
         puertos: "80/tcp  open  http       nginx 1.24.0\n3306/tcp filtered mysql",
       },
@@ -25,9 +25,9 @@ export default {
   web: {
     "http://10.10.10.30": {
       raiz:
-        "<html><head><title>ACME Store</title></head>\n<body><h1>Tienda online de ACME</h1><a href='/producto?id=1'>Producto 1</a></body></html>",
+        "<html><head><title>CiberCorp Store</title></head>\n<body><h1>Tienda online de CiberCorp</h1><a href='/producto?id=1'>Producto 1</a></body></html>",
       rutas: {
-        "/producto?id=1": "<h1>Producto: Tornillos ACME</h1><p>Precio: 0.50 EUR</p>",
+        "/producto?id=1": "<h1>Producto: Tornillos CiberCorp</h1><p>Precio: 0.50 EUR</p>",
         "/admin": "<h1>Login de administracion</h1><form><input name='usuario'><input type='password' name='password'></form>",
       },
       login: { url: "/admin", usuario: "admin", password: "Admin#2024$" },
@@ -35,7 +35,7 @@ export default {
   },
   sqli: {
     url: "http://10.10.10.30/producto?id=1",
-    db: "acme_shop",
+    db: "cibercorp_shop",
     tablas: [
       {
         nombre: "usuarios",

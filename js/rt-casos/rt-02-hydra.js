@@ -16,7 +16,7 @@ export default {
   red: {
     hosts: {
       "10.10.10.20": {
-        hostname: "srv-backup.acme.local",
+        hostname: "srv-backup.cibercorp.local",
         os: "Linux Debian 12",
         puertos: "22/tcp open ssh  OpenSSH 9.2p1\n80/tcp open http nginx 1.24.0",
       },
@@ -35,10 +35,10 @@ export default {
   fs: {
     "/opt/wordlists/": ["top1000.txt"],
     "/opt/wordlists/top1000.txt": [
-      "password", "123456", "admin", "acme", "acme2023", "verano2023",
+      "password", "123456", "admin", "cibercorp", "cibercorp2023", "verano2023",
       "Verano2024!", "Admin#2024$", "Passw0rd!2024", "invierno2024",
       "clave123", "administrador", "root", "toor", "qwerty", "letmein",
-      "acmeAdmin1", "backup", "Backup2024", "monkey", "iloveyou",
+      "cibercorpAdmin1", "backup", "Backup2024", "monkey", "iloveyou",
     ].join("\n"),
     "/home/admin/": ["credenciales.txt", "notes.txt"],
     "/home/admin/credenciales.txt": [

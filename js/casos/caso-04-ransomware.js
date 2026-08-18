@@ -91,7 +91,7 @@ export default {
     {
       id: 1,
       de: "soporte@correo-corporativo.top",
-      para: "m.ruiz@acme.com",
+      para: "m.ruiz@cibercorp.com",
       asunto: "URGENTE: actualización de nómina",
       fecha: "11 Feb 2026 03:31",
       estado: "ABIERTO (m.ruiz)",
@@ -167,7 +167,7 @@ export default {
   },
 
   incorrectas: [
-    "bloquear|dominio:acme.com",
+    "bloquear|dominio:cibercorp.com",
   ],
 
   eventos: [

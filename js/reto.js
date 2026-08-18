@@ -250,9 +250,9 @@ function variarDominio(dominio, rand, mapa) {
 }
 
 // Varía un correo: el dominio cambia (a través del MISMO mapa de dominios,
-// para que `m.garcia@acme.com` y el `acme.com` suelto compartan variante) y
+// para que `m.garcia@cibercorp.com` y el `cibercorp.com` suelto compartan variante) y
 // el USUARIO con punto también (a través del mismo mapa.usuario, para que
-// `m.garcia@acme.com` y `deshabilitar m.garcia` compartan variante). Si el
+// `m.garcia@cibercorp.com` y `deshabilitar m.garcia` compartan variante). Si el
 // dominio ya no es un TLD reconocido (es una variante), el correo se deja
 // intacto (idempotente).
 function variarCorreo(correo, rand, mapas) {
