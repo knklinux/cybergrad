@@ -86,7 +86,7 @@ jobs:
       - name: Test voz (reconocimiento del navegador con mock, degradación sin API)
         run: npm run test:voz
 
-      - name: Test voz local de Jimmy (Piper TTS: funciones puras + E2E con servidor simulado)
+      - name: "Test voz local de Jimmy (Piper TTS: funciones puras + E2E con servidor simulado)"
         run: npm run test:piper
 
       - name: Test modo presentador (demo sin persistir)
