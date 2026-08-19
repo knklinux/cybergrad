@@ -38,10 +38,10 @@ check("el caso variado conserva el id de origen", a1.retoBaseId === base.id);
 check("el modo se conserva (soc)", a1.modo !== "rt");
 
 // ---------- Dominios y correos ----------
-check("el dominio original cambia (acme-facturas.info)", !json1.includes("acme-facturas.info"));
-check("el subdominio cambia (mail.acme-facturas.info)", !json1.includes("mail.acme-facturas.info"));
-check("los correos cambian (m.garcia@acme.com)", !json1.includes("m.garcia@acme.com"));
-check("las URLs se varían solo en el dominio (http://.../payment.exe)", !json1.includes("http://acme-facturas.info") && json1.includes("/payment.exe"));
+check("el dominio original cambia (cibercorp-facturas.info)", !json1.includes("cibercorp-facturas.info"));
+check("el subdominio cambia (mail.cibercorp-facturas.info)", !json1.includes("mail.cibercorp-facturas.info"));
+check("los correos cambian (m.garcia@cibercorp.com)", !json1.includes("m.garcia@cibercorp.com"));
+check("las URLs se varían solo en el dominio (http://.../payment.exe)", !json1.includes("http://cibercorp-facturas.info") && json1.includes("/payment.exe"));
 check("powershell.exe suelto (sin ruta) sigue intacto", json1.includes("powershell.exe"));
 check("la ruta /var/log/proxy.log varía como ruta (no como dominio)", !json1.includes("/var/log/proxy.log") && !!a1b.mapas.ruta.get("/var/log/proxy.log"));
 
@@ -51,11 +51,11 @@ check("el usuario m.garcia varía", !!uVar && uVar !== "m.garcia");
 check("la variante de usuario está en el caso (deshabilitar m.garcia incluido)", !!uVar && json1.includes(uVar));
 check("la variante de usuario NO re-casa con el patrón (tiene dígito)", !!uVar && /\d/.test(uVar));
 check("la variante de usuario conserva la longitud", !!uVar && uVar.length === "m.garcia".length);
-const uVarCorreo = a1b.mapas.correo.get("m.garcia@acme.com");
+const uVarCorreo = a1b.mapas.correo.get("m.garcia@cibercorp.com");
 check("el correo comparte el usuario variado", !!uVarCorreo && uVarCorreo.startsWith(uVar + "@"));
 // El dominio de un correo comparte variante con el dominio suelto
 const mapaDom = a1b.mapas.dominio;
-check("el correo y el dominio suelto comparten variante", a1b.mapas.correo.get("facturacion@acme-facturas.info") === "facturacion@" + mapaDom.get("acme-facturas.info"));
+check("el correo y el dominio suelto comparten variante", a1b.mapas.correo.get("facturacion@cibercorp-facturas.info") === "facturacion@" + mapaDom.get("cibercorp-facturas.info"));
 // update.exe (archivo de varias letras) sigue intacto; los usuarios con
 // punto de otros casos (r.gutierrez en caso-07, l.fuentes en caso-08) varían.
 const j7 = JSON.stringify(variarCaso(CASOS[6], "2026-08-13").caso);
@@ -95,7 +95,7 @@ check("desvariarCaso reconstruye el caso original exacto", JSON.stringify(recons
 
 // La inversa también funciona al revés (variante → original en el mapa)
 const inv = invertirMapas(a1b.mapas);
-check("invertirMapas devuelve variante → original", inv.dominio.get(mapaDom.get("acme-facturas.info")) === "acme-facturas.info" && inv.correo.get(a1b.mapas.correo.get("m.garcia@acme.com")) === "m.garcia@acme.com");
+check("invertirMapas devuelve variante → original", inv.dominio.get(mapaDom.get("cibercorp-facturas.info")) === "cibercorp-facturas.info" && inv.correo.get(a1b.mapas.correo.get("m.garcia@cibercorp.com")) === "m.garcia@cibercorp.com");
 
 // Invariante de longitud + reversibilidad en TODOS los casos (SOC + RT)
 let longOk = true;

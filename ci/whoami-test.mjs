@@ -1,7 +1,7 @@
 // whoami-test.mjs — Regresión del comando whoami (E2E con Playwright)
 // Verifica que el comando `whoami` refleja la campaña activa:
-//   - En un caso blue team (SOC)  → "... del SOC de ACME Corp" (sin "Red Team").
-//   - En un pentest red team      → "... de la Unidad Red Team de ACME Corp"
+//   - En un caso blue team (SOC)  → "... del SOC de CiberCorp" (sin "Red Team").
+//   - En un pentest red team      → "... de la Unidad Red Team de CiberCorp"
 //                                    (sin "del SOC").
 // Si no hay servidor en CYBERGRAD_URL (por defecto 127.0.0.1:8000), levanta
 // uno propio (node serve.js) y lo cierra al final, igual que smoke.mjs.
@@ -68,7 +68,7 @@ await page.waitForTimeout(400);
 
 // 3) whoami en campaña SOC → debe hablar del SOC, nunca de Red Team
 let salida = await ejecutar("whoami");
-check("whoami (SOC) menciona el SOC", salida.includes("del SOC de ACME Corp"));
+check("whoami (SOC) menciona el SOC", salida.includes("del SOC de CiberCorp"));
 check("whoami (SOC) NO menciona Red Team", !salida.includes("Unidad Red Team"));
 
 // 4) Abrir la campaña Red Team y aceptar el primer contrato (RT-01)
@@ -82,8 +82,8 @@ await page.waitForTimeout(400);
 
 // 5) whoami en pentest → debe hablar de la Unidad Red Team, nunca del SOC
 salida = await ejecutar("whoami");
-check("whoami (Red Team) menciona la Unidad Red Team", salida.includes("de la Unidad Red Team de ACME Corp"));
-check("whoami (Red Team) NO menciona el SOC", !salida.includes("del SOC de ACME Corp"));
+check("whoami (Red Team) menciona la Unidad Red Team", salida.includes("de la Unidad Red Team de CiberCorp"));
+check("whoami (Red Team) NO menciona el SOC", !salida.includes("del SOC de CiberCorp"));
 
 // 6) Sin errores de consola en todo el flujo
 if (errs.length) {

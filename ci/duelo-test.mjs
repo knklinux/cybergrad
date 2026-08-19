@@ -64,7 +64,7 @@ check("recon y acceso cohabitan (mismo canon, tipos distintos)", d2.hecho.rojo.s
 
 // objetivo ajeno al bando activo → jugada fallida
 let d3 = crearDuelo(e1);
-d3 = accionDuelo(d3, "bloquear", "dominio:c2.acme.net");
+d3 = accionDuelo(d3, "bloquear", "dominio:c2.cibercorp.net");
 check("objetivo del otro bando → turno perdido sin puntos", d3.turnos === 1 && d3.turno === "azul" && d3.puntos.rojo === 0 && d3.historial[d3.historial.length - 1].ok === false);
 
 // turno fallido: cambia de bando sin puntos
@@ -76,7 +76,7 @@ check("turno fallido cambia de bando sin puntos", d4.turno === "azul" && d4.turn
 let dr = crearDuelo(e1);
 for (const [tipo, canon] of [
   ["recon", "host:10.10.10.30"], ["aislar", "host:HOST-104"],
-  ["acceso", "host:10.10.10.30"], ["bloquear", "dominio:c2.acme.net"],
+  ["acceso", "host:10.10.10.30"], ["bloquear", "dominio:c2.cibercorp.net"],
   ["exfiltracion", "archivo:/home/admin/credenciales.txt"], ["deshabilitar", "usuario:m.garcia"],
   ["escalada", "host:10.10.10.60"],
 ]) dr = accionDuelo(dr, tipo, canon);
@@ -86,7 +86,7 @@ check("marcador rojo 100 / azul 75", dr.puntos.rojo === 100 && dr.puntos.azul ==
 // victoria del AZUL si completa primero (el rojo falla todos sus turnos)
 let da = crearDuelo(e1);
 for (const step of [
-  "fallido", ["aislar", "host:HOST-104"], "fallido", ["bloquear", "dominio:c2.acme.net"],
+  "fallido", ["aislar", "host:HOST-104"], "fallido", ["bloquear", "dominio:c2.cibercorp.net"],
   "fallido", ["deshabilitar", "usuario:m.garcia"], "fallido", ["escalar", "escalar"],
 ]) da = step === "fallido" ? turnoFallido(da) : accionDuelo(da, step[0], step[1]);
 check("azul gana si completa antes", da.fin && da.fin.ganador === "azul", JSON.stringify(da.fin));
@@ -107,7 +107,7 @@ for (const step of [
 check("dos bloquear del azul cohabitan y ganan", d5.fin && d5.fin.ganador === "azul" && d5.hecho.azul.size === 4, JSON.stringify(d5.fin));
 
 // claves del motor → tipo → bando
-check("clave azul bloquear", tipoDeClave("bloquear:dominio:c2.acme.net") === "bloquear" && ladoDeTipo("bloquear") === "azul");
+check("clave azul bloquear", tipoDeClave("bloquear:dominio:c2.cibercorp.net") === "bloquear" && ladoDeTipo("bloquear") === "azul");
 check("clave roja recon", tipoDeClave("objetivo:recon:host:10.10.10.30") === "recon" && ladoDeTipo("recon") === "rojo");
 check("clave escalar literal", tipoDeClave("escalar") === "escalar" && ladoDeTipo("escalar") === "azul");
 
@@ -170,7 +170,7 @@ const ejecutar = async (page, cmd) => {
   // Turno 1 (ROJO): nmap → recon
   await ejecutar(page, "nmap 10.10.10.30");
   let term = await page.locator("#terminal").innerText();
-  check("E2E · nmap recon funciona", term.includes("NMAP SCAN") && term.includes("web-vpn.acme.local"));
+  check("E2E · nmap recon funciona", term.includes("NMAP SCAN") && term.includes("web-vpn.cibercorp.local"));
   let hud2 = await page.locator("#caso-info").innerText();
   check("E2E · recon marcado y turno al AZUL", hud2.includes("TURNO DE 🔵 SOC") && hud2.includes("+25 pts"));
 
@@ -188,7 +188,7 @@ const ejecutar = async (page, cmd) => {
   check("E2E · acceso marcado", hud2.includes("Acceso por fuerza bruta SSH"));
 
   // Turno 4 (AZUL): bloquear dominio C2
-  await ejecutar(page, "bloquear dominio:c2.acme.net");
+  await ejecutar(page, "bloquear dominio:c2.cibercorp.net");
   hud2 = await page.locator("#caso-info").innerText();
   check("E2E · C2 bloqueado", hud2.includes("TURNO DE 🔴 RED TEAM"));
 

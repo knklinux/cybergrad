@@ -118,9 +118,9 @@ await page.waitForSelector("#terminal input", { timeout: 15000 }).catch(() => fa
 
 // 2) Completar el caso-01 (todas las acciones correctas)
 const acciones = [
-  "bloquear dominio:acme-facturas.info",
+  "bloquear dominio:cibercorp-facturas.info",
   "bloquear ip:185.220.101.34",
-  "bloquear url:http://acme-facturas.info/payment.exe",
+  "bloquear url:http://cibercorp-facturas.info/payment.exe",
   "bloquear dominio:paypal-verifica.top",
   "aislar HOST-104",
   "deshabilitar m.garcia",
@@ -134,8 +134,8 @@ const txtarea = page.locator("#informe-texto");
 if (!(await txtarea.count())) falla("El comando informe no abrió el textarea");
 const informe = [
   "Incidente de phishing confirmado con macro.",
-  "IOCs: acme-facturas.info, 185.220.101.34,",
-  "http://acme-facturas.info/payment.exe, paypal-verifica.top.",
+  "IOCs: cibercorp-facturas.info, 185.220.101.34,",
+  "http://cibercorp-facturas.info/payment.exe, paypal-verifica.top.",
   "Host HOST-104 aislado, cuenta m.garcia deshabilitada.",
   "Escalar a CSIRT.",
 ].join("\n");

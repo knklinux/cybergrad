@@ -210,9 +210,9 @@ check("Parte 3: el examen elige el phishing-01 (stub Math.random)", tituloCaso.i
 
 // Resolver el phishing-01 (misma secuencia que quiz-test)
 const accionesExamen = [
-  "bloquear dominio:acme-facturas.info",
+  "bloquear dominio:cibercorp-facturas.info",
   "bloquear ip:185.220.101.34",
-  "bloquear url:http://acme-facturas.info/payment.exe",
+  "bloquear url:http://cibercorp-facturas.info/payment.exe",
   "bloquear dominio:paypal-verifica.top",
   "aislar HOST-104",
   "deshabilitar m.garcia",
@@ -231,8 +231,8 @@ const txtarea2 = page2.locator("#informe-texto");
 if (!(await txtarea2.count())) falla("Parte 3: el comando informe no abrió el textarea");
 await txtarea2.fill([
   "Incidente de phishing confirmado con macro.",
-  "IOCs: acme-facturas.info, 185.220.101.34,",
-  "http://acme-facturas.info/payment.exe, paypal-verifica.top.",
+  "IOCs: cibercorp-facturas.info, 185.220.101.34,",
+  "http://cibercorp-facturas.info/payment.exe, paypal-verifica.top.",
   "Host HOST-104 aislado, cuenta m.garcia deshabilitada.",
   "Escalar a CSIRT.",
 ].join("\n"));
