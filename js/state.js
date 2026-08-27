@@ -65,6 +65,37 @@ export const RT_RANKS = [
 ];
 
 export const RANK_MAX = RANKS.length - 1;
+// ---- Carrera bug bounty ----
+export const BB_RANKS = [
+  {
+    id: 0, nombre: "Bug Hunter Novato", icono: "🐛",
+    xpRequerida: 0,
+    desc: "Primeros pasos en bug bounty. Aprendes a encontrar vulnerabilidades básicas.",
+  },
+  {
+    id: 1, nombre: "Bug Hunter", icono: "🎯",
+    xpRequerida: 400,
+    desc: "Encuentras vulnerabilidades reales y generas reportes profesionales.",
+  },
+  {
+    id: 2, nombre: "Bug Bounty Pro", icono: "💰",
+    xpRequerida: 900,
+    desc: "Cadenas de explotación completas y bounties de alto valor.",
+  },
+  {
+    id: 3, nombre: "Elite Hunter", icono: "🏆",
+    xpRequerida: 1500,
+    desc: "Vulnerabilidades críticas, bypass de autenticación y exfiltración de datos.",
+  },
+  {
+    id: 4, nombre: "Bug Bounty Legend", icono: "👑",
+    xpRequerida: 2100,
+    desc: "El mejor cazador de bugs. Encuentras lo que nadie ve.",
+  },
+];
+
+export const BB_RANK_MAX = BB_RANKS.length - 1;
+
 export const RT_RANK_MAX = RT_RANKS.length - 1;
 
 export function rangoActualRT(xp) {
@@ -117,6 +148,12 @@ export const GAME = {
   rtCasosResueltos: 0,
   rtCasosCompletados: [],
   rtLecciones: [],
+  // ---- Carrera bug bounty ----
+  bbModo: false,
+  bbXp: 0,
+  bbCasosResueltos: 0,
+  bbCasosCompletados: [],
+  bbBountyTotal: 0,
   // ---- Prácticas guiadas de becario superadas (blue team y red team) ----
   becarioCompletadas: [],
   // ---- Logros e insignias ----
@@ -182,4 +219,41 @@ export function registrarAccion(tipo, detalle, ok, puntos) {
 
 export function resetAccionesCaso() {
   GAME.acciones = [];
+}
+
+// ---- Bug Bounty Functions ----
+export function rangoActualBB(xp) {
+  let r = 0;
+  for (let i = 0; i < BB_RANKS.length; i++) {
+    if (xp >= BB_RANKS[i].xpRequerida) r = i;
+  }
+  return r;
+}
+
+export function estadoRangoBB() {
+  const idx = rangoActualBB(GAME.bbXp);
+  return { indice: idx, ...BB_RANKS[idx] };
+}
+
+export function addBBXP(n) {
+  const antes = estadoRangoBB();
+  GAME.bbXp = Math.max(0, GAME.bbXp + n);
+  const despues = estadoRangoBB();
+  if (despues.indice > antes.indice) {
+    return { ascendido: true, desde: antes, hasta: despues };
+  }
+  return { ascendido: false };
+}
+
+export function addBounty(n) {
+  GAME.bbBountyTotal = Math.max(0, GAME.bbBountyTotal + n);
+  addPuntos(n);
+}
+
+export function completarCasoBB(casoId, bounty) {
+  if (!GAME.bbCasosCompletados.includes(casoId)) {
+    GAME.bbCasosCompletados.push(casoId);
+    GAME.bbCasosResueltos++;
+  }
+  addBounty(bounty);
 }

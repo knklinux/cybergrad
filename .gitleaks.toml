@@ -25,7 +25,7 @@ paths = [
   '''\.example$''',
   # Contenido ficticio del simulador: los casos del juego contienen
   # credenciales falsas a propósito (evidencias de un entorno educativo).
-  '''(^|/)js/(rt-)?casos/''',
+  '''(^|/)js/(rt-|bb-)?casos/''',
 ]
 # Valores placeholder típicos de documentación y ejemplos conocidos
 regexes = [
@@ -35,5 +35,6 @@ regexes = [
   '''(?i)your[_-]?(api[_-]?key|token|secret|password|client[_-]?id|access[_-]?key)''',
   '''(?i)<[^>\n]{0,40}(key|token|secret|password|api)[^>\n]{0,40}>''',
   '''^changeme$''',
+  '''tk_test_ficticio''',
   '''^xxxx+$''',
 ]

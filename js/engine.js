@@ -1042,4 +1042,39 @@ export class Engine {
     }
     this.ui.siguienteCasoDisponible(GAME.casosCompletados, true);
   }
+
+  // ---- Bug Bounty Case Completion ----
+  completarCasoBB(casoId, bounty) {
+    if (GAME.bbCasosCompletados.includes(casoId)) return;
+    
+    GAME.bbCasosResueltos++;
+    GAME.bbCasosCompletados.push(casoId);
+    GAME.bbBountyTotal += bounty;
+    
+    // Award XP
+    const xpGanado = this.caso?.xp || 0;
+    const rangoAntes = estadoRangoBB();
+    GAME.bbXp += xpGanado;
+    const rangoDespues = estadoRangoBB();
+    
+    this.term.print("");
+    this.term.print("═══════════════════════════════════════════", "t-out-success");
+    this.term.print("  ¡CASO DE BUG BOUNTY COMPLETADO!", "t-out-success");
+    this.term.print("═══════════════════════════════════════════", "t-out-success");
+    this.term.print("");
+    this.term.print(`  +${xpGanado} XP (Bug Bounty)`, "t-out-info");
+    this.term.print(`  💰 Bounty: $${bounty} USD`, "t-out-success");
+    this.term.print(`  📊 Total ganado: $${GAME.bbBountyTotal} USD`, "t-out-success");
+    this.term.print("");
+    
+    if (rangoDespues.indice > rangoAntes.indice) {
+      this.term.print(`  🎉 ¡ASCENSO! Nuevo rango: ${rangoDespues.icono} ${rangoDespues.nombre}`, "t-out-success");
+      this.term.print(`  ${rangoDespues.desc}`, "t-out-dim");
+    }
+    
+    this.term.print("");
+    this.term.print("[+] Continúa cazando vulnerabilidades...", "t-out-info");
+    
+    guardar();
+  }
 }

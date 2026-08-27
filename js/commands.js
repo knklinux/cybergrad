@@ -1052,3 +1052,22 @@ function decodificarBase64(b64) {
   } catch { /* no es base64 */ }
   return null;
 }
+
+// ---- Bug Bounty Commands ----
+import { BB_CASOS, numCasoBB } from "./bb-casos.js";
+import { crearComandosBB } from "./bb-commands.js";
+import { estadoRangoBB, addBBXP, completarCasoBB } from "./state.js";
+
+// Add bug bounty help entries
+const BB_AYUDA = {
+  "recon": "recon <target> — reconocimiento del objetivo en bug bounty",
+  "scan": "scan <url> — escaneo de vulnerabilidades",
+  "test": "test <tipo> <param> — probar vulnerabilidad (idor, xss, cors, redirect, ssrf, sqli)",
+  "exploit": "exploit <tipo> — explotar vulnerabilidad confirmada",
+  "report": "report — generar reporte de hallazgo",
+  "scope": "scope — ver scope del programa actual",
+  "bb_casos": "bb_casos — ver casos de bug bounty disponibles",
+};
+
+// Merge with main help
+Object.assign(AYUDA, BB_AYUDA);
