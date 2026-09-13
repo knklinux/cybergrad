@@ -6,6 +6,7 @@
   "description": "Simulador de carrera SOC + Red Team: aprende ciberseguridad resolviendo incidentes realistas y ejecutando pentests desde una terminal.",
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "start": "node serve.js",
     "build:icons": "node ci/build-icons.mjs",
     "build:ico": "node ci/build-ico.mjs",

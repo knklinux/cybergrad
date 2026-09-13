@@ -1,0 +1,3 @@
+# El hook pre-commit lo ejecuta sh: con CRLF (autocrlf=true en Windows)
+# fallaría. Este atributo lo mantiene con LF en todos los checkouts.
+.githooks/** text eol=lf

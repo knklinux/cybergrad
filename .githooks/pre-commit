@@ -1,0 +1,5 @@
+#!/bin/sh
+# Guardián del PRECACHE (incidente Bug Bounty 2026-08-27): sw.js debe cubrir
+# todos los .js de js/ que se van a commitear. Actívalo una vez con:
+#   git config core.hooksPath .githooks
+node "$(git rev-parse --show-toplevel)/ci/precache-check.mjs" --staged
