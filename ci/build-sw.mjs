@@ -165,12 +165,21 @@ self.addEventListener("fetch", (e) => {
 `;
 
 // ---------- Versión: hash de la plantilla + contenido de los archivos ----------
+// El hash debe ser independiente del sistema operativo: un checkout Windows
+// con autocrlf ve CRLF y CI ve LF; si se hashean los bytes crudos el VERSION
+// cambia entre plataformas y "PWA al día" (git diff) nunca cuadra.
+// Normalizamos CRLF->LF en los ficheros de texto; los binarios (png/jpg/ico)
+// pasan intactos porque git los almacena byte a byte.
+const TEXT_EXT = /\.(js|mjs|cjs|css|html|htm|json|webmanifest|svg|txt|md|xml)$/i;
+const normaliza = (f, raw) =>
+  TEXT_EXT.test(f) ? raw.toString("utf8").replace(/\r\n/g, "\n") : raw;
+
 const h = createHash("sha256");
-h.update(PLANTILLA);
+h.update(PLANTILLA.replace(/\r\n/g, "\n"));
 for (const f of precache) {
   h.update(f);
   try {
-    h.update(readFileSync(path.join(ROOT, f)));
+    h.update(normaliza(f, readFileSync(path.join(ROOT, f))));
   } catch {
     // el archivo no existe (p. ej. un favicon opcional): se ignora
   }
