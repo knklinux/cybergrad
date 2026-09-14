@@ -3,3 +3,7 @@
 # todos los .js de js/ que se van a commitear. Actívalo una vez con:
 #   git config core.hooksPath .githooks
 node "$(git rev-parse --show-toplevel)/ci/precache-check.mjs" --staged
+
+# Guardián de secretos (réplica del de knk-suite): bloquea el commit si lo
+# indexado contiene tokens, cookies de sesión o claves API.
+node "$(git rev-parse --show-toplevel)/ci/secret-check.mjs" --staged

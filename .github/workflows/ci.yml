@@ -155,6 +155,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Secret scan (tree)
+        run: node ci/secret-check.mjs --all
+
   gitleaks:
     runs-on: ubuntu-latest
     steps:
